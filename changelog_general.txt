@@ -1,0 +1,35 @@
+from v1.2 of python-trials:
+==========================
+
+In geometry.py,
+
+(*) Added docstring to class Point and its member functions
+(*) Instance of Point class can now be initiated with a numpy array of
+coordinates
+(*) An instance can now be initialized using another instance of Point class
+(*) Added operator overloading __abs__() to compute the magnitude of the vector
+(*) Added overloaded comparison operators for <, <=, >, >=, and == to compare
+the magnitudes of two vectors
+
+In my_DSP_modules.py,
+
+(*) Added a new function shaping() to return rectangular or Blackman-Nuttall 
+windows. Read docstring for more details.
+(*) Added new function downsampler() to downsample a given data set either
+in intervals of integral multiples or non-integral intervals through 
+interpolation.
+(*) Added new function upsampler() to upsample a given data set through 
+interpolation.
+
+In my_gridding_modules.py,
+
+(*) interpolate module in scipy is separately imported instead of a 
+direct call using scipy.interpolate
+(*) Modified conv_grid2d() to handle xc, yc, xkern, ykern, xgrid, ygrid,
+and kernel not only as list inputs but also as numpy arrays
+(*) Modified conv_grid1d() to handle xc, xkern, xgrid, ygrid, and kernel
+not only as list inputs but also as numpy arrays
+(*) Modified conv_grid1d() to perform complex interpolation depending on
+input data type
+(*) Modified conv_grid2d() to perform complex interpolation depending on
+input data type
