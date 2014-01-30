@@ -6,7 +6,7 @@ try:
 except ImportError:
     from scipy.spatial import KDTree as KDT
 
-###############################################################
+#################################################################################
 
 class Point:
 
@@ -46,26 +46,26 @@ class Point:
     def __init__(self, xyz=None):
 
         """
-        ----------------------------------------------------------------------------
+        -------------------------------------------------------------------------
         Initializes an instance of class Point
 
         Inputs:
 
-        xyz    [Tuple, list or scalar] If not provided, the instance of 
-               class Point is initialized to (0.0, 0.0, 0.0). If scalar is provided, 
-               it is assigned to the x value. The y and z values are both set to
-               0.0. If a list or tuple is provided, the first element is assigned
-               to x, the second to y, and the third to z. If the second or third
-               elements are not provided, a value 0.0 is assigned to the corresponding
-               coordinates. If more than three elements are provided, only the first 
-               three values are used and the others ignored. Default = None which 
-               initializes to (0.0, 0.0, 0.0).
+        xyz    [Tuple, list or scalar] If not provided, the instance of class
+               Point is initialized to (0.0, 0.0, 0.0). If scalar is provided, it
+               is assigned to the x value. The y and z values are both set to 0.0.
+               If a list or tuple is provided, the first element is assigned to x,
+               the second to y, and the third to z. If the second or third
+               elements are not provided, a value 0.0 is assigned to the 
+               corresponding coordinates. If more than three elements are 
+               provided, only the first three values are used and the others 
+               ignored. Default = None which initializes to (0.0, 0.0, 0.0).
 
         Class attributes initialized are:
         x, y, z
 
         Read docstring of class Point for details on these attributes.
-        ----------------------------------------------------------------------------
+        -------------------------------------------------------------------------
         """
         
         if xyz is None:
@@ -97,17 +97,17 @@ class Point:
         else:
             raise TypeError('Data type mismatch. Check input again.')
 
-    #################################################################################
+    #############################################################################
 
     def __str__(self):
         return '({0}, {1}, {2})'.format(self.x, self.y, self.z)
 
-    #################################################################################
+    #############################################################################
 
     def __add__(self, other):
 
         """
-        ------------------------------------------------------------------------
+        -------------------------------------------------------------------------
         Operator overloading to add two vectors which are represented as
         instances of class Point
 
@@ -116,7 +116,7 @@ class Point:
         other     [instance of class Point] The instance of class Point which is
                   to be added to the current instance. 
 
-        ------------------------------------------------------------------------
+        -------------------------------------------------------------------------
         """
 
         try:
@@ -130,7 +130,7 @@ class Point:
 
         return Point((self.x+other.x, self.y+other.y, self.z+other.z))
  
-    #################################################################################
+    #############################################################################
 
     def __sub__(self, other):
 
@@ -161,7 +161,7 @@ class Point:
     # def __mul__(self, value):
     #     return Point(value*self.x, value*self.y, value*self.z)
 
-    #################################################################################
+    #############################################################################
 
     def __mul__(self, other): # Dot product
 
@@ -192,7 +192,7 @@ class Point:
 
     # __rmul__ = __mul__
 
-    #################################################################################
+    #############################################################################
 
     def __rmul__(self, value): # scalar product
 
@@ -220,7 +220,7 @@ class Point:
 
         return Point((value*self.x, value*self.y, value*self.z))
 
-    #################################################################################
+    #############################################################################
     
     def __abs__(self):
 
@@ -236,7 +236,7 @@ class Point:
 
         return NP.sqrt(self.__mul__(self))
 
-    #################################################################################
+    #############################################################################
 
     def __lt__(self, other):
 
@@ -266,7 +266,7 @@ class Point:
 
         return abs(self) < abs(other)
 
-    #################################################################################
+    #############################################################################
 
     def __le__(self, other):
 
@@ -297,7 +297,7 @@ class Point:
 
         return abs(self) <= abs(other)
 
-    #################################################################################
+    #############################################################################
 
     def __gt__(self, other):
 
@@ -327,7 +327,7 @@ class Point:
 
         return abs(self) > abs(other)
 
-    #################################################################################
+    #############################################################################
 
     def __ge__(self, other):
 
@@ -358,7 +358,7 @@ class Point:
 
         return abs(self) >= abs(other)
 
-    #################################################################################
+    #############################################################################
 
     def __eq__(self, other):
 
@@ -388,12 +388,12 @@ class Point:
 
         return abs(self) == abs(other)
 
-#####################################################################
+#################################################################################
 
 def altaz2dircos(altaz, units=None):
 
     """
-    -----------------------------------------------------------------------
+    -----------------------------------------------------------------------------
     Convert altitude and azimuth to direction cosines
 
     Inputs:
@@ -402,15 +402,15 @@ def altaz2dircos(altaz, units=None):
     
     Keyword Inputs:
 
-    units:       [Default = 'radians'] Units of altitude and azimuth. Could
-                 be radians or degrees. 
+    units:       [Default = 'radians'] Units of altitude and azimuth. Could be
+                 radians or degrees. 
 
     Output:
     
-    dircos:      Direction cosines corresponding to altitude and azimuth.
-                 The first axis corresponds to local East, second to local
-                 North and the third corresponds to zenith.
-    -----------------------------------------------------------------------
+    dircos:      Direction cosines corresponding to altitude and azimuth. The
+                 first axis corresponds to local East, second to local North and
+                 the third corresponds to Up.
+    -----------------------------------------------------------------------------
     """
 
     try:
@@ -418,6 +418,7 @@ def altaz2dircos(altaz, units=None):
     except NameError:
         print 'No altitude or azimuth specified. Check inputs.'
 
+    # PDB.set_trace()
     if not isinstance(altaz, NP.ndarray):
         if not isinstance(altaz, list):
             if not isinstance(altaz, tuple):
@@ -441,7 +442,7 @@ def altaz2dircos(altaz, units=None):
         elif altaz.shape[1] > 2:
             altaz = altaz[:,:2]
 
-    altaz = NP.asarray(altaz)
+    altaz = NP.asarray(altaz).reshape(-1,2)
 
     if units is None: units = 'radians'
     if units == 'degrees':
@@ -456,12 +457,12 @@ def altaz2dircos(altaz, units=None):
     n = NP.sin(altaz[:,0])                    # towards zenith
     return NP.asarray(zip(l,m,n))
 
-#######################################################################
+#################################################################################
 
 def dircos2altaz(dircos, units=None):
 
     """
-    -----------------------------------------------------------------------
+    -----------------------------------------------------------------------------
     Convert direction cosines to altitude and azimuth
 
     Inputs:
@@ -470,15 +471,15 @@ def dircos2altaz(dircos, units=None):
     
     Keyword Inputs:
 
-    units:       [Default = 'radians'] Units of altitude and azimuth. Could
-                 be radians or degrees. 
+    units:       [Default = 'radians'] Units of altitude and azimuth. Could be
+                 radians or degrees. 
 
     Output:
     
-    altaz:       Altitude and azimuth corresponding to direction cosines.
-                 The first axis corresponds to local East, second to local
-                 North and the third corresponds to zenith.
-    -----------------------------------------------------------------------
+    altaz:       Altitude and azimuth corresponding to direction cosines. The
+                 first axis corresponds to local East, second to local North and
+                 the third corresponds to Up.
+    -----------------------------------------------------------------------------
     """
 
     try:
@@ -529,12 +530,12 @@ def dircos2altaz(dircos, units=None):
 
     return altaz
 
-#######################################################################
+#################################################################################
 
 def hadec2altaz(hadec, latitude, units=None):
 
     """
-    -----------------------------------------------------------------------
+    -----------------------------------------------------------------------------
     Convert HA and declination to altitude and azimuth
 
     Inputs:
@@ -545,14 +546,14 @@ def hadec2altaz(hadec, latitude, units=None):
 
     Keyword Inputs:
 
-    units:       [Default = 'radians'] Units of HA, dec and latitude. Could
-                 be radians or degrees. 
+    units:       [Default = 'radians'] Units of HA, dec and latitude. Could be
+                 'radians' or 'degrees'. 
 
     Output:
     
-    altaz:       Altitude and azimuth corresponding to HA and dec at the 
-                 given latitude. Units are identical to those in input.
-    -----------------------------------------------------------------------
+    altaz:       Altitude and azimuth corresponding to HA and dec at the given
+                 latitude. Units are identical to those in input.
+    -----------------------------------------------------------------------------
     """
 
     try:
@@ -617,15 +618,14 @@ def hadec2altaz(hadec, latitude, units=None):
         azimuth = NP.degrees(azimuth)
     return NP.asarray(zip(altitude, azimuth))
 
-#########################################################################
+#################################################################################
 
 def altaz2hadec(altaz, latitude, units=None):
 
     """
-    -----------------------------------------------------------------------
-    Convert altitude and azimuth to HA and declination
-    Same transformation function as hadec2altaz, replace azimuth with HA
-        and altitude with declination.
+    -----------------------------------------------------------------------------
+    Convert altitude and azimuth to HA and declination. Same transformation
+    function as hadec2altaz, replace azimuth with HA and altitude with declination.
 
     Inputs:
     
@@ -635,14 +635,14 @@ def altaz2hadec(altaz, latitude, units=None):
 
     Keyword Inputs:
 
-    units:       [Default = 'radians'] Units of HA, dec and latitude. Could
-                 be radians or degrees. 
+    units:       [Default = 'radians'] Units of HA, dec and latitude. Could be
+                 radians or degrees. 
 
     Output:
     
-    hadec:       HA and declination corresponding to altitude and azimuth
-                 given latitude. Units are identical to those in input.
-    -----------------------------------------------------------------------
+    hadec:       HA and declination corresponding to altitude and azimuth given
+                 latitude. Units are identical to those in input.
+    -----------------------------------------------------------------------------
     """
 
     try:
@@ -702,12 +702,12 @@ def altaz2hadec(altaz, latitude, units=None):
         dec *= 180.0/NP.pi
     return NP.asarray(zip(ha, dec))
 
-#########################################################################
+#################################################################################
 
 def enu2xyz(enu, latitude, units='radians'):
 
     """
-    -----------------------------------------------------------------------
+    -----------------------------------------------------------------------------
     Convert local ENU coordinates to equatorial XYZ coordinates.
 
     Inputs:
@@ -718,14 +718,15 @@ def enu2xyz(enu, latitude, units='radians'):
 
     Keyword Inputs:
 
-    units:       [Default = 'radians'] Units of latitude. Could
-                 be radians or degrees. 
+    units:       [Default = 'radians'] Units of latitude. Could be radians or
+                 degrees. 
 
     Output:
     
-    xyz:         Equatorial XYZ coordinates corresponding to local ENU coordinates
-                 given latitude. Units are identical to those in input.
-    -----------------------------------------------------------------------
+    xyz:         Equatorial XYZ coordinates corresponding to local ENU 
+                 coordinates given latitude. Units are identical to those in
+                 input.
+    -----------------------------------------------------------------------------
     """
 
     try:
@@ -777,30 +778,31 @@ def enu2xyz(enu, latitude, units='radians'):
 
     return xyz
 
-#########################################################################
+#################################################################################
 
 def xyz2enu(xyz, latitude, units='radians'):
 
     """
-    -----------------------------------------------------------------------
+    -----------------------------------------------------------------------------
     Convert equatorial XYZ coordinates to local ENU coordinates.
 
     Inputs:
     
-    xyz:         equatorial XYZ coordinates as a list of tuples or Nx3 Numpy array
+    xyz:         equatorial XYZ coordinates as a list of tuples or Nx3 Numpy
+                 array
     
     latitude:    Latitude of the observatory. 
 
     Keyword Inputs:
 
-    units:       [Default = 'radians'] Units of latitude. Could
-                 be radians or degrees. 
+    units:       [Default = 'radians'] Units of latitude. Could be radians or
+                 degrees. 
 
     Output:
     
     enu:         local ENU coordinates corresponding to equatorial XYZ coordinates
                  given latitude. Units are identical to those in input.
-    -----------------------------------------------------------------------
+    -----------------------------------------------------------------------------
     """
 
     try:
@@ -852,7 +854,7 @@ def xyz2enu(xyz, latitude, units='radians'):
 
     return enu
 
-#########################################################################
+#################################################################################
 
 # def angular_ring(skypos, angles, npoints=100, skyunits='radec', angleunits='degrees'):
 
@@ -886,18 +888,12 @@ def xyz2enu(xyz, latitude, units='radians'):
 
 #     # Rotate the "north" and "up" to equatorial coordinates by the declination provided
 
-
-
-    
-
-    
-
-#########################################################################
+#################################################################################
 
 def sph2xyz(lon, lat, rad=None):
 
     """
-    --------------------------------------------------------------------
+    -----------------------------------------------------------------------------
     Inputs:
 
     lon [scalar or vector] longitude in degrees.  
@@ -914,7 +910,7 @@ def sph2xyz(lon, lat, rad=None):
     y   [scalar or vector] y-coordinates. Same size as lon and lat
 
     z   [scalar or vector] z-coordinates. Same size as lon and lat
-    --------------------------------------------------------------------
+    -----------------------------------------------------------------------------
     """
 
     try:
@@ -942,35 +938,35 @@ def sph2xyz(lon, lat, rad=None):
 
     return x, y, z
 
-#########################################################################
+#################################################################################
 
 def sphdist(lon1, lat1, lon2, lat2):
 
     """
-    --------------------------------------------------------------------
+    -----------------------------------------------------------------------------
     Returns great circle distance.  
 
-    Uses vicenty distance formula - a bit slower than others, but
-    numerically stable.
+    Uses vicenty distance formula - a bit slower than others, but numerically
+    stable.
 
     Inputs: 
 
     lon1 [scalar or vector] Longtitude in first list in degrees
 
-    lat1 [scalar or vector] Latitude in first list in degrees.
-         Must be of same size as lon1 if vector
+    lat1 [scalar or vector] Latitude in first list in degrees. Must be of same
+         size as lon1 if vector
 
-    lon2 [scalar or vector] Longtitude in second list in degrees.
-         Must be of same size as lon1 if vector
+    lon2 [scalar or vector] Longtitude in second list in degrees. Must be of same
+         size as lon1 if vector
 
-    lat2 [scalar or vector] Latitude in second list in degrees.
-         Must be of same size as lon1 if vector
+    lat2 [scalar or vector] Latitude in second list in degrees. Must be of same
+         size as lon1 if vector
 
     Outputs:
 
-    Angular distance (in degrees) subtended on the great circle between
-    the given set of points. Same size as the inputs.
-    --------------------------------------------------------------------
+    Angular distance (in degrees) subtended on the great circle between the given
+    set of points. Same size as the inputs.
+    -----------------------------------------------------------------------------
     """
 
     try:
@@ -1017,24 +1013,26 @@ def sphdist(lon1, lat1, lon2, lat2):
 
     return NP.degrees(NP.arctan2(numer, denom))
 
-#########################################################################
+#################################################################################
 
 def spherematch(lon1, lat1, lon2=None, lat2=None, matchrad=None,
                 nnearest=0, maxmatches=-1):
 
     """
-    ---------------------------------------------------------------------------
+    -----------------------------------------------------------------------------
     Finds matches in one catalog to another. 
 
     Parameters
     lon1 : array-like
          Longitude-like (RA, etc.) coordinate in degrees of the first catalog
     lat1 : array-like
-        Latitude-like (Dec, etc.) coordinate in degrees of the first catalog (shape of array must match `lon1`)
+        Latitude-like (Dec, etc.) coordinate in degrees of the first catalog
+        (shape of array must match `lon1`)
     lon2 : array-like
         Latitude-like (RA, etc.) coordinate in degrees of the second catalog
     lat2 : array-like
-        Latitude-like (Dec, etc.) in degrees of the second catalog (shape of array must match `ra2`)
+        Latitude-like (Dec, etc.) in degrees of the second catalog (shape of
+        array must match `ra2`)
     matchrad : float or None, optional
         How close (in degrees) a match has to be to count as a match.  If None,
         all nearest neighbors for the first catalog will be returned. 
@@ -1042,7 +1040,7 @@ def spherematch(lon1, lat1, lon2=None, lat2=None, matchrad=None,
         The nth neighbor to find.  
     maxmatches : int, optional
         Maximum number of matches to find. If maxmatches > 0, the code finds 
-        all matches up to maxmatches satisfying matchrad and nnearest is
+        all matches up to maxmatches satisfying matchrad. And nnearest is
         ignored.
 
     Returns
@@ -1053,7 +1051,7 @@ def spherematch(lon1, lat1, lon2=None, lat2=None, matchrad=None,
         Indices into the second catalog of the matches. 
     d12 : float array
         Distance (in degrees) between the matches 
-    -------------------------------------------------------
+    -----------------------------------------------------------------------------
     """
 
     try:
@@ -1192,117 +1190,5 @@ def spherematch(lon1, lat1, lon2=None, lat2=None, matchrad=None,
 
     return m1, m2, d12        
 
-#########################################################################
-
-def baseline_generator(antenna_locations, auto=False, conjugate=False):
-
-    """
-    -------------------------------------------------------------------
-    Generate baseline from antenna locations.
-
-    Inputs:
-
-    antenna_locations: List of tuples containing antenna coordinates, 
-                       or list of instances of class Point containing
-                       antenna coordinates, or Numpy array (Nx3) array
-                       with each row specifying an antenna location.
-
-    Input keywords:
-
-    auto:              [Default=False] If True, compute zero spacings of
-                       antennas with themselves.
-
-    conjugate:         [Default=False] If True, compute conjugate 
-                       baselines.
-
-    Output:
-
-    baseline_locations: Baseline locations in the same data type as 
-                        antenna locations (list of tuples, list of 
-                        instances of class Point or Numpy array of size
-                        Nb x 3 with each row specifying one baseline 
-                        vector)
-
-    -------------------------------------------------------------------
-    """
-
-    try:
-        antenna_locations
-    except NameError:
-        print 'No antenna locations supplied. Returning from baseline_generator()'
-        return None
-
-    inp_type = 'tbd'
-
-    if not isinstance(antenna_locations, NP.ndarray):
-        if isinstance(antenna_locations, list):
-            if isinstance(antenna_locations[0], Point):
-                inp_type = 'loo' # list of objects
-            elif isinstance(antenna_locations[0], tuple):
-                inp_type = 'lot' # list of tuples
-                antenna_locations = [(tuple(loc) if len(loc) == 3 else (tuple([loc[0],0.0,0.0]) if len(loc) == 1 else (tuple([loc[0],loc[1],0.0]) if len(loc) == 2 else (tuple([loc[0],loc[1],loc[2]]))))) for loc in antenna_locations if len(loc) != 0] # Remove empty tuples and validate the data range and data type for antenna locations. Force it to have three components for every antenna location.
-        elif isinstance(antenna_locations, Point):
-            if not auto:
-                print 'No non-zero spacings found since auto=False.'
-                return None
-            else:
-                return Point()
-        elif isinstance(antenna_locations, tuple):
-            if not auto:
-                print 'No non-zero spacings found since auto=False.'
-                return None
-            else:
-                return (0.0,0.0,0.0)
-        else:
-            if not auto:
-                print 'No non-zero spacings found since auto=False.'
-                return None
-            else:
-                return (0.0,0.0,0.0)
-    else:
-        inp_type = 'npa' # A numpy array
-        if antenna_locations.shape[0] == 1:
-            if not auto:
-                print 'No non-zero spacings found since auto=False.'
-                return None
-            else:
-                return NP.zeros(1,3)
-        else:
-            if antenna_locations.shape[1] > 3:
-                antenna_locations = antenna_locations[:,:3]
-            elif antenna_locations.shape[1] < 3:
-                antenna_locations = NP.hstack((antenna_locations, NP.zeros(antenna_locations.shape[0],3-antenna_locations.shape[1])))
-
-    if isinstance(antenna_locations, list):
-        num_ants = len(antenna_locations)
-    else:
-        num_ants = antenna_locations.shape[0]
-
-    if inp_type == 'loo':
-        if auto:
-            baseline_locations = [antenna_locations[j]-antenna_locations[i] for i in xrange(0,num_ants) for j in xrange(0,num_ants) if j >= i]
-        else:
-            baseline_locations = [antenna_locations[j]-antenna_locations[i] for i in range(0,num_ants) for j in range(0,num_ants) if j > i]                
-        if conjugate:
-            baseline_locations += [antenna_locations[j]-antenna_locations[i] for i in xrange(0,num_ants) for j in xrange(0,num_ants) if j < i]
-    elif inp_type == 'lot':
-        if auto:
-            baseline_locations = [tuple((antenna_locations[j][0]-antenna_locations[i][0], antenna_locations[j][1]-antenna_locations[i][1], antenna_locations[j][2]-antenna_locations[i][2])) for i in xrange(0,num_ants) for j in xrange(0,num_ants) if j >= i]
-        else:
-            baseline_locations = [tuple((antenna_locations[j][0]-antenna_locations[i][0], antenna_locations[j][1]-antenna_locations[i][1], antenna_locations[j][2]-antenna_locations[i][2])) for i in xrange(0,num_ants) for j in xrange(0,num_ants) if j > i]
-        if conjugate:
-            baseline_locations += [tuple((antenna_locations[j][0]-antenna_locations[i][0], antenna_locations[j][1]-antenna_locations[i][1], antenna_locations[j][2]-antenna_locations[i][2])) for i in xrange(0,num_ants) for j in xrange(0,num_ants) if j < i]
-    elif inp_type == 'npa':
-        if auto:
-            baseline_locations = [antenna_locations[i,:]-antenna_locations[j,:] for i in xrange(0,num_ants) for j in xrange(0,num_ants) if j >= i]
-        else:
-            baseline_locations = [antenna_locations[i,:]-antenna_locations[j,:] for i in xrange(0,num_ants) for j in xrange(0,num_ants) if j > i]        
-        if conjugate:
-            baseline_locations += [antenna_locations[i,:]-antenna_locations[j,:] for i in xrange(0,num_ants) for j in xrange(0,num_ants) if j < i]         
-        baseline_locations = NP.asarray(baseline_locations)
-
-    return baseline_locations
-
-##########################################################################
-
+#################################################################################
 

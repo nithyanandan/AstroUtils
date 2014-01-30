@@ -1,3 +1,33 @@
+from v1.0 of general:
+====================
+
+In my_DSP_modules.py,
+
+(*) Moved functions XC() and spectax() from MOFF module to the DSP module.
+Changed the module prefix in the concerned calling sequences accordingly.
+(*) Added keyword boolean input 'shift' to perform a shift to the correlated
+sequence to be compatible for equivalence with FFT based methods. Without shift,
+the usual correlated sequence is returned.
+(*) Added a function smooth() to smooth a sequence using a moving mean or median 
+window
+(*) Added a function filter() to create a low/high pass filtered data from the 
+input using user supplied filter window specifications
+
+In catalog.py,
+
+(*) Added docstring to all classes and associated member functions
+(*) Now input named catalog to the __init__() member function of class SkyModel
+is verified to be an instance of class Catalog
+
+In geometry.py,
+
+(*) function altaz2dircos() was found to fail when a 2-element list was supplied
+after converting from list to numpy array. Now it is forced to convert to a 
+two-dimensional array even if only one list is provided.
+(*) Moved the routine baseline_generator from geometry.py to interferometry.py
+
+---------------------------------------------------------------------------------
+
 from v1.2 of python-trials:
 ==========================
 

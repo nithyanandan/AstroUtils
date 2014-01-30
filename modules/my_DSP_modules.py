@@ -1,5 +1,5 @@
 import numpy as NP
-import scipy as SP
+from scipy import signal
 from scipy import interpolate
 import my_operations as OPS
 
@@ -8,24 +8,25 @@ import my_operations as OPS
 def FT1D(inp, ax=-1, use_real=False, shift=False, verbose=True):
 
     """
-    ---------------------------------------------------------------------
-    Compute FFT from Numpy. 
+    -----------------------------------------------------------------------------
+    Compute FFT using Numpy. 
+
     Inputs:
 
     inp:    Input data (vector or array) to be Fourier transformed
 
     Keyword Inputs:
 
-    ax:         Axis (scalar integer) over which FFT is performed. 
-                Default = -1 (last axis)
+    ax:         Axis (scalar integer) over which FFT is performed. Default = -1
+                (last axis)
 
-    use_real:   [Boolean scalar] If True, compute only the positive
-                frequency components using the real part of the data
+    use_real:   [Boolean scalar] If True, compute only the positive frequency
+                components using the real part of the data
 
     oututs:    
     
     fftout: FFT of input data over the specified axes
-    -------------------------------------------------------------------
+    -----------------------------------------------------------------------------
     """
 
     try:
@@ -49,12 +50,12 @@ def FT1D(inp, ax=-1, use_real=False, shift=False, verbose=True):
         fftout = NP.fft.fftshift(fftout, axes=ax)
     return fftout
 
-################################################################################
+#################################################################################
 
 def spectral_axis(length, delx=1.0, shift=False, use_real=False):
 
     """
-    ----------------------------------------------------------------
+    -----------------------------------------------------------------------------
     Compute spectral axis in the FFT
 
     Inputs:
@@ -63,18 +64,17 @@ def spectral_axis(length, delx=1.0, shift=False, use_real=False):
 
     Keyword Inputs:
 
-    delx:        x-axis interval, used only in case of 1D inp.
-                 Default = 1.0
+    delx:        x-axis interval, used only in case of 1D inp. Default = 1.0
 
     shift:       [Boolean scalar] True => Shift to center of frequencies
 
-    use_real:    [Boolean scalar] True => Compute only positive 
-                 frequencies using numpy.fft.rfftfreq() 
+    use_real:    [Boolean scalar] True => Compute only positive frequencies using
+                 numpy.fft.rfftfreq() 
 
     Output:    
     
     spaxis: Discrete spectral axis in the output FFT
-    ---------------------------------------------------------------
+    -----------------------------------------------------------------------------
     """
     
     # try: 
@@ -94,12 +94,12 @@ def spectral_axis(length, delx=1.0, shift=False, use_real=False):
 
     return spaxis
 
-################################################################################
+#################################################################################
 
 def rfft_append(inp, axis=0):
 
     """
-    ------------------------------------------------------------------
+    -----------------------------------------------------------------------------
     Compute the negative frequency left out by numpy.rfft()
     and append in the right order to the output from numpy.rfft().
 
@@ -117,7 +117,7 @@ def rfft_append(inp, axis=0):
     Output:
 
     Appended data along the axis specified. 
-    -------------------------------------------------------------------
+    -----------------------------------------------------------------------------
     """
 
     try:
@@ -142,15 +142,14 @@ def rfft_append(inp, axis=0):
 
     return NP.append(inp, NP.conj(OPS.reverse(inp, axis=axis, ind_range=[1,shp[axis]-2])), axis=axis)
 
-################################################################################
+#################################################################################
 
 def rfftfreq_append(rfft_freqs):
 
     """
-    ------------------------------------------------------------
-    Compute the negative frequencies for the output of 
-    numpy.rfftfreq() and rearrange the frequencies in the correct
-    order. 
+    -----------------------------------------------------------------------------
+    Compute the negative frequencies for the output of numpy.rfftfreq() and
+    rearrange the frequencies in the correct order. 
 
     Input: 
 
@@ -158,9 +157,9 @@ def rfftfreq_append(rfft_freqs):
 
     Output:
 
-    Positive and negative frequencies computed from numpy.rfftfreq()
-    made equal to the output of numpy.fftfreq()
-    ------------------------------------------------------------
+    Positive and negative frequencies computed from numpy.rfftfreq() made equal
+    to the output of numpy.fftfreq()
+    -----------------------------------------------------------------------------
     """
 
     try:
@@ -175,13 +174,13 @@ def rfftfreq_append(rfft_freqs):
 
     return NP.append(rfft_freqs[:-1],-rfft_freqs[-1:0:-1],axis=0)
 
-################################################################################
+#################################################################################
 
 def shaping(N_samples, fraction=1.0, shape='rect', area_normalize=False,
             peak=None, verbose=True):
     
     """
-    ----------------------------------------------------------------------------
+    -----------------------------------------------------------------------------
     Routine to produce sequences which can be used as shaping windows for other
     sequences. 
 
@@ -214,7 +213,7 @@ def shaping(N_samples, fraction=1.0, shape='rect', area_normalize=False,
     samples      [Numpy array] Sequence containing the required shape and zero
                  padding if fraction < 1.0
     
-    ----------------------------------------------------------------------------
+    -----------------------------------------------------------------------------
     """
 
     try:
@@ -248,7 +247,6 @@ def shaping(N_samples, fraction=1.0, shape='rect', area_normalize=False,
             print 'fraction was found to exceed 1.0. Resetting fraction to 1.0 in shaping().'
     
     center = int(0.5 * N_samples)
-    # PDB.set_trace()
     N_window = N_samples * fraction
 
     if (N_window % 2) == 0.0:
@@ -290,13 +288,13 @@ def shaping(N_samples, fraction=1.0, shape='rect', area_normalize=False,
 
     return samples
 
-################################################################################
+#################################################################################
 
 def downsampler(inp, factor, axis=-1, verbose=True, kind='linear',
                 fill_value=NP.nan):
 
     """
-    ----------------------------------------------------------------------------
+    -----------------------------------------------------------------------------
     Routine to downsample a given input sequence along a specific dimension 
     where the input could be multi-dimensional (up to 8 dimensions)
 
@@ -326,7 +324,7 @@ def downsampler(inp, factor, axis=-1, verbose=True, kind='linear',
 
     fill_value    [scalar] Value to fill locations outside the index range of 
                   input array. Default = NaN
-    ----------------------------------------------------------------------------
+    -----------------------------------------------------------------------------
     """
 
     try:
@@ -359,7 +357,6 @@ def downsampler(inp, factor, axis=-1, verbose=True, kind='linear',
     if len(inp.shape) > 8:
         raise ValueError('The routine cannot handle inputs with more than 8 dimensions. Aborting downsampler().')
 
-    # PDB.set_trace()
     axis = range(len(inp.shape))[axis]
     if (factor % 1) == 0:
         factor = int(factor)
@@ -451,13 +448,13 @@ def downsampler(inp, factor, axis=-1, verbose=True, kind='linear',
             print 'Returning the downsampled data.'
         return intpfunc(reqd_inds)
 
-################################################################################
+#################################################################################
 
 def upsampler(inp, factor, axis=-1, verbose=True, kind='linear',
               fill_value=NP.nan):
 
     """
-    ----------------------------------------------------------------------------
+    -----------------------------------------------------------------------------
     Routine to upsample a given input sequence along a specific dimension 
     where the input could be multi-dimensional (up to 8 dimensions)
 
@@ -484,7 +481,7 @@ def upsampler(inp, factor, axis=-1, verbose=True, kind='linear',
 
     fill_value    [scalar] Value to fill locations outside the index range of 
                   input array. Default = NaN
-    ----------------------------------------------------------------------------
+    -----------------------------------------------------------------------------
     """
 
     try:
@@ -532,5 +529,339 @@ def upsampler(inp, factor, axis=-1, verbose=True, kind='linear',
             print 'Returning the upsampled data.'
         return intpfunc(reqd_inds)
         
-################################################################################
+#################################################################################
     
+def XC(inp1, inp2=None, shift=True):
+    """
+    -----------------------------------------------------------------------------
+    Cross-correlate two sequences.
+
+    Inputs:
+
+    inp1:    [list or numpy array] First sequence.
+
+    inp2:    [list or numpy array] If not given, auto-correlation of inp1 is
+             returned.
+
+    shift:   [Boolean] If True, shift the correlated product such that it is 
+             represented in FFT format. i.e., the first sample corresponds to
+             zero lag followed by positive lags. The second half corresponds to
+             negative lags. Default = True
+
+    Output:  The correlation of input sequences inp1 and inp2. The output is of 
+             length len(inp1)+len(inp2)-1 zero padded to the nearest power of 2 
+             and shifted to be identical to a Fourier transform based estimate.
+    
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        inp1
+    except NameError:
+        raise NameError('inp1 not defined. Aborting XC().')
+
+    if not isinstance(inp1, (list, tuple, NP.ndarray, int, float, complex)):
+        raise TypeError('inp1 is of the wrong data type. Check inputs again. Aborting XC().')
+
+    inp1 = NP.asarray(inp1)
+
+    if inp2 is None:
+        inp2 = inp1
+    elif not isinstance(inp2, (list, tuple, int, float, complex, NP.ndarray)):
+        raise TypeError('inp2 has incompatible data type. Verify inputs. Aborting XC().')
+
+    inp2 = NP.asarray(inp1)
+
+    zero_pad_length = 2**NP.ceil(NP.log2(len(inp1)+len(inp2)-1))-(len(inp1)+len(inp2)-1)
+
+    if shift:
+        return NP.roll(NP.append(NP.correlate(inp1, inp2, mode='full'), NP.zeros(zero_pad_length)), -(len(inp2)-1))   # zero pad and shift to ensure identical results as FX() operation
+    else:
+        return NP.correlate(inp1, inp2, mode='full')
+
+#################################################################################  
+
+def spectax(length, resolution=1.0, shift=True, use_real=False):
+    """
+    -----------------------------------------------------------------------------
+    Determine the spectral axis after a Fourier Transform
+
+    Inputs:
+
+    length     [Scalar] Positive integer specifying the length of sequence which is
+               to be Fourier transformed
+
+    resolution [Scalar] Positive value for resolution in the sequence before
+               Fourier Transform
+
+    Keyword Inputs:
+
+    use_real   [Boolean] If true, the input sequence is assumed to consist only
+               of real values and the spectral axis is computed accordingly. 
+               Default = False
+
+    shift      [Boolean] If true, the spectral axis values are shifted 
+               cooresponding to a fftshift. Default = True
+
+    Output:
+
+    Spectral axis for an input sequence of given length and resolution.
+    -----------------------------------------------------------------------------
+    """
+    
+    try:
+        length
+    except NameError:
+        raise NameError('Input length not defined. Aborting spectax().')
+        
+    if not isinstance(resolution, (int, float)):
+        raise TypeError('Input resolution must be a positive scalar integer or floating point number. Aborting spectax().')
+    elif resolution < 0.0:
+        raise ValueError('Input resolution must be positive. Aborting spectax().')
+
+    return spectral_axis(length, resolution, shift, use_real)
+
+#################################################################################
+
+def smooth(inp, wts=None, width=None, stat='mean', verbose=True):
+
+    """
+    -----------------------------------------------------------------------------
+    Smoothen the input data using a moving average or median window along an
+    axis
+
+    Inputs:
+
+    inp         [Numpy vector or array] M x N numpy array which has to be 
+                smoothed across columns. 
+
+    Keyword Inputs:
+
+    wts         [Numpy vector] 1 x P array which will be used as the window of
+                weights in case of a moving average. Will not be used if a 
+                median is used in place of mean. P <= N. Sum of the weights
+                should equal unity, otherwise the weights will be accordingly
+                scaled. Default = None. If not set, then it will be set to a 
+                rectangular window of width specified in width (see below)
+
+    width       [scalar] Width of the moving window. Has to be positive. Default
+                is None. If width is None, wts should be set. One and only one
+                among wts and width should be set. 
+
+    stat        [string scalar] String specifying the statistic ('mean' or
+                'median') to be used. Default = 'mean'
+
+    verbose     [boolean] If set to True (default), print messages indicating
+                progress
+
+    Output:
+    
+    Smoothed output (M x N numpy array)
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        inp
+    except NameError:
+        raise NameError('No input sequence specified.')
+
+    if stat is None:
+        stat = 'mean'
+
+    if (stat != 'mean') and (stat != 'median'):
+        raise ValueError('stat can only be either mean or median.')
+
+    if (wts is None) and (width is None):
+        raise NameError('Neither weights nor window width specified.')
+
+    if wts is not None:
+        wts = NP.asarray(wts)
+        wts_shape = wts.shape
+        if len(wts_shape) == 1:
+            wts /= NP.sum(wts)
+        elif (wts_shape[0] == 1) or (wts_shape[1] == 1):
+            wts = NP.ravel(wts)
+        else:
+            raise TypeError('wts must be a vector.')
+        width = wts.size
+    else:
+        width = int(width)
+        if width <= 0:
+            raise ValueError('Window width has to be positive.')
+        wts = NP.ones(width)/width
+
+    if width == 1:
+        if verbose:
+            print '\tWindow width width is one. Input will be returned without smoothing.'
+            return inp
+
+    if stat == 'mean':
+        out = NP.convolve(inp, wts, mode='same')
+    else:
+        if width % 2 == 0:
+            if verbose:
+                raise ValueError('\tWindow width must be odd for median filtering.')
+        else:
+            out = signal.medfilt(inp, width) 
+
+    return out
+
+#################################################################################  
+
+def filter(inp, wts=None, width=None, passband='low', verbose=True):    
+    
+    """
+    -----------------------------------------------------------------------------
+    Filter the input data using a low or high pass filter in frequency domain 
+    along an axis
+
+    Inputs:
+
+    inp         [Numpy vector or array] M x N numpy array which has to be 
+                filtered across columns. 
+
+    Keyword Inputs:
+
+    wts         [Numpy vector] 1 x P or M x P array which will be used as the 
+                frequency window of weights. P <= N. Zeroth frequency of the 
+                weights should equal unity, otherwise the weights will be 
+                scaled accordingly. Default = None. If not set, then it will be 
+                set to a rectangular window of width specified in width
+                (see below) and will be applied as a filter identically to all
+                rows
+
+    width       [scalar] Width of the frequency window as a fraction of the 
+                bandwidth (or equivalently N). Has to be positive. Default
+                is None. If width is None, wts should be set. One and only one
+                among wts and width should be set. 
+
+    passband    [string scalar] String specifying the passband ('low' or 'high')
+                to be used. Default = 'low'
+
+    verbose     [boolean] If set to True (default), print messages indicating
+                progress
+
+    Output:
+    
+    Filtered output (M x N numpy array)
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        inp
+    except NameError:
+        raise NameError('No input specified for filtering.')
+
+    if isinstance(inp, list):
+        inp = NP.asarray(inp)
+    elif not isinstance(inp, NP.ndarray):
+        raise TypeError('Input should be of type list or numpy array.')
+
+    if len(inp.shape) == 1:
+        inp = inp.reshape(1,-1)
+    elif (inp.shape[0] == 1) or (inp.shape[1] == 1):
+        inp = inp.reshape(1,-1)
+
+    if (passband != 'low') and (passband != 'high'):
+        raise ValueError('Invalid passband specified. Valid passbands are low or high.')
+
+    if (wts is None) and (width is None):
+        raise NameError('Neither frequency weights nor filter width specified.')
+
+    if wts is None:
+        if not isinstance(width, (int,float)):
+            raise TypeError('Filter width should be a scalar.')
+
+        if width <= 0.0:
+            raise ValueError('Filter width should be positive.')
+        elif width >= 1.0:
+            if verbose:
+                print '\tFilter width exceeds 1.0. Returning input without filtering.'
+            return inp
+
+        filter_width = inp.shape[1] * width
+
+        # Even samples in input or low passband, keep the filter width odd
+        # Odd samples in input and high passband, keep the filter width even
+        # to have no imaginary parts after filtering
+
+        if (inp.shape[1] % 2 == 0) or (passband == 'low'): 
+            if NP.floor(filter_width) % 2 == 0:            
+                filter_width = NP.floor(filter_width) + 1
+                if filter_width > inp.shape[1]:
+                    filter_width = inp.shape[1]
+            else:
+                filter_width = NP.floor(filter_width)
+
+            wts = NP.ones(filter_width).reshape(1,-1) # Simple rectangular filter
+            pads = inp.shape[1] - filter_width
+
+            if pads > 0:
+                wts = NP.hstack((wts, NP.zeros(pads).reshape(1,-1)))
+
+            wts = NP.repeat(wts, inp.shape[0], axis=0)
+
+            if passband == 'low':
+                wts = NP.roll(wts, -int(0.5*filter_width), axis=1)
+            else:
+                wts = NP.fft.fftshift(NP.roll(wts, -int(0.5*filter_width), axis=1), axes=1)
+        else:
+            if NP.floor(filter_width) % 2 != 0:
+                filter_width = NP.floor(filter_width) + 1
+                if filter_width > inp.shape[1]:
+                    filter_width = inp.shape[1]
+            else:
+                filter_width = NP.floor(filter_width)
+
+            wts = NP.ones(filter_width).reshape(1,-1) # Simple rectangular filter
+            pads = inp.shape[1] - filter_width
+
+            if pads > 0:
+                wts = NP.hstack((wts, NP.zeros(pads).reshape(1,-1)))
+
+            wts = NP.repeat(wts, inp.shape[0], axis=0)
+            wts = NP.fft.fftshift(NP.roll(wts, -int(filter_width/2 - 1), axis=1), axes=1)
+            
+    else:
+        if isinstance(wts, list):
+            wts = NP.asarray(list)
+        elif not isinstance(wts, NP.ndarray):
+            raise TypeError('Frequency weights should be a numpy array.')
+
+        if len(wts.shape) > 2:
+            raise IndexError('Dimensions of frequency weights exceed dimensions of input.')
+        elif len(wts.shape) == 1:
+            wts = wts.reshape(1,-1)
+        elif (wts.shape[0] == 1) or (wts.shape[1] == 1):
+            wts = wts.reshape(1,-1)
+        elif (wts.shape[0] > inp.shape[0]) or (wts.shape[1] > inp.shape[1]):
+            raise IndexError('Dimensions of frequency weights exceed dimensions of input.')
+
+        wshape = wts.shape
+
+        if (wts.shape[0] != 1) and (wts.shape[0] != inp.shape[0]):
+            raise IndexError('Dimensions of frequency weights exceed dimensions of input.')
+        
+        pads = inp.shape[1] - wts.shape[1]
+        if pads > 0:
+            if (wts.shape[0] == 1):
+                wts = NP.hstack((wts, NP.zeros(pads).reshape(-1,1)))
+                wts = NP.repeat(wts, inp.shape[0], axis=0)
+            else:
+                wts = NP.hstack(wts, NP.zeros((inp.shape[0],pads)))
+        else:
+            if (wts.shape[0] == 1):
+                wts = NP.repeat(wts, inp.shape[0], axis=0)
+
+        if passband == 'low':
+            wts = NP.roll(wts, -int(0.5*wshape[1]), axis=1)
+        else:
+            wts = NP.fft.fftshift(NP.roll(wts, -int(0.5*wshape[1]), axis=1), axes=1)        
+
+        wts = wts/wts[0,0] # Scale the weights to have zeroth frequency to have weight of unity
+
+    return NP.fft.ifft(NP.fft.fft(inp, axis=1) * wts, axis=1)
+        
+#################################################################################  
+        
+        
