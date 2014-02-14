@@ -2,6 +2,7 @@ import numpy as NP
 from scipy import signal
 from scipy import interpolate
 import my_operations as OPS
+import pdb as PDB
 
 ################################################################################
 
@@ -177,7 +178,7 @@ def rfftfreq_append(rfft_freqs):
 #################################################################################
 
 def shaping(N_samples, fraction=1.0, shape='rect', area_normalize=False,
-            peak=None, verbose=True):
+            peak=None, verbose=True, centering=False):
     
     """
     -----------------------------------------------------------------------------
@@ -250,18 +251,18 @@ def shaping(N_samples, fraction=1.0, shape='rect', area_normalize=False,
     N_window = N_samples * fraction
 
     if (N_window % 2) == 0.0:
-        if (shape == 'bnw'):
+        if (shape == 'bnw') or (shape == 'BNW'):
             N_window = int(N_window - 1)
-        if (N_window < N_samples) and (shape == 'rect'):
+        if (N_window < N_samples) and ((shape == 'rect') or (shape == 'RECT')):
             N_window = int(N_window - 1)
     elif (N_window % 2.0) < 1.0:
         N_window = NP.ceil(N_window)
     elif (N_window % 2.0) >= 1.0:
         N_window = NP.floor(N_window)
 
-    if shape == 'rect':
+    if (shape == 'rect') or (shape == 'RECT'):
         window = NP.ones(N_window)
-    elif shape == 'bnw':
+    elif (shape == 'bnw') or (shape == 'BNW'):
         a = [0.3635819, -0.4891775, 0.1365995, -0.0106411]
         window = a[0]*NP.ones(N_window) + a[1]*NP.cos(2*NP.pi*NP.arange(N_window)/(N_window-1)) + a[2]*NP.cos(4*NP.pi*NP.arange(N_window)/(N_window-1)) + a[3]*NP.cos(6*NP.pi*NP.arange(N_window)/(N_window-1))
 
@@ -287,6 +288,116 @@ def shaping(N_samples, fraction=1.0, shape='rect', area_normalize=False,
             print 'Renormalized the shaping window to unit area.'
 
     return samples
+
+#################################################################################
+
+def windowing(N_window, shape='rect', pad_width=0, pad_value=0.0, 
+              area_normalize=False, peak=None, verbose=True, centering=True):
+    
+    """
+    -----------------------------------------------------------------------------
+    Routine to produce sequences which can be used as shaping windows for other
+    sequences. 
+
+    Inputs:
+
+    N_window     [Integer] Number of samples in the actual window. Should be
+                 positive
+
+    Keyword inputs:
+
+    shape        [string] Shape type. Currently allowed values are 'rect' and
+                 'bnw' for rectangular and Blackman-Nuttall windows respectively
+
+    pad_width    [scalar integer] Number of padding samples. it has to be 
+                 non-negative. Padding values are provided in pad_values.
+
+    area_normalize
+                 [Boolean] True mean re-normalize the window to have unit
+                 area. False means no re-normalization is performed. Cannot be
+                 set simulataneously if peak is set.
+
+    peak         [Float] If set, rescale the window so the peak is set to the
+                 specified value. 
+
+    verbose      [Boolean] If set, print progress and/or diagnostic messages.
+
+    centering    [Boolean] If set to True, centers the window with close to 
+                 symmetric on either side. If False, padding is done on the 
+                 right side. Default = True
+
+    Output:
+
+    window       [Numpy array] window containing the required shape and padding
+                 if pad_width > 0
+    
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        N_window
+    except NameError:
+        raise NameError('Window size undefined. Aborting windowing().')
+
+    if (area_normalize) and (peak is not None):
+        raise ValueError('Both area_normalize and peak cannot be set at the same time in windowing().')
+
+    if not isinstance(area_normalize, bool):
+        raise TypeError('area_normalize should be a boolean value. Aborting windowing().')
+
+    if peak is not None:
+        if not isinstance(peak, (int, float)):
+            raise ValueError('Peak should be a scalar value. Aborting windowing().')
+
+    if not isinstance(N_window, (int, float)):
+        raise TypeError('N_window should be a positive integer. Aborting windowing().')
+    else:
+        N_window = int(N_window)
+        if N_window < 1:
+            raise ValueError('N_window should be a positive integer. Aborting windowing().')
+
+    if not isinstance(pad_width, (int, float)):
+        raise TypeError('pad_width must be an integer.')
+    else:
+        pad_width = int(pad_width)
+
+    if pad_width < 0:
+        raise ValueError('pad_width should be non-negative. Aborting windowing().')
+    
+    if (shape == 'rect') or (shape == 'RECT'):
+        if not centering:
+            window = NP.pad(NP.ones(N_window), (0, pad_width), mode='constant', constant_values=(pad_value, pad_value))
+        else:
+            window = NP.pad(NP.ones(N_window), (NP.ceil(0.5*pad_width), NP.floor(0.5*pad_width)), mode='constant', constant_values=(pad_value, pad_value))
+    elif (shape == 'bnw') or (shape == 'BNW'):
+        a = [0.3635819, -0.4891775, 0.1365995, -0.0106411]
+        if (N_window % 2 == 1):
+            win = a[0]*NP.ones(N_window) + a[1]*NP.cos(2*NP.pi*NP.arange(N_window)/(N_window-1)) + a[2]*NP.cos(4*NP.pi*NP.arange(N_window)/(N_window-1)) + a[3]*NP.cos(6*NP.pi*NP.arange(N_window)/(N_window-1))
+            if not centering:
+                if pad_width >= 1:
+                    window = NP.pad(win, (1, pad_width-1), mode='constant', constant_values=(pad_value, pad_value))
+                else:
+                    window = win
+            else:
+                window = NP.pad(win, (NP.ceil(0.5*pad_width), NP.floor(0.5*pad_width)), mode='constant', constant_values=(pad_value, pad_value))
+        else:
+            win = a[0]*NP.ones(N_window-1) + a[1]*NP.cos(2*NP.pi*NP.arange(N_window-1)/(N_window-2)) + a[2]*NP.cos(4*NP.pi*NP.arange(N_window-1)/(N_window-2)) + a[3]*NP.cos(6*NP.pi*NP.arange(N_window-1)/(N_window-2))
+            if not centering:
+                window = NP.pad(win, (1, pad_width), mode='constant', constant_values=(pad_value, pad_value))
+            else:
+                window = NP.pad(win, (NP.ceil(0.5*(pad_width+1)), NP.floor(0.5*(pad_width+1))), mode='constant', constant_values=(pad_value, pad_value))
+
+    if peak is not None:
+        window *= peak/NP.amax(NP.abs(window))
+        if verbose:
+            print '\tRescaled the shaping window to peak value.'
+    elif area_normalize:
+        area = NP.trapz(window) # Beware that NP.trapz could differ from NP.cumsum due to edge effects. Sufficient padding will make them converge
+        window /= area
+        if verbose:
+            print '\tRenormalized the shaping window to unit area.'
+
+    return window
 
 #################################################################################
 

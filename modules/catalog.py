@@ -63,14 +63,14 @@ class Catalog:
 
         self.frequency = frequency
         self.location = NP.asarray(location)
-        self.flux_density = NP.asarray(flux_density)
+        self.flux_density = NP.asarray(flux_density).reshape(-1)
         self.epoch = epoch
         self.coords = coords
 
         if spectral_index is None:
-            self.spectral_index = NP.zeros(self.flux_density.size)
+            self.spectral_index = NP.zeros(self.flux_density.size).reshape(-1)
         else: 
-            self.spectral_index = NP.asarray(spectral_index)
+            self.spectral_index = NP.asarray(spectral_index).reshape(-1)
         
         if (self.location.shape[0] != self.flux_density.size) or (self.flux_density.size != self.spectral_index.size) or (self.location.shape[0] != self.spectral_index.size):
             raise ValueError('location, flux_density, and spectral_index must be of equal size.')

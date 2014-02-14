@@ -1,3 +1,39 @@
+from v1.01 of general:
+=====================
+
+(*) Added a new module named foregrounds.py.
+(*) Added a function power_law_spectral_index() which computes a single power law
+spectral index when flux densities and corresponding frequencies are specified.
+
+In my_DSP_modules.py,
+
+(*) function shaping was modified to handle when the window shape is specified in
+both lower and upper case letters
+(*) Created a window shaping function windowing() which creates a window shape 
+with optional padding, and centering capabilities. Differs from shaping() in that 
+whole number of samples are specified instead of a fraction for padding.
+
+In my_operations.py,
+
+(*) In function reverse(), replaced the usage of sys.exit() with raise of
+exceptions.
+
+In catalog.py,
+
+(*) In __init__() of class Catalog, force attributes flux_density and
+spectral_index to a numpy vector of non-zero dimensions even if the input 
+provides only a single object to be cataloged.
+
+In geometry.py, 
+
+(*) Modified altaz2dircos() so that it handles input altitudes which are negative
+(*) Modified altaz2dircos() to check that altitudes lie in the range -90 to +90
+degrees, earlier it was checking only the range 0 to 90 degrees.
+(*) Rectified the return value in dircos2altaz() from being a 3-column array to a
+2-column array. Changed documentation accordingly
+(*) In dircos2altaz(), changed usage of numpy absolute() to numpy abs()
+
+---------------------------------------------------------------------------------
 from v1.0 of general:
 ====================
 

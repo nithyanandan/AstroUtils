@@ -1,4 +1,3 @@
-import sys
 import numpy as NP
 
 def reverse(inp, axis=0, ind_range=[-1,-1]):
@@ -35,21 +34,16 @@ def reverse(inp, axis=0, ind_range=[-1,-1]):
         isinstance(inp, NP.ndarray)
         # type(inp) is numpy.ndarray
     except TypeError: 
-        print 'Unable to convert to Numpy array data type'
-        sys.exit(1) # Abort execution
+        raise TypeError('Unable to convert to Numpy array data type')
 
     shp = NP.shape(inp)
     ndim = len(shp)
     
     if ndim > 8:
-        print "Input data with more than 8 dimensions not supported."
-        print "Aborted execution in my_operations.reverse()"
-        sys.exit(1)
+        raise ValueError("Input data with more than 8 dimensions not supported. Aborted execution in my_operations.reverse()")
 
     if (axis < 0) or (axis >= ndim):
-        print "Input data does not contain the axis specified."
-        print "Aborted execution in my_operations.reverse()"
-        sys.exit(1) 
+        raise ValueError("Input data does not contain the axis specified. Aborted execution in my_operations.reverse()")
 
     if (ind_range[0] <= -1):
         ind_range[0] = 0 # set default to starting index

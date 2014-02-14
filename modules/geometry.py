@@ -448,8 +448,8 @@ def altaz2dircos(altaz, units=None):
     if units == 'degrees':
         altaz = NP.radians(altaz)
 
-    if (NP.any(altaz[:,0] > NP.pi/2)) or (NP.any(altaz[:,0] < 0.0)):
-        raise ValueError('Altitude(s) should lie between 0 and 90 degrees. Check inputs and units.')
+    if NP.any(NP.abs(altaz[:,0]) > NP.pi/2):
+        raise ValueError('Altitude(s) should lie between -90 and 90 degrees. Check inputs and units.')
 
     altaz[:,1] = NP.pi/2 - altaz[:,1] # Convert azimuth (measured from north towards east) to angle measured from east towards north
     l = NP.cos(altaz[:,0])*NP.cos(altaz[:,1]) # towards east
@@ -476,9 +476,7 @@ def dircos2altaz(dircos, units=None):
 
     Output:
     
-    altaz:       Altitude and azimuth corresponding to direction cosines. The
-                 first axis corresponds to local East, second to local North and
-                 the third corresponds to Up.
+    altaz:       Altitude and azimuth corresponding to direction cosines. 
     -----------------------------------------------------------------------------
     """
 
@@ -516,11 +514,11 @@ def dircos2altaz(dircos, units=None):
     if ((NP.any(NP.abs(dircos[:,0]) > 1.0)) or
         (NP.any(NP.abs(dircos[:,1]) > 1.0)) or
         (NP.any(NP.abs(dircos[:,2]) > 1.0)) or
-        (NP.any(NP.absolute(NP.sqrt(NP.sum(dircos**2,axis=1))-1.0) > eps))):
+        (NP.any(NP.abs(NP.sqrt(NP.sum(dircos**2,axis=1))-1.0) > eps))):
 
         raise ValueError('Individual components of direction cosines should lie between 0 and 1 and the direction cosines should have unit magnitudes. Check inputs.')
 
-    altaz = NP.empty((dircos.shape[0],3))
+    altaz = NP.empty((dircos.shape[0],2))
     altaz[:,0] = NP.pi/2 - NP.arccos(dircos[:,2]) # Altitude/elevation
     altaz[:,1] = NP.pi/2 - NP.arctan2(dircos[:,1],dircos[:,0]) # Azimuth (measured from North)
 
