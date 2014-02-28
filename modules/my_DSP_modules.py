@@ -2,7 +2,6 @@ import numpy as NP
 from scipy import signal
 from scipy import interpolate
 import my_operations as OPS
-import pdb as PDB
 
 ################################################################################
 
@@ -392,7 +391,8 @@ def windowing(N_window, shape='rect', pad_width=0, pad_value=0.0,
         if verbose:
             print '\tRescaled the shaping window to peak value.'
     elif area_normalize:
-        area = NP.trapz(window) # Beware that NP.trapz could differ from NP.cumsum due to edge effects. Sufficient padding will make them converge
+        # area = NP.trapz(window) # Beware that NP.trapz could differ from NP.cumsum due to edge effects. Sufficient padding will make them converge
+        area = NP.sum(window) # Using sum is preferable to using trapz although less accurate especially when FFT is going to be involved later on.
         window /= area
         if verbose:
             print '\tRenormalized the shaping window to unit area.'
@@ -975,4 +975,91 @@ def filter(inp, wts=None, width=None, passband='low', verbose=True):
         
 #################################################################################  
         
-        
+def PFB_empirical(nchan, bank_nchan, rise_frac_half_max, fall_frac_half_max,
+                  log_fall_rise=True, verbose=True):        
+
+    """
+    -----------------------------------------------------------------------------
+    Create a polyphase filter bank from empirical models. 
+
+    Inputs:
+
+    nchan         [scalar] total number of samples in the output
+                  
+    bank_nchan    [scalar] number of channels in each filter bank. bank_nchan
+                  must be less than nchan
+
+    rise_frac_half_max
+                  [scalar] fraction of bank_nchan in which the function rises 
+                  from half-maximum to maximum value
+
+    fall_frac_half_max
+                  [scalar] fraction of bank_nchan in which the function falls 
+                  from maximum to half-maximum value
+
+    log_fall_rise [boolean] flag indicating if the rise and fall between maximum
+                  and half-maximum values occur in logarithmic or linear
+                  intervals. if True, log scale is used (default), otherwise a 
+                  linear scale is used.
+
+    verbose       [boolean] If True (default), prints progress and diagnostic 
+                  messages. If False, suppress printing such messages.
+
+    Output:
+
+    window        [numpy vector] Frequency window function of size nchan.
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        nchan, bank_nchan, rise_frac_half_max, fall_frac_half_max
+    except NameError:
+        raise NameError('nchan, bank_nchan, rise_frac_half_max, fall_frac_half_max must be specified.')
+
+    if not isinstance(nchan, (int, float)):
+        raise TypeError('nchan must be a scalar integer.')
+
+    if not isinstance(bank_nchan, (int, float)):
+        raise TypeError('bank_nchan must be a scalar integer.')
+
+    if not isinstance(rise_frac_half_max, (int, float)):
+        raise TypeError('rise_frac_half_max must be a scalar value.')
+
+    if not isinstance(fall_frac_half_max, (int, float)):
+        raise TypeError('fall_frac_half_max must be a scalar value.')
+
+    if nchan <= 0:
+        raise ValueError('nchan must be a positive integer.')
+
+    if bank_nchan <= 0:
+        raise ValueError('bank_nchan must be a positive integer.')
+
+    if (rise_frac_half_max < 0.0) or (rise_frac_half_max > 1.0):
+        raise ValueError('rise_frac_half_max must lie in the range 0 and 1.')
+
+    if (fall_frac_half_max < 0.0) or (fall_frac_half_max > 1.0):
+        raise ValueError('fall_frac_half_max must lie in the range 0 and 1.')
+
+    if bank_nchan > nchan:
+        raise TypeError('Number of channels, bank_nchan, in the filter bank must be less than the total number of channels, nchan.')
+
+    nfall = int(rise_frac_half_max * bank_nchan)
+    nrise = int(fall_frac_half_max * bank_nchan)
+
+    bank_window = NP.ones(bank_nchan)
+    if log_fall_rise:
+        fall = 10.0 ** NP.linspace(NP.log10(1.0), NP.log10(0.5), nfall)
+        rise = 10.0 ** NP.linspace(NP.log10(0.5), NP.log10(1.0), nrise)
+    else:
+        fall = NP.linspace(1.0, 0.5, nfall)
+        rise = NP.linspace(0.5, 1.0, nrise)
+    bank_window[:nrise] = rise
+    bank_window[bank_nchan-nfall:] = fall
+
+    window = NP.repeat(bank_window.reshape(1,-1), NP.ceil(1.0*nchan/bank_nchan), axis=0)
+    window = window.ravel()
+    window = window[:nchan]
+    
+    return window
+    
+#################################################################################  

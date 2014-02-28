@@ -1,3 +1,30 @@
+from v1.02 of general:
+=====================
+
+In geometry.py,
+
+(*) Raising of few exceptions have been fixed.
+
+In my_DSP_modules.py,
+
+(*) In function windowing(), replaced the estimation of area using trapz() with
+sum() even if the latter is less accurate in order to be more consistent with FFT
+usage downstream.
+(*) Added a function PFB_empirical() which empirically generates a polyphase
+filter bank. 
+
+In catalog.py, 
+
+(*) Added a new attribute src_shape which is initialized by the newly included 
+input parameter in the __init__() member function of class Catalog. The src_shape 
+will consist of three elements, namely, major axis FWHM, minor axis FWHM, and 
+position angle (degrees), for each source. The docstring has been modified
+accordingly. 
+(*) Added a new input parameter src_shape_units to member function __init__()
+that specifies the units of the major and minor axes, and position angle. The
+docstring has been modified accordingly.
+
+---------------------------------------------------------------------------------
 from v1.01 of general:
 =====================
 

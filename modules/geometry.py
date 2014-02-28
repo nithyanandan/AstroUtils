@@ -416,9 +416,8 @@ def altaz2dircos(altaz, units=None):
     try:
         altaz
     except NameError:
-        print 'No altitude or azimuth specified. Check inputs.'
+        raise NameError('No altitude or azimuth specified. Check inputs.')
 
-    # PDB.set_trace()
     if not isinstance(altaz, NP.ndarray):
         if not isinstance(altaz, list):
             if not isinstance(altaz, tuple):
@@ -483,7 +482,7 @@ def dircos2altaz(dircos, units=None):
     try:
         dircos
     except NameError:
-        print 'No direction cosines specified. Check inputs.'
+        raise NameError('No direction cosines specified. Check inputs.')
 
     if not isinstance(dircos, NP.ndarray):
         if not isinstance(dircos, list):
@@ -557,12 +556,12 @@ def hadec2altaz(hadec, latitude, units=None):
     try:
         hadec
     except NameError:
-        print 'No HA or declination specified. Check inputs.'
+        raise NameError('No HA or declination specified. Check inputs.')
 
     try:
         latitude
     except NameError:
-        print 'No latitude specified. Check inputs.'
+        raise NameError('No latitude specified. Check inputs.')
 
     if isinstance(latitude, (list, tuple, str)):
         raise TypeError('Latitude should be a scalar number.')
@@ -646,12 +645,12 @@ def altaz2hadec(altaz, latitude, units=None):
     try:
         altaz
     except NameError:
-        print 'No altitude or azimuth specified. Check inputs.'
+        raise NameError('No altitude or azimuth specified. Check inputs.')
 
     try:
         latitude
     except NameError:
-        print 'No latitude specified. Check inputs.'
+        raise NameError('No latitude specified. Check inputs.')
 
     if isinstance(latitude, (list, tuple, str)):
         raise TypeError('Latitude should be a scalar number.')
@@ -730,12 +729,12 @@ def enu2xyz(enu, latitude, units='radians'):
     try:
         enu
     except NameError:
-        print 'No baselines specified. Check inputs.'
+        raise NameError('No baselines specified. Check inputs.')
 
     try:
         latitude
     except NameError:
-        print 'No latitude specified. Check inputs.'
+        raise NameError('No latitude specified. Check inputs.')
 
     if isinstance(latitude, (list, tuple, str)):
         raise TypeError('Latitude should be a scalar number.')
@@ -806,12 +805,12 @@ def xyz2enu(xyz, latitude, units='radians'):
     try:
         xyz
     except NameError:
-        print 'No baselines specified. Check inputs.'
+        raise NameError('No baselines specified. Check inputs.')
 
     try:
         latitude
     except NameError:
-        print 'No latitude specified. Check inputs.'
+        raise NameError('No latitude specified. Check inputs.')
 
     if isinstance(latitude, (list, tuple, str)):
         raise TypeError('Latitude should be a scalar number.')

@@ -26,6 +26,14 @@ class Catalog:
                    (flux ~ freq^spectral_index). If not specified, it is taken
                    as 0 for all sources. Same size as flux_density
 
+    src_shape      [3-column numpy array or list of 3-element lists] source shape
+                   specified by major axis FWHM (first column), minor axis FWHM 
+                   (second column), and position angle (third column). The major
+                   and minor axes and position angle are stored in degrees. The
+                   number of rows must match the number of sources. Position 
+                   angle is in degrees east of north (same convention as local
+                   azimuth)
+
     epoch          [string] Epoch appropriate for the coordinate system. Default
                    is 'J2000'
 
@@ -48,14 +56,24 @@ class Catalog:
     ##############################################################################
 
     def __init__(self, frequency, location, flux_density, spectral_index=None,
-                 epoch='J2000', coords='radec'):
+                 src_shape=None, epoch='J2000', coords='radec',
+                 src_shape_units=None):
 
         """
         --------------------------------------------------------------------------
         Initialize an instance of class Catalog
 
         Class attributes initialized are:
-        frequency, location, flux_density, epoch, spectral_index, coords
+        frequency, location, flux_density, epoch, spectral_index, coords, and 
+        src_shape
+
+        Other input(s):
+
+        src_shape_units  [3-element list or tuple of strings] Specifies the units 
+                         of major axis FWHM, minor axis FWHM, and position angle.
+                         Accepted values for major and minor axes units are 
+                         'arcsec', 'arcmin', 'degree', or 'radian'. Accepted
+                         values for position angle units are 'degree' or 'radian'
 
         Read docstring of class Catalog for details on these attributes.
         --------------------------------------------------------------------------
@@ -66,14 +84,48 @@ class Catalog:
         self.flux_density = NP.asarray(flux_density).reshape(-1)
         self.epoch = epoch
         self.coords = coords
+        self.src_shape = None
 
         if spectral_index is None:
             self.spectral_index = NP.zeros(self.flux_density.size).reshape(-1)
         else: 
             self.spectral_index = NP.asarray(spectral_index).reshape(-1)
         
-        if (self.location.shape[0] != self.flux_density.size) or (self.flux_density.size != self.spectral_index.size) or (self.location.shape[0] != self.spectral_index.size):
-            raise ValueError('location, flux_density, and spectral_index must be of equal size.')
+        if src_shape is not None:
+            self.src_shape = NP.asarray(src_shape)
+            if self.src_shape.shape[1] != 3:
+                raise ValueError('Source shape must consist of three columns (major axis FWHM, minor axis FWHM, position angle) per source.')
+            if src_shape_units is not None:
+                if not isinstance(src_shape_units, (list, tuple)):
+                    raise TypeError('Source shape units must be provided as a list or tuple')
+                if len(src_shape_units) != 3:
+                    raise ValueError('Source shape units must contain three elements.')
+
+                if src_shape_units[0] == 'arcsec':
+                    self.src_shape[:,0] = self.src_shape[:,0]/3.6e3
+                elif src_shape_units[0] == 'arcmin':
+                    self.src_shape[:,0] = self.src_shape[:,0]/60.0
+                elif src_shape_units[0] == 'radian':
+                    self.src_shape[:,0] = NP.degrees(self.src_shape[:,0])
+                elif src_shape_units[0] != 'degree':
+                    raise ValueError('major axis FWHM must be specified as "arcsec", "arcmin", "degree" or "radian"')
+
+                if src_shape_units[1] == 'arcsec':
+                    self.src_shape[:,1] = self.src_shape[:,1]/3.6e3
+                elif src_shape_units[1] == 'arcmin':
+                    self.src_shape[:,1] = self.src_shape[:,1]/60.0
+                elif src_shape_units[1] == 'radian':
+                    self.src_shape[:,1] = NP.degrees(self.src_shape[:,1])
+                elif src_shape_units[0] != 'degree':
+                    raise ValueError('minor axis FWHM must be specified as "arcsec", "arcmin", "degree" or "radian"')
+
+                if src_shape_units[2] == 'radian':
+                    self.src_shape[:,2] = NP.degrees(self.src_shape[:,2])
+                elif src_shape_units[2] != 'degree':
+                    raise ValueError('position angle must be specified as "degree" or "radian" measured from north towards east.')
+
+        if (self.location.shape[0] != self.flux_density.size) or (self.flux_density.size != self.spectral_index.size) or (self.location.shape[0] != self.spectral_index.size) or (self.src_shape.shape[0] != self.flux_density.size):
+            raise ValueError('location, flux_density, spectral_index, and src_shape must be provided for each source.')
 
     #############################################################################
 
