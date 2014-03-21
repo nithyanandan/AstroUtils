@@ -1,3 +1,33 @@
+from v1.03 of general:
+=====================
+
+In catalog.py,
+
+(*) Added a new attribute named 'name' to class Catalog that denotes the catalog 
+to which the object belongs. The __init__() function inputs were modified
+accordingly.
+(*) Modified the attribute frequency of class Catalog to be a vector, one for
+each object, thus giving the freedom to have a heterogeneous catalog with source
+flux densities at different frequencies. Contents of the __init__() function were
+modified accordingly
+(*) Added error checking in __init__() member function of class Catalog
+(*) Modified error checkign in __init__() member function of class Catalog to
+retain src_shape as an optional input parameter
+
+In my_operations.py,
+
+(*) A new function named binned_statistic() has been added which is a wrapper for
+the binned_statistic() function in scipy.stats but also can return the reverse
+indices from the binning operation identical to the reverse indices oepration in
+IDL's histogram.
+
+In my_DSP_modules.py,
+
+(*) New polyphase filter bank related functions, namely, PFB_FIR_coeff(), 
+apply_PFB_filter(), PFB_shape(), sinewave(), and pfbshape() have been added.
+These are untested and highly experimental. Documentation has to be provided.
+
+---------------------------------------------------------------------------------
 from v1.02 of general:
 =====================
 

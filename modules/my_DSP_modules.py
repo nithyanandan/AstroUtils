@@ -1063,3 +1063,48 @@ def PFB_empirical(nchan, bank_nchan, rise_frac_half_max, fall_frac_half_max,
     return window
     
 #################################################################################  
+
+def PFB_FIR_coeff(nside, ntap, cutoff, nbits, window=('kaiser',5)):
+    b = signal.firwin(nside*ntap, cutoff, window=window)
+    b = (1-2**(-(nbits-1))) * b/b.max()
+    return NP.round(b * 2**(nbits-1))
+
+#################################################################################  
+
+def apply_PFB_filter(inp, nside, ntap, coeff=None, cutoff=None, nbits=None,
+                     window=('kaiser',5)):
+    if coeff is None:
+        if cutoff is None:
+            cutoff = 1.0/nside
+        if nbits is None:
+            nbits = 12
+        coeff = PFB_FIR_coeff(nside, ntap, cutoff, nbits, window=window)
+    coeff = coeff/8192/32 # Normalize the amplitude
+    arr = (inp[:nside*ntap]*coeff).reshape(ntap, nside)
+    wsum = NP.sum(arr, axis=0)
+    wf = NP.fft.ifft(wsum) * wsum.size
+    return wf[:nside/2]
+
+#################################################################################  
+
+def PFB_shape(coeffs):
+    pass
+
+#################################################################################  
+
+def sinewave(freq, tlen=8192, clock_freq=655.36):
+    dt = 1./clock_freq
+    t = NP.arange(tlen) * dt
+    return NP.sin(2*NP.pi*freq.reshape(-1,1)*t.reshape(1,-1))
+
+#################################################################################  
+
+def pfbshape(freq):
+    coeff = PFB_FIR_coeff(512, 8, 1.0/512, 12, window=('kaiser',5))
+    twaves = sinewave(freq, tlen=4096)
+    filter_twaves = NP.empty((freq.size, 512/2))
+    for i in range(freq.size):
+        filter_twaves[i,:] = apply_PFB_filter(twaves[i,:], 512, 8, coeff=coeff)
+    return NP.abs(filter_twaves)**2
+    
+#################################################################################  

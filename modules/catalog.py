@@ -55,9 +55,9 @@ class Catalog:
 
     ##############################################################################
 
-    def __init__(self, frequency, location, flux_density, spectral_index=None,
-                 src_shape=None, epoch='J2000', coords='radec',
-                 src_shape_units=None):
+    def __init__(self, name, frequency, location, flux_density, 
+                 spectral_index=None, src_shape=None, epoch='J2000', 
+                 coords='radec', src_shape_units=None):
 
         """
         --------------------------------------------------------------------------
@@ -79,12 +79,40 @@ class Catalog:
         --------------------------------------------------------------------------
         """
 
-        self.frequency = frequency
+        try:
+            name, frequency, location, flux_density
+        except NameError:
+            raise NameError('Catalog name, frequency, source location and flux density must be provided.')
+
         self.location = NP.asarray(location)
         self.flux_density = NP.asarray(flux_density).reshape(-1)
         self.epoch = epoch
         self.coords = coords
         self.src_shape = None
+
+        if isinstance(name, (int, float, str)):
+            self.name = NP.repeat(NP.asarray(name).reshape(-1), flux_density.size)
+        elif isinstance(name, NP.ndarray):
+            if name.size == 1:
+                self.name = NP.repeat(NP.asarray(name).reshape(-1), flux_density.size)
+            elif (name.size == flux_density.size):
+                self.name = name.reshape(-1)
+            else:
+                raise ValueError('Size of input "name" does not match number of objects')
+        else:
+            raise TypeError('Catalog name must be a integer, float, string or numpy array')
+
+        if isinstance(frequency, (int, float)):
+            self.frequency = NP.repeat(NP.asarray(frequency).reshape(-1), flux_density.size)
+        elif isinstance(frequency, NP.ndarray):
+            if frequency.size == 1:
+                self.frequency = NP.repeat(NP.asarray(frequency).reshape(-1), flux_density.size)
+            elif (frequency.size == flux_density.size):
+                self.frequency = frequency.reshape(-1)
+            else:
+                raise ValueError('Size of input frequency does not match number of objects')
+        else:
+            raise TypeError('Catalog frequency must be a integer, float, or numpy array')
 
         if spectral_index is None:
             self.spectral_index = NP.zeros(self.flux_density.size).reshape(-1)
@@ -124,8 +152,12 @@ class Catalog:
                 elif src_shape_units[2] != 'degree':
                     raise ValueError('position angle must be specified as "degree" or "radian" measured from north towards east.')
 
-        if (self.location.shape[0] != self.flux_density.size) or (self.flux_density.size != self.spectral_index.size) or (self.location.shape[0] != self.spectral_index.size) or (self.src_shape.shape[0] != self.flux_density.size):
-            raise ValueError('location, flux_density, spectral_index, and src_shape must be provided for each source.')
+        if src_shape is not None:
+            if (self.location.shape[0] != self.flux_density.size) or (self.flux_density.size != self.spectral_index.size) or (self.location.shape[0] != self.spectral_index.size) or (self.src_shape.shape[0] != self.flux_density.size):
+                raise ValueError('location, flux_density, spectral_index, and src_shape must be provided for each source.')
+        else:
+            if (self.location.shape[0] != self.flux_density.size) or (self.flux_density.size != self.spectral_index.size) or (self.location.shape[0] != self.spectral_index.size):
+                raise ValueError('location, flux_density, and spectral_index must be provided for each source.')            
 
     #############################################################################
 
