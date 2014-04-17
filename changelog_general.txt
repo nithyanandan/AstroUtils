@@ -1,3 +1,35 @@
+from v1.04 of general:
+=====================
+
+In geometry.py,
+
+(*) sphdist() now returns a flattened array as output
+(*) Modified docstring in spherematch.py to indicate that the matches for the 
+first catalog are searched for in the second catalog
+(*) Modified docstring in spherematch.py to indicate the order of preference in
+implementing keyword inputs nnearest and maxmatches
+(*) In altaz2hadec(), added an important change that takes care of the sign 
+conventions and distinguishes between azimuths that are on opposite sides
+(*) In hadec2altaz(), modified to handle any NaN values arising out of machine
+precision effects by adding a tolerance factor
+
+In catalog.py,
+
+(*) member function subset() of class Catalog now uses numpy.take() to select 
+subset from indices instead of using fancy indexing. This will be faster when
+size of indices is large.
+(*) member function subset() of class Catalog modified to initialize a subset
+catalog differently to reflect changes in Catalog attribute structure made in 
+v1.04. 
+(*) Modified the docstring of class Catalog to reflect the changes made in its
+attribute structure in v1.04 which was forgotten to be made back then.
+
+In my_DSP_modules.py,
+
+(*) Added inverse FFT functionality to FT1D() through use of a boolean 'inverse'
+keyword and changed docstring accordingly
+
+---------------------------------------------------------------------------------
 from v1.03 of general:
 =====================
 

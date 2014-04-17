@@ -5,11 +5,11 @@ import my_operations as OPS
 
 ################################################################################
 
-def FT1D(inp, ax=-1, use_real=False, shift=False, verbose=True):
+def FT1D(inp, ax=-1, use_real=False, shift=False, inverse=False, verbose=True):
 
     """
     -----------------------------------------------------------------------------
-    Compute FFT using Numpy. 
+    Compute FFT/IFFT using Numpy. 
 
     Inputs:
 
@@ -23,9 +23,15 @@ def FT1D(inp, ax=-1, use_real=False, shift=False, verbose=True):
     use_real:   [Boolean scalar] If True, compute only the positive frequency
                 components using the real part of the data
 
+    shift:      [Boolean] If True, shift the result to make the zeroth component
+                move to the center. Default=False
+
+    inverse:    [Boolean] If True, compute the inverse FFT. If False, compute the
+                FFT. Default=False
+
     oututs:    
     
-    fftout: FFT of input data over the specified axes
+    fftout: FFT/IFFT of input data over the specified axes
     -----------------------------------------------------------------------------
     """
 
@@ -37,17 +43,31 @@ def FT1D(inp, ax=-1, use_real=False, shift=False, verbose=True):
     if not isinstance(inp, NP.ndarray):   # type(inp) is numpy.ndarray
         raise TypeError('Input array should be Numpy array data type')
 
-    if use_real:
-        inp = NP.real(inp)
-        if verbose:
-            print "Opted for FFT of real data. Hence performing numpy.rfft()."
-            print "numpy.rfft() returns only positive frequencies."
-        fftout = NP.fft.rfft(inp, axis=ax)
+    if inverse:
+        if use_real:
+            inp = NP.real(inp)
+            if verbose:
+                print "Opted for IFFT of real data. Hence performing numpy.irfft()."
+                print "numpy.irfft() returns only positive frequencies."
+            fftout = NP.fft.irfft(inp, axis=ax)
+        else:
+            fftout = NP.fft.ifft(inp, axis=ax)
+    
+        if shift:
+            fftout = NP.fft.ifftshift(fftout, axes=ax)
     else:
-        fftout = NP.fft.fft(inp, axis=ax)
+        if use_real:
+            inp = NP.real(inp)
+            if verbose:
+                print "Opted for FFT of real data. Hence performing numpy.rfft()."
+                print "numpy.rfft() returns only positive frequencies."
+            fftout = NP.fft.rfft(inp, axis=ax)
+        else:
+            fftout = NP.fft.fft(inp, axis=ax)
+    
+        if shift:
+            fftout = NP.fft.fftshift(fftout, axes=ax)
 
-    if shift:
-        fftout = NP.fft.fftshift(fftout, axes=ax)
     return fftout
 
 #################################################################################
@@ -76,15 +96,7 @@ def spectral_axis(length, delx=1.0, shift=False, use_real=False):
     spaxis: Discrete spectral axis in the output FFT
     -----------------------------------------------------------------------------
     """
-    
-    # try: 
-    #     size(length) == 1 and isinstance(length, int)
-    #     print type(length)
-    # except: 
-    #     print "length has to be a scalar positive integer."
-    #     print "Aborted execution in my_DSP_modules.frequencies()"
-    #     SYS.exit(1) # Abort execution
-
+        
     if use_real:
         spaxis = NP.fft.rfftfreq(length, d=delx)
     else: 

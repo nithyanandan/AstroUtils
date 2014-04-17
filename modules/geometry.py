@@ -605,8 +605,16 @@ def hadec2altaz(hadec, latitude, units=None):
     if NP.absolute(latitude) > NP.pi/2:
         raise ValueError('Latitude should lie between -90 and 90 degrees. Check inputs and units.')
 
-    altitude = NP.arcsin( NP.sin(hadec[:,1])*NP.sin(latitude) + NP.cos(hadec[:,1])*NP.cos(latitude)*NP.cos(hadec[:,0]) )
-    azimuth = NP.arccos( (NP.sin(hadec[:,1])-NP.sin(altitude)*NP.sin(latitude))/(NP.cos(altitude)*NP.cos(latitude)) )
+    eps = 1e-10
+    sin_alt = NP.sin(hadec[:,1])*NP.sin(latitude) + NP.cos(hadec[:,1])*NP.cos(latitude)*NP.cos(hadec[:,0])
+    valid_ind = NP.where(NP.abs(sin_alt) <= 1.0+eps)
+    sin_alt[valid_ind] = NP.clip(sin_alt[valid_ind], -1.0, 1.0)
+    altitude = NP.arcsin(sin_alt)
+    zenith_ind = NP.abs(NP.abs(sin_alt)-1.0) < eps
+    cos_az = NP.where(zenith_ind, NP.zeros_like(sin_alt), (NP.sin(hadec[:,1])-NP.sin(altitude)*NP.sin(latitude))/(NP.cos(altitude)*NP.cos(latitude)))
+    valid_ind = NP.where(NP.abs(cos_az) <= 1.0+eps)
+    cos_az[valid_ind] = NP.clip(cos_az[valid_ind], -1.0, 1.0)
+    azimuth = NP.arccos(cos_az)
 
     # Need to make sure the values are in the conventional range
     azimuth = NP.where(NP.sin(hadec[:,0])<0.0, azimuth, 2.0*NP.pi-azimuth)
@@ -694,6 +702,9 @@ def altaz2hadec(altaz, latitude, units=None):
     dec = NP.arcsin( NP.sin(altaz[:,0])*NP.sin(latitude) + NP.cos(altaz[:,1])*NP.cos(latitude)*NP.cos(altaz[:,0]) )
     ha = NP.arccos( (NP.sin(altaz[:,0])-NP.sin(dec)*NP.sin(latitude))/(NP.cos(dec)*NP.cos(latitude)) )
  
+    # Make sure the conventions are taken into account
+    ha = NP.where(NP.sin(altaz[:,1])<0.0, ha, 2.0*NP.pi-ha)
+
     if units == 'degrees':
         ha *= 180.0/NP.pi
         dec *= 180.0/NP.pi
@@ -1008,7 +1019,7 @@ def sphdist(lon1, lat1, lon2, lat2):
     numer = NP.hypot(numera, numerb)
     denom = NP.sin(phis) * NP.sin(phif) + NP.cos(phis) * NP.cos(phif) * NP.cos(dlamb)
 
-    return NP.degrees(NP.arctan2(numer, denom))
+    return NP.degrees(NP.arctan2(numer, denom)).ravel()
 
 #################################################################################
 
@@ -1017,7 +1028,8 @@ def spherematch(lon1, lat1, lon2=None, lat2=None, matchrad=None,
 
     """
     -----------------------------------------------------------------------------
-    Finds matches in one catalog to another. 
+    Finds matches in one catalog to another. Matches for the first catalog are
+    searched for in the second catalog.
 
     Parameters
     lon1 : array-like
@@ -1034,11 +1046,15 @@ def spherematch(lon1, lat1, lon2=None, lat2=None, matchrad=None,
         How close (in degrees) a match has to be to count as a match.  If None,
         all nearest neighbors for the first catalog will be returned. 
     nnearest : int, optional
-        The nth neighbor to find.  
+        The nth nearest neighbor to find. Default = 0 (if maxmatches >= 0,
+        maxmatches is used, else nnearest is set to 1 thereby searching for the
+        first nearest neighbour)
     maxmatches : int, optional
         Maximum number of matches to find. If maxmatches > 0, the code finds 
-        all matches up to maxmatches satisfying matchrad. And nnearest is
-        ignored.
+        all matches up to maxmatches satisfying matchrad. If maxmatches = 0, all
+        matches upto matchrad are found. And nnearest is ignored. Default = -1 
+        (nnearest, if positive, is used instead of maxmatches. if nnearest is 0, 
+        then nnearest is set to 1 and the first nearest neighbour is searched.)
 
     Returns
     -------
@@ -1165,7 +1181,8 @@ def spherematch(lon1, lat1, lon2=None, lat2=None, matchrad=None,
                 m2 = m2[:,-1]
         else: 
             m1 = NP.repeat(NP.arange(lon1.size).reshape(lon1.size,1), maxmatches, axis=1).flatten()
-            m2 = m2[:,-maxmatches:].flatten() # Extract the last maxmatches columns
+            if maxmatches > 1:
+                m2 = m2[:,-maxmatches:].flatten() # Extract the last maxmatches columns
 
         if not self_match:
             msk = m2 < lon2.size

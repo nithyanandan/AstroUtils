@@ -11,7 +11,15 @@ class Catalog:
 
     Attributes:
 
-    frequency      [scalar] Frequency at which the catalog exists
+    name           [scalar or vector] Name of the catalog. If scalar, will be 
+                   used for all sources in the catalog. If vector, will be used
+                   for corresponding object. If vector, size must equal the 
+                   number of objects.
+
+    frequency      [scalar or vector] Frequency at which the catalog exists. If 
+                   scalar, will be used for all sources in the catalog. If vector, 
+                   will be used for corresponding object. If vector, size must 
+                   equal the number of objects.
 
     location       [numpy array or list of lists] Positions of the sources in 
                    catalog. Each position is specified as a row (numpy array)
@@ -236,7 +244,7 @@ class Catalog:
         Inputs:
 
         indices    [list] List of indices of sources in the current instance of 
-        class Catalog
+                   class Catalog
 
         Output:    [instance of class Catalog] An instance of class Catalog
                    holding a subset of the sources in the current instance of 
@@ -247,7 +255,8 @@ class Catalog:
         if (indices is None) or (len(indices) == 0):
             raise IndexError('No indices specified to select a catalog subset.')
         else:
-            return Catalog(self.frequency, self.location[indices, :], self.flux_density[indices, :], self.spectral_index[indices], self.epoch, self.coords)
+            # return Catalog(self.frequency, self.location[indices, :], self.flux_density[indices, :], self.spectral_index[indices], self.epoch, self.coords)
+            return Catalog(NP.take(self.name, indices), NP.take(self.frequency, indices), NP.take(self.location, indices, axis=0), NP.take(self.flux_density, indices, axis=0), NP.take(self.spectral_index, indices), NP.take(self.src_shape, indices, axis=0), self.epoch, self.coords)
 
 #################################################################################
 
