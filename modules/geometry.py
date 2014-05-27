@@ -6,6 +6,7 @@ try:
 except ImportError:
     from scipy.spatial import KDTree as KDT
 
+import ipdb as PDB
 #################################################################################
 
 class Point:
@@ -612,6 +613,7 @@ def hadec2altaz(hadec, latitude, units=None):
     altitude = NP.arcsin(sin_alt)
     zenith_ind = NP.abs(NP.abs(sin_alt)-1.0) < eps
     cos_az = NP.where(zenith_ind, NP.zeros_like(sin_alt), (NP.sin(hadec[:,1])-NP.sin(altitude)*NP.sin(latitude))/(NP.cos(altitude)*NP.cos(latitude)))
+    eps = 1e-6
     valid_ind = NP.where(NP.abs(cos_az) <= 1.0+eps)
     cos_az[valid_ind] = NP.clip(cos_az[valid_ind], -1.0, 1.0)
     azimuth = NP.arccos(cos_az)
@@ -981,7 +983,7 @@ def sphdist(lon1, lat1, lon2, lat2):
         lon1, lat1, lon2, lat2
     except NameError:
         raise NameError('At least one of lon1, lat1, lon2, lat2 undefined in sphdist().')
-
+        
     lon1 = NP.asarray(lon1)
     lat1 = NP.asarray(lat1)
 

@@ -1,3 +1,19 @@
+from v1.05 of general:
+=====================
+
+In geometry.py,
+
+(*) Added further checks in hadec2altaz() to take into account machine precision
+effects
+
+Moved module lookup_operations.py from MOFF to general repository.
+
+In lookup_operations.py,
+
+(*) in function lookup(), distNN was not initialized when remove_oob is False.
+Now it is initialized.
+
+---------------------------------------------------------------------------------
 from v1.04 of general:
 =====================
 
