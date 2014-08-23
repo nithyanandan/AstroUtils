@@ -89,7 +89,7 @@ def read_lookup(file):
 #################################################################################
 
 def lookup(x, y, val, xin, yin, distance_ULIM=NP.inf, oob_value=0.0,
-           remove_oob=True):
+           remove_oob=True, tol=None, maxNN=None):
 
     """
     -----------------------------------------------------------------------------
@@ -116,7 +116,7 @@ def lookup(x, y, val, xin, yin, distance_ULIM=NP.inf, oob_value=0.0,
             searching for nearest neighbours. Neighbours outside of this upper
             bound are not searched for. Default = NP.inf (infinite distance upper 
             bound means nearest neighbours will be searched all the way out to 
-            infinite distance)
+            infinite distance). Should be in the same units as x, y, xin and yin
 
     oob_value
             [scalar] Value to be returned at the location if the nearest
@@ -137,7 +137,8 @@ def lookup(x, y, val, xin, yin, distance_ULIM=NP.inf, oob_value=0.0,
 
     Returns a tuple of nearest neighbour lookup value, the index of input
     location and nearest neighbour distance in the lookup table. The tuple
-    consists of the following elements in this order.
+    consists of the following elements in this order. The number of nearest
+    neighbours will be the lesser of those determined by distNN and maxNN
 
     ibind   [numpy vector] indices of the input locations for which nearest 
             neighbours were found from the lookup table. If remove_oob is 
@@ -161,6 +162,18 @@ def lookup(x, y, val, xin, yin, distance_ULIM=NP.inf, oob_value=0.0,
             less than or equal to size of xin or yin. In such a case, out of 
             bound locations are filled with inf or NP.inf. 
     
+    maxNN   [scalar] A positive value indicating maximum number of input 
+            locations (xin, yin) to be assigned. Default = None. If set to None, 
+            all the input locations specified are assigned values. For instance,
+            to have only one input location to be populated per antenna, use
+            maxNN=1. 
+
+    tol     [scalar] If set, only lookup data with abs(val) > tol will be 
+            considered for nearest neighbour lookup. Default = None implies all
+            lookup values will be considered for nearest neighbour determination.
+            tol is to be interpreted as a minimum value considered as significant
+            in the lookup table.
+
     -----------------------------------------------------------------------------
     """
 
@@ -175,6 +188,16 @@ def lookup(x, y, val, xin, yin, distance_ULIM=NP.inf, oob_value=0.0,
     if xin.size != yin.size:
         raise ValueError('Input parameters xin and yin must have same size.')
 
+    if tol is not None:
+        if isinstance(tol, (int, float)):
+            if tol < 0.0:
+                raise ValueError('tol value must be non-negative')
+            x = x[NP.abs(val) >= tol]
+            y = y[NP.abs(val) >= tol]
+            val = val[NP.abs(val) >= tol]
+        else:
+            raise TypeError('tol must be a scalar integer or float')
+
     kdt = KDT(zip(x,y))
     dist, ind = kdt.query(NP.hstack((xin.reshape(-1,1), yin.reshape(-1,1))), distance_upper_bound=distance_ULIM)
     nnval = NP.zeros(ind.size, dtype=val.dtype)
@@ -186,6 +209,19 @@ def lookup(x, y, val, xin, yin, distance_ULIM=NP.inf, oob_value=0.0,
         nnval = nnval[dist <= distance_ULIM]
         ibind = ibind[dist <= distance_ULIM]
         distNN = dist[dist <= distance_ULIM]
+
+    if maxNN is not None:
+        if not isinstance(maxNN, int):
+            raise TypeError('maxNN must be an integer.')
+
+        if maxNN < distNN.size:
+            if maxNN > 0:
+                sortind = NP.argsort(distNN)[:maxNN] # Indices of maxNN nearest neighbours
+                nnval = nnval[sortind]
+                ibind = ibind[sortind]
+                distNN = distNN[sortind]
+            else:
+                raise ValueError('Maximum number of nearest neighbours must be positive.')
 
     return ibind, nnval, distNN
 

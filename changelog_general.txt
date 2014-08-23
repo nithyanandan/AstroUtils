@@ -1,3 +1,28 @@
+from v1.06 of general:
+=====================
+
+In my_DSP_modules.py,
+
+(*) Added a new function fft_filter which can filter multi-dimensional input data
+using the frequency domain representation of the input using frequency weights 
+with passband options being 'low' or 'high'
+
+In my_operations.py,
+
+(*) added a customizable function to estimate root mean square value of an input
+with multiple dimensions which can apply frequency domain filtering and/or 
+mask before estimating standard deviation.
+(*) in function reverse(), changed default of ind_range from [-1, 1] to None
+because there seemed to be a bug where ind_range from previous call seemed to
+copy over to the next call. Still needs to be udnerstood why this was happening.
+Changing the default to None seems to eliminate this unexplained carryover.
+
+In lookup_operations.py,
+
+(*) Added a keyword maxNN to populate only the maxNN nearest neighbours with 
+nearest neighbour values
+
+---------------------------------------------------------------------------------
 from v1.05 of general:
 =====================
 

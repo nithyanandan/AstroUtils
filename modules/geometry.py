@@ -1025,8 +1025,8 @@ def sphdist(lon1, lat1, lon2, lat2):
 
 #################################################################################
 
-def spherematch(lon1, lat1, lon2=None, lat2=None, matchrad=None,
-                nnearest=0, maxmatches=-1):
+def spherematch(lon1, lat1, lon2=None, lat2=None, matchrad=None, nnearest=0,
+                maxmatches=-1):
 
     """
     -----------------------------------------------------------------------------

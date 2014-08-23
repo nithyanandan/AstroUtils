@@ -2,8 +2,9 @@ import numpy as NP
 from scipy import signal
 from scipy import interpolate
 import my_operations as OPS
+import ipdb as PDB
 
-################################################################################
+#################################################################################
 
 def FT1D(inp, ax=-1, use_real=False, shift=False, inverse=False, verbose=True):
 
@@ -815,7 +816,7 @@ def smooth(inp, wts=None, width=None, stat='mean', verbose=True):
 
     if width == 1:
         if verbose:
-            print '\tWindow width width is one. Input will be returned without smoothing.'
+            print '\tWindow width is one. Input will be returned without smoothing.'
             return inp
 
     if stat == 'mean':
@@ -831,7 +832,7 @@ def smooth(inp, wts=None, width=None, stat='mean', verbose=True):
 
 #################################################################################  
 
-def filter(inp, wts=None, width=None, passband='low', verbose=True):    
+def filter_(inp, wts=None, width=None, passband='low', verbose=True):    
     
     """
     -----------------------------------------------------------------------------
@@ -1119,4 +1120,177 @@ def pfbshape(freq):
         filter_twaves[i,:] = apply_PFB_filter(twaves[i,:], 512, 8, coeff=coeff)
     return NP.abs(filter_twaves)**2
     
+#################################################################################  
+
+def fft_filter(inp, axis=None, wts=None, width=None, passband='low', verbose=True):    
+    
+    """
+    -----------------------------------------------------------------------------
+    Filter the input data using a low or high pass filter in frequency domain 
+    along an axis
+
+    Inputs:
+
+    inp         [Numpy array] input data which has to be filtered across a given 
+                axis 
+
+    Keyword Inputs:
+
+    axis        Axis (scalar integer) over which FFT is performed. Default = None
+                (last axis). Any negative value or values exceeding the number of
+                axes in the input data will be reset to use the last axis.
+
+    wts         [Numpy array] frequency window of weights. Should either have 
+                same shape as inp or have number of elements equal to the number
+                of elements in input data along specified axis. Default = None.
+                If not set, then it will be set to a rectangular window of width
+                specified in width (see below) and will be applied as a filter
+                identically to the entire data along the specified axis. The wts
+                should correspond to frequency domain wts that would have been 
+                obtained after fftshift. For instance, a low pass filter weights
+                should be dominant around the middle of the sequence while a high
+                pass filter weights would be concentrated at the beginning and 
+                end of the sequence.
+
+    width       [scalar] Width of the frequency window as a fraction of the 
+                bandwidth. Has to be positive. Default is None. If width is None,
+                wts should be set. One and only one among wts and width should be 
+                set. 
+
+    passband    [string scalar] String specifying the passband ('low' or 'high')
+                to be used. Default = 'low'
+
+    verbose     [boolean] If set to True (default), print messages indicating
+                progress
+
+    Output:
+    
+    Filtered output with same shape as inp
+    -----------------------------------------------------------------------------
+    """
+
+    if verbose:
+        print 'Entering fft_filtering()...'
+        print '\tChecking inputs for compatibility...'
+
+    try:
+        inp
+    except NameError:
+        raise NameError('No input specified for filtering.')
+
+    if isinstance(inp, list):
+        inp = NP.asarray(inp)
+    elif not isinstance(inp, NP.ndarray):
+        raise TypeError('Input should be of type list or numpy array.')
+
+    if (passband != 'low') and (passband != 'high'):
+        raise ValueError('Invalid passband specified. Valid passbands are low or high.')
+
+    if (wts is None) and (width is None):
+        raise NameError('Neither frequency weights nor filter width specified.')
+
+    if axis is None:
+        axis = len(inp.shape) - 1
+    elif not isinstance(axis, int):
+        raise TypeError('axis must be an integer')
+    else:
+        if (axis < 0) or (axis >= len(inp.shape)):
+            axis = len(inp.shape) - 1
+            if verbose:
+                print '\tSetting axis to be the last dimension of data'
+
+    if wts is None:
+        if not isinstance(width, (int,float)):
+            raise TypeError('Filter width should be a scalar.')
+
+        if verbose:
+            print '\tFrequency weights not provided. Using filter width instead.'
+
+        if width <= 0.0:
+            raise ValueError('Filter width should be positive.')
+        elif width >= 1.0:
+            if verbose:
+                print '\tFilter width exceeds 1.0. Returning input without filtering.'
+            return inp
+
+        filter_width = inp.shape[axis] * width
+
+        # Even samples in input or low passband, keep the filter width odd
+        # Odd samples in input and high passband, keep the filter width even
+        # to have no imaginary parts after filtering
+
+        shape = NP.asarray(inp.shape)
+        shape[NP.arange(len(shape)) != axis] = 1
+        shape = tuple(shape)
+        if (inp.shape[axis] % 2 == 0) or (passband == 'low'): 
+            if NP.floor(filter_width) % 2 == 0:            
+                filter_width = NP.floor(filter_width) + 1
+                if filter_width > inp.shape[axis]:
+                    filter_width = inp.shape[axis]
+            else:
+                filter_width = NP.floor(filter_width)
+            
+            if verbose:
+                print '\tAdjusting filter width to integer and to have FFT symmetry properties.'
+            
+            wts = NP.ones(filter_width) # Simple rectangular filter
+            if verbose:
+                print '\tFrequency weights have been set to be a rectangular filter of unit height'
+
+            pads = shape[axis] - filter_width
+            if pads > 0:
+                wts = NP.pad(wts, (0,pads), mode='constant', constant_values=(0,))
+
+            wts = wts.reshape(shape)
+
+            if passband == 'low':
+                wts = NP.roll(wts, -int(0.5*filter_width), axis=axis)
+            else:
+                wts = NP.fft.fftshift(NP.roll(wts, -int(0.5*filter_width), axis=axis), axes=axis)
+        else:
+            if NP.floor(filter_width) % 2 != 0:
+                filter_width = NP.floor(filter_width) + 1
+                if filter_width > inp.shape[1]:
+                    filter_width = inp.shape[1]
+            else:
+                filter_width = NP.floor(filter_width)
+
+            wts = NP.ones(filter_width) # Simple rectangular filter
+            pads = shape[axis] - filter_width
+            if pads > 0:
+                wts = NP.pad(wts, (0,pads), mode='constant', constant_values=(0,))
+            wts = wts.reshape(shape)
+
+            wts = NP.fft.fftshift(NP.roll(wts, -int(filter_width/2 - 1), axis=axis), axes=axis)
+            
+    else:
+        if isinstance(wts, list):
+            wts = NP.asarray(list)
+        elif not isinstance(wts, NP.ndarray):
+            raise TypeError('Frequency weights should be a numpy array.')
+
+        shape = NP.asarray(inp.shape)
+        shape[NP.arange(len(shape)) != axis] = 1
+        if wts.size == inp.shape[axis]:
+            wts = wts.reshape(tuple(shape))
+        elif wts.shape != inp.shape:
+            raise IndexError('Dimensions of frequency weights do not match dimensions of input.')
+
+        wshape = wts.shape
+
+        if passband == 'low':
+            wts = NP.roll(wts, -int(0.5*wshape[axis]), axis=axis)
+        else:
+            wts = NP.fft.fftshift(NP.roll(wts, -int(0.5*wshape[axis]), axis=axis), axes=axis)        
+
+        # wts = wts/wts.ravel()[0] # Scale the weights to have zeroth frequency to have weight of unity
+
+    out = NP.fft.ifft(NP.fft.fft(inp, axis=axis) * wts, axis=axis)
+    out = out.reshape(inp.shape)
+
+    if verbose:
+        print '\tInput data successfully filtered in the frequency domain.'
+
+    return out
+        
 #################################################################################  
