@@ -208,8 +208,9 @@ def shaping(N_samples, fraction=1.0, shape='rect', area_normalize=False,
                  sequence is actually generated. For fraction less than unity,
                  the zero padding comes about symmetrically at the edges.
 
-    shape        [string] Shape type. Currently allowed values are 'rect' and
-                 'bnw' for rectangular and Blackman-Nuttall windows respectively
+    shape        [string] Shape type. Currently allowed values are 'rect', 'bhw'
+                 and 'bnw' for rectangular, Blackman-Harris and Blackman-Nuttall
+                 windows respectively
 
     area_normalize
                  [Boolean] True mean re-normalize the sequence to have unit
@@ -263,7 +264,7 @@ def shaping(N_samples, fraction=1.0, shape='rect', area_normalize=False,
     N_window = N_samples * fraction
 
     if (N_window % 2) == 0.0:
-        if (shape == 'bnw') or (shape == 'BNW'):
+        if (shape == 'bnw') or (shape == 'BNW') or (shape == 'bhw') or (shape == 'BHW'):
             N_window = int(N_window - 1)
         if (N_window < N_samples) and ((shape == 'rect') or (shape == 'RECT')):
             N_window = int(N_window - 1)
@@ -276,6 +277,9 @@ def shaping(N_samples, fraction=1.0, shape='rect', area_normalize=False,
         window = NP.ones(N_window)
     elif (shape == 'bnw') or (shape == 'BNW'):
         a = [0.3635819, -0.4891775, 0.1365995, -0.0106411]
+        window = a[0]*NP.ones(N_window) + a[1]*NP.cos(2*NP.pi*NP.arange(N_window)/(N_window-1)) + a[2]*NP.cos(4*NP.pi*NP.arange(N_window)/(N_window-1)) + a[3]*NP.cos(6*NP.pi*NP.arange(N_window)/(N_window-1))
+    elif (shape == 'bhw') or (shape == 'BHW'):
+        a = [0.35875, -0.48829, 0.14128, -0.01168]
         window = a[0]*NP.ones(N_window) + a[1]*NP.cos(2*NP.pi*NP.arange(N_window)/(N_window-1)) + a[2]*NP.cos(4*NP.pi*NP.arange(N_window)/(N_window-1)) + a[3]*NP.cos(6*NP.pi*NP.arange(N_window)/(N_window-1))
 
     N_zeros = N_samples - N_window
@@ -318,8 +322,9 @@ def windowing(N_window, shape='rect', pad_width=0, pad_value=0.0,
 
     Keyword inputs:
 
-    shape        [string] Shape type. Currently allowed values are 'rect' and
-                 'bnw' for rectangular and Blackman-Nuttall windows respectively
+    shape        [string] Shape type. Currently allowed values are 'rect',
+                 'bnw' and 'bhw' for rectangular, Blackman-Nuttall and 
+                 Blackman-Harris windows respectively
 
     pad_width    [scalar integer] Number of padding samples. it has to be 
                  non-negative. Padding values are provided in pad_values.
@@ -383,6 +388,23 @@ def windowing(N_window, shape='rect', pad_width=0, pad_value=0.0,
             window = NP.pad(NP.ones(N_window), (NP.ceil(0.5*pad_width), NP.floor(0.5*pad_width)), mode='constant', constant_values=(pad_value, pad_value))
     elif (shape == 'bnw') or (shape == 'BNW'):
         a = [0.3635819, -0.4891775, 0.1365995, -0.0106411]
+        if (N_window % 2 == 1):
+            win = a[0]*NP.ones(N_window) + a[1]*NP.cos(2*NP.pi*NP.arange(N_window)/(N_window-1)) + a[2]*NP.cos(4*NP.pi*NP.arange(N_window)/(N_window-1)) + a[3]*NP.cos(6*NP.pi*NP.arange(N_window)/(N_window-1))
+            if not centering:
+                if pad_width >= 1:
+                    window = NP.pad(win, (1, pad_width-1), mode='constant', constant_values=(pad_value, pad_value))
+                else:
+                    window = win
+            else:
+                window = NP.pad(win, (NP.ceil(0.5*pad_width), NP.floor(0.5*pad_width)), mode='constant', constant_values=(pad_value, pad_value))
+        else:
+            win = a[0]*NP.ones(N_window-1) + a[1]*NP.cos(2*NP.pi*NP.arange(N_window-1)/(N_window-2)) + a[2]*NP.cos(4*NP.pi*NP.arange(N_window-1)/(N_window-2)) + a[3]*NP.cos(6*NP.pi*NP.arange(N_window-1)/(N_window-2))
+            if not centering:
+                window = NP.pad(win, (1, pad_width), mode='constant', constant_values=(pad_value, pad_value))
+            else:
+                window = NP.pad(win, (NP.ceil(0.5*(pad_width+1)), NP.floor(0.5*(pad_width+1))), mode='constant', constant_values=(pad_value, pad_value))
+    elif (shape == 'bhw') or (shape == 'BHW'):
+        a = [0.35875, -0.48829, 0.14128, -0.01168]
         if (N_window % 2 == 1):
             win = a[0]*NP.ones(N_window) + a[1]*NP.cos(2*NP.pi*NP.arange(N_window)/(N_window-1)) + a[2]*NP.cos(4*NP.pi*NP.arange(N_window)/(N_window-1)) + a[3]*NP.cos(6*NP.pi*NP.arange(N_window)/(N_window-1))
             if not centering:

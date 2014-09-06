@@ -1,3 +1,13 @@
+from v1.07 of general:
+=====================
+
+In my_DSP_modules.py,
+
+(*) Added capability in functions shaping() and windowing() to accept values
+'bhw' or 'BHW' in input shape and compute Blackman-Harris window. Changed 
+docstrings accordingly.
+
+---------------------------------------------------------------------------------
 from v1.06 of general:
 =====================
 
