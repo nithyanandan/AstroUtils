@@ -1,3 +1,28 @@
+from v1.08 of general:
+=====================
+
+In lookup_operations.py,
+
+(*) Changed name of parameter maxNN in lookup() to maxmatch to indicate that
+it refers to number of unique matches to input required and remove the ambiguity
+that it refers to number of nearest neighbours for each input location. The 
+number of nearest neighbours sought per input location is fixed at 1 in the call
+to KDTree query. Changed docstring accordingly.
+(*) Docstring of lookup() did not match to the output produced. Fixed it.
+(*) Created find_NN() that searches for the nearest neighbours.
+(*) Created a new nearest neighbour lookup operation in lookup_1NN() which 
+determines the first neighbour in the lookup (reference positions) table and
+assigns the value of the nearest neighbour. It is intended to supercede the 
+performance of lookup() as it is designed to handle locations in
+multi-dimensional parameter (coordinate) space. Uses the find_1NN() routine to
+find the nearest neighbours and then subsequently assigns nearest neighbour value
+
+In my_DSP_modules.py,
+   
+(*) Created a function discretize() that discretizes an input sequence either by
+truncation or rounding
+
+---------------------------------------------------------------------------------
 from v1.07 of general:
 =====================
 

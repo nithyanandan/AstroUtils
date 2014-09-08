@@ -2,6 +2,7 @@ import numpy as NP
 from scipy import signal
 from scipy import interpolate
 import my_operations as OPS
+import lookup_operations as LKP
 import ipdb as PDB
 
 #################################################################################
@@ -1316,3 +1317,146 @@ def fft_filter(inp, axis=None, wts=None, width=None, passband='low', verbose=Tru
     return out
         
 #################################################################################  
+
+def discretize(inp, nbits=None, nlevels=None, range=None, mode='floor', 
+               discrete_out=True, verbose=True):
+
+    """
+    -----------------------------------------------------------------------------
+    Discretize the input sequence either through truncation or rounding to the
+    nearest levels
+
+    Inputs:
+
+    inp         [numpy array] Input sequence as a vector or array, could also be
+                complex
+
+    nbits       [scalar integer] Number of bits. Must be positive. Number of 
+                levels will be 2**nbits. This takes precedence over nlevels if
+                both are specified.
+
+    nlevels     [scalar integer] Number of levels. Must be positive. Will be used
+                only when nbits is not set.
+
+    range       [2-element list] Consists of min and max bounds for the data. The
+                data will be clipped outside this range. If set to None
+                (default), min and max of the data will be used
+
+    mode        [string] determines if the nearest neighbour is determined by 
+                truncation to the next lower level or by round to the nearest 
+                level. mode can be set to 'floor' or 'truncate' for truncation.
+                It must be set to 'round' or 'nearest' for rounding to the 
+                nearest level. Default = None (applies truncation).
+
+    discrete_out
+                [boolean] If set to True, return the output in discrete levels. 
+                If False, output is scaled back to the input scale. Default is
+                True.
+
+    verbose     [boolean] If set to True, print progress and diagnostic messages
+
+    Outputs:
+
+    inpmod      [numpy array] Discretized array same shape as input array. If 
+                discrete_out is set to True, inpmod is given in discrete 
+                integer levels. If discrete_out is False, inpmod is given in
+                the scale of the input corresponding to discrete integer levels.
+                If input is complex, real and imaginary parts are separately 
+                discretized.
+
+    inpmin      [scalar] Lower bound on the data range used in discretization
+
+    interval    [scalar] Resolution between levels
+
+    Tuple consisting of discretized sequence (inpmod), minimum value determined
+    from original sequence or specified range (inpmin), and resolution between
+    levels (interval). If discrete_out is True, the rescaled output is given by 
+    inpmin + interval * inpmod when the input sequence is real and 
+    inpmin * (1+1j) + interval * inpmod when it is complex. When discrete_out is
+    False, the discretized values scaled to integer values are given by 
+    (inpmod - inpmin*(1+1j))/interval when the input is complex and 
+    (inpmod - inpmin)/interval when it is real.
+
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        inp
+    except NameError:
+        raise NameError('inp must be provided')
+
+    if isinstance(inp, list):
+        inp = NP.asarray(inp)
+    elif not isinstance(inp, NP.ndarray):
+        raise TypeError('inp must be a list or numpy array')
+
+    if (nbits is None) and (nlevels is None):
+        if verbose:
+            print '\tnbits or nlevels must be specified for discretization. Returning input unmodified'
+        return inp
+    elif (nbits is not None) and (nlevels is not None):
+        nlevels = None
+
+    if nlevels is not None:
+        if not isinstance(nlevels, (int,float)):
+            raise TypeError('nlevels must be an integer')
+        nlevels = int(nlevels)
+        if nlevels <= 1:
+            raise ValueError('nlevels must be greater than 1')
+
+    if nbits is not None:
+        if not isinstance(nbits, (int,float)):
+            raise TypeError('nbits must be an integer')
+        nbits = int(nbits)
+        if nbits <= 0:
+            raise ValueError('nbits must be greater than 0')
+        nlevels = 2**nbits
+
+    if range is None:
+        if NP.iscomplexobj(inp):
+            inpmin = min(inp.real.min(), inp.imag.min())
+            inpmax = max(inp.real.max(), inp.imag.max())
+        else:
+            inpmin = inp.min()
+            inpmax = inp.max()
+    else:
+        range = NP.asarray(range).ravel()
+        inpmin = range[0]
+        inpmax = range[1]
+
+    interval = (inpmax - inpmin)/nlevels
+    levels = NP.arange(nlevels, dtype=NP.float)
+
+    if NP.iscomplexobj(inp):
+        scaled_inp = (inp - inpmin*(1+1j))/interval
+    else:
+        scaled_inp = (inp - inpmin)/interval
+
+    if (mode == 'floor') or (mode == 'truncate') or (mode is None):
+        if NP.iscomplexobj(scaled_inp):
+            inpmod = NP.clip(NP.floor(scaled_inp.real), levels.min(), levels.max()) + 1j * NP.clip(NP.floor(scaled_inp.imag), levels.min(), levels.max())
+        else:
+            inpmod = NP.clip(NP.floor(scaled_inp), levels.min(), levels.max())
+    elif (mode == 'round') or (mode == 'nearest'):
+        inpshape = scaled_inp.shape
+        scaled_inp = scaled_inp.reshape(-1,1)
+        if NP.iscomplexobj(scaled_inp):
+            inpind, distNN, refind = LKP.find_1NN(levels.reshape(-1,1), scaled_inp.real)
+            inpmod = levels[refind].astype(NP.complex64)
+            inpind, distNN, refind = LKP.find_1NN(levels.reshape(-1,1), scaled_inp.imag)
+            inpmod += 1j * levels[refind]
+        else:
+            inpind, distNN, refind = LKP.find_1NN(levels.reshape(-1,1), scaled_inp)
+            inpmod = levels[refind]
+        inpmod = inpmod.reshape(inpshape)
+            
+    else:
+        raise ValueError('Invalid mode specified for discretization.')
+            
+    if not discrete_out:
+        inpmod *= interval
+
+    return inpmod, inpmin, interval
+
+#################################################################################
+
