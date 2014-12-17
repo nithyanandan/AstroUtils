@@ -521,6 +521,7 @@ def dircos2altaz(dircos, units=None):
     altaz = NP.empty((dircos.shape[0],2))
     altaz[:,0] = NP.pi/2 - NP.arccos(dircos[:,2]) # Altitude/elevation
     altaz[:,1] = NP.pi/2 - NP.arctan2(dircos[:,1],dircos[:,0]) # Azimuth (measured from North)
+    altaz[:,1] = NP.mod(altaz[:,1], 2*NP.pi)
 
     if units is None: units = 'radians'
     if units == 'degrees':
@@ -718,11 +719,14 @@ def enu2xyz(enu, latitude, units='radians'):
 
     """
     -----------------------------------------------------------------------------
-    Convert local ENU coordinates to equatorial XYZ coordinates.
+    Convert local ENU coordinates in local tangential plane to XYZ in equatorial
+    coordinates.
 
     Inputs:
     
-    enu:         local ENU coordinates as a list of tuples or Nx3 Numpy array
+    enu:         local ENU coordinates in local tangential plane as a list of
+                 tuples or Nx3 Numpy array. First column refers to local East,
+                 second to local North and third to local Up.
     
     latitude:    Latitude of the observatory. 
 
@@ -735,7 +739,9 @@ def enu2xyz(enu, latitude, units='radians'):
     
     xyz:         Equatorial XYZ coordinates corresponding to local ENU 
                  coordinates given latitude. Units are identical to those in
-                 input.
+                 input. First column refers to X (ha=0, dec=0), second column to
+                 Y (ha=-6h, dec=0), and third column to north celestial pole 
+                 Z (dec=90)
     -----------------------------------------------------------------------------
     """
 
@@ -794,12 +800,15 @@ def xyz2enu(xyz, latitude, units='radians'):
 
     """
     -----------------------------------------------------------------------------
-    Convert equatorial XYZ coordinates to local ENU coordinates.
+    Convert equatorial XYZ coordinates to local ENU coordinates in the local 
+    tangential plane.
 
     Inputs:
     
     xyz:         equatorial XYZ coordinates as a list of tuples or Nx3 Numpy
-                 array
+                 array. First column refers to X (ha=0, dec=0), second column to
+                 Y (ha=-6h, dec=0), and third column to north celestial pole 
+                 Z (dec=90)
     
     latitude:    Latitude of the observatory. 
 
@@ -810,8 +819,10 @@ def xyz2enu(xyz, latitude, units='radians'):
 
     Output:
     
-    enu:         local ENU coordinates corresponding to equatorial XYZ coordinates
-                 given latitude. Units are identical to those in input.
+    enu:         local ENU coordinates in the local tangential plane
+                 corresponding to equatorial XYZ coordinates given latitude.
+                 Units are identical to those in input. First column refers to 
+                 local East, second to local North and third to local Up.
     -----------------------------------------------------------------------------
     """
 
@@ -857,8 +868,8 @@ def xyz2enu(xyz, latitude, units='radians'):
         latitude = NP.radians(latitude)
 
     rotation_matrix = NP.asarray([[0.0               , 1.0, 0.0],
-                                  [-NP.sin(-latitude), 0.0, NP.cos(-latitude)],
-                                  [NP.cos(-latitude) , 0.0, NP.sin(-latitude)]])
+                                  [NP.sin(-latitude), 0.0, NP.cos(-latitude)],
+                                  [NP.cos(-latitude) , 0.0, -NP.sin(-latitude)]])
 
     enu = NP.dot(xyz, rotation_matrix.T)
 

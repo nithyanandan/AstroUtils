@@ -678,7 +678,7 @@ def upsampler(inp, factor, axis=-1, verbose=True, kind='linear',
         
 #################################################################################
     
-def XC(inp1, inp2=None, shift=True):
+def XC(inp1, inp2=None, pow2=False, shift=True):
     """
     -----------------------------------------------------------------------------
     Cross-correlate two sequences.
@@ -690,6 +690,11 @@ def XC(inp1, inp2=None, shift=True):
     inp2:    [list or numpy array] If not given, auto-correlation of inp1 is
              returned.
 
+    pow2     [boolean] If set to True, will pad the results of the correlation 
+             with zeros so the length of the correlated sequence is equal to the
+             next power of 2. If set to False, the correlated sequence is just 
+             padded with one sample of value 0. Default = False
+
     shift:   [Boolean] If True, shift the correlated product such that it is 
              represented in FFT format. i.e., the first sample corresponds to
              zero lag followed by positive lags. The second half corresponds to
@@ -697,6 +702,7 @@ def XC(inp1, inp2=None, shift=True):
 
     Output:  The correlation of input sequences inp1 and inp2. The output is of 
              length len(inp1)+len(inp2)-1 zero padded to the nearest power of 2 
+             (if pow2 is True) or zero padded by one sample (if pow2 is False)
              and shifted to be identical to a Fourier transform based estimate.
     
     -----------------------------------------------------------------------------
@@ -713,18 +719,25 @@ def XC(inp1, inp2=None, shift=True):
     inp1 = NP.asarray(inp1)
 
     if inp2 is None:
-        inp2 = inp1
+        inp2 = NP.copy(inp1)
     elif not isinstance(inp2, (list, tuple, int, float, complex, NP.ndarray)):
         raise TypeError('inp2 has incompatible data type. Verify inputs. Aborting XC().')
 
-    inp2 = NP.asarray(inp1)
+    inp2 = NP.asarray(inp2)
 
-    zero_pad_length = 2**NP.ceil(NP.log2(len(inp1)+len(inp2)-1))-(len(inp1)+len(inp2)-1)
-
-    if shift:
-        return NP.roll(NP.append(NP.correlate(inp1, inp2, mode='full'), NP.zeros(zero_pad_length)), -(len(inp2)-1))   # zero pad and shift to ensure identical results as FX() operation
+    if pow2:
+        zero_pad_length = 2**NP.ceil(NP.log2(len(inp1)+len(inp2)-1))-(len(inp1)+len(inp2)-1)
     else:
-        return NP.correlate(inp1, inp2, mode='full')
+        zero_pad_length = 1
+
+    xc = NP.pad(NP.correlate(inp1, inp2, mode='full'), (zero_pad_length,0), mode='constant', constant_values=(0.0,0.0))
+    xc = NP.roll(xc, -int(NP.floor(0.5*zero_pad_length)))
+    # xc = NP.append(NP.correlate(inp1, inp2, mode='full'), NP.zeros(zero_pad_length))
+    if shift:
+        # xc = NP.roll(xc, -(inp2.size-1))
+        xc = NP.fft.ifftshift(xc)
+
+    return xc
 
 #################################################################################  
 
@@ -1318,7 +1331,7 @@ def fft_filter(inp, axis=None, wts=None, width=None, passband='low', verbose=Tru
         
 #################################################################################  
 
-def discretize(inp, nbits=None, nlevels=None, range=None, mode='floor', 
+def discretize(inp, nbits=None, nlevels=None, inprange=None, mode='floor', 
                discrete_out=True, verbose=True):
 
     """
@@ -1338,7 +1351,7 @@ def discretize(inp, nbits=None, nlevels=None, range=None, mode='floor',
     nlevels     [scalar integer] Number of levels. Must be positive. Will be used
                 only when nbits is not set.
 
-    range       [2-element list] Consists of min and max bounds for the data. The
+    inprange    [2-element list] Consists of min and max bounds for the data. The
                 data will be clipped outside this range. If set to None
                 (default), min and max of the data will be used
 
@@ -1412,7 +1425,7 @@ def discretize(inp, nbits=None, nlevels=None, range=None, mode='floor',
             raise ValueError('nbits must be greater than 0')
         nlevels = 2**nbits
 
-    if range is None:
+    if inprange is None:
         if NP.iscomplexobj(inp):
             inpmin = min(inp.real.min(), inp.imag.min())
             inpmax = max(inp.real.max(), inp.imag.max())
@@ -1420,9 +1433,9 @@ def discretize(inp, nbits=None, nlevels=None, range=None, mode='floor',
             inpmin = inp.min()
             inpmax = inp.max()
     else:
-        range = NP.asarray(range).ravel()
-        inpmin = range[0]
-        inpmax = range[1]
+        inprange = NP.asarray(inprange).ravel()
+        inpmin = inprange[0]
+        inpmax = inprange[1]
 
     interval = (inpmax - inpmin)/nlevels
     levels = NP.arange(nlevels, dtype=NP.float)

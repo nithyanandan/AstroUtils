@@ -1,3 +1,37 @@
+from v1.08.1 of general:
+=======================
+
+In my_DSP_modules.py,
+
+(*) In discretize(), changed input parameter named range to inprange in order
+not to conflict with python's in-built command range(). Changed docstring
+accordingly.
+(*) In XC(), added input keyword parameter pow2 to return a sequence of length
+which is the next power of 2. Also modified code and docstring accordingly. Also
+when pow2 is False, length of the output sequence is equal to the sum of lengths 
+of the two input sequences.
+(*) In XC(), fixed a bug where inp2 was being forcibly reassigned to inp1.
+(*) In XC(), zeros are padded in front instead of at the end. Also replaced 
+NP.roll() with NP.fft.ifftshift() to do the shifting
+
+In constants.py,
+
+(*) Added rest frequency of 21 cm line of neutral hydrogen
+
+In geometry.py,
+
+(*) Changed the rotation matrix in xyz2enu() which was wrong earlier.
+(*) Made dosctring of xyz2enu() and enu2xyz() more descriptive
+(*) forced azimuth to lie in the range 0-360 in dircos2altaz()
+
+In lookup_operations.py,
+
+(*) Allow comments rows to be accounted for while reading the ascii file in 
+read_lookup()
+(*) Added a new function find_1NN_pp() that is identical in functionality to 
+find_1NN() but should be only used only in parallel programming applications
+
+---------------------------------------------------------------------------------
 from v1.08 of general:
 =====================
 
