@@ -1,3 +1,16 @@
+from 306c2f2:
+============
+
+In catalog.py,
+
+(*) Create a new class SkyModel_new that can take sky model input whose 
+spectral dimension can be specified as a functional form or as an input cube. It
+has the ability to create a spectrum from these spectral parameters. This is 
+intended to supercede and replace classes catalog and SkyModel.
+(*) Create __init__(), subset(), match() and generate_spectrum() member 
+functions for class SkyModel_new
+(*) Import my_operations and lookup_operations modules 
+
 from v1.08.1 of general:
 =======================
 
