@@ -1,5 +1,13 @@
-from 306c2f2:
-============
+from 3ff2c66 of general:
+=======================
+
+In catalog.py,
+
+(*) Comment out defunct classes Catalog and SkyModel
+(*) Rename class SkyModel_new to SkyModel
+
+from 306c2f2 of general:
+=======================
 
 In catalog.py,
 
