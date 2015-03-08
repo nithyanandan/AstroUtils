@@ -648,7 +648,7 @@ class SkyModel(object):
         
     #############################################################################
 
-    def subset(self, indices=None):
+    def subset(self, indices):
 
         """
         -------------------------------------------------------------------------
@@ -657,8 +657,8 @@ class SkyModel(object):
         
         Inputs:
 
-        indices    [list] List of indices of sources in the current instance of 
-                   class SkyModel
+        indices    [list or numpy array] Flattened list or numpy array of 
+                   indices of sources in the current instance of class SkyModel
 
         Output:    [instance of class SkyModel] An instance of class 
                    SkyModel holding a subset of the sources in the current 
@@ -666,11 +666,20 @@ class SkyModel(object):
         -------------------------------------------------------------------------
         """
 
+        try:
+            indices
+        except NameError:
+            return self
+
         if (indices is None) or (len(indices) == 0):
-            raise IndexError('No indices specified to select a sky model subset.')
+            return self
         else:
+            indices = NP.asarray(indices).ravel()
             if self.spec_type == 'spectrum':
-                return SkyModel(NP.take(self.name, indices), self.frequency, NP.take(self.location, indices, axis=0), self.spec_type, spectrum=NP.take(self.spectrum, indices, axis=0), src_shape=NP.take(self.src_shape, indices, axis=0), epoch=self.epoch, coords=self.coords)
+                if self.src_shape is not None:
+                    return SkyModel(NP.take(self.name, indices), self.frequency, NP.take(self.location, indices, axis=0), self.spec_type, spectrum=NP.take(self.spectrum, indices, axis=0), src_shape=NP.take(self.src_shape, indices, axis=0), epoch=self.epoch, coords=self.coords)
+                else:
+                    return SkyModel(NP.take(self.name, indices), self.frequency, NP.take(self.location, indices, axis=0), self.spec_type, spectrum=NP.take(self.spectrum, indices, axis=0), epoch=self.epoch, coords=self.coords)
             else:
                 spec_parms = {}
                 spec_parms['name'] = NP.take(self.spec_parms['name'], indices)
@@ -679,8 +688,10 @@ class SkyModel(object):
                 spec_parms['flux-scale'] = NP.take(self.spec_parms['flux-scale'], indices)
                 spec_parms['flux-offset'] = NP.take(self.spec_parms['flux-offset'], indices)
                 spec_parms['freq-width'] = NP.take(self.spec_parms['freq-width'], indices)
-
-                return SkyModel(NP.take(self.name, indices), self.frequency, NP.take(self.location, indices, axis=0), self.spec_type, spec_parms=spec_parms, src_shape=NP.take(self.src_shape, indices, axis=0), epoch=self.epoch, coords=self.coords)
+                if self.src_shape is not None:
+                    return SkyModel(NP.take(self.name, indices), self.frequency, NP.take(self.location, indices, axis=0), self.spec_type, spec_parms=spec_parms, src_shape=NP.take(self.src_shape, indices, axis=0), epoch=self.epoch, coords=self.coords)
+                else:
+                    return SkyModel(NP.take(self.name, indices), self.frequency, NP.take(self.location, indices, axis=0), self.spec_type, spec_parms=spec_parms, epoch=self.epoch, coords=self.coords)                    
 
     #############################################################################
 

@@ -1,3 +1,17 @@
+from 0ed80ca of general:
+=======================
+
+In catalog.py,
+
+(*) In subset() member function of class SkyModel, input parameter 
+indices is now not a keyword input but an essential input. Change 
+handling of this input parameter by flattening it first
+(*) In subset() member function src_shape is used only if it is set in
+the first place
+(*) Fix bug in subset() member function of class SkyModel where
+earlier the all spectral functional names were returned instead only of
+a subset
+
 from 3ff2c66 of general:
 =======================
 
