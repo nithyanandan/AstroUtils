@@ -326,7 +326,7 @@ class SkyModel(object):
                    the number of objects.
 
     frequency      [scalar or vector] Frequency range for which sky model is
-                   applicable. Units in 
+                   applicable. Units in Hz.
 
     location       [numpy array or list of lists] Positions of the sources in 
                    sky model. Each position is specified as a row (numpy array)
@@ -367,7 +367,7 @@ class SkyModel(object):
                             at which the spectrum is mid-way between min and 
                             max of the tanh function. This is not applicable 
                             when value under key 'name' is set to 'random' or 
-                            'flat'.
+                            'flat'. 
                    'flux-scale' 
                             [scalar or numpy array] Flux scale of the flux 
                             densities at object locations. If a scalar, it is
@@ -420,6 +420,10 @@ class SkyModel(object):
 
     subset()       Provide a subset of the sky model using a list of indices onto
                    the existing sky model
+
+    generate_spectrum()
+                   Generate and return a spectrum from functional spectral 
+                   parameters
     ------------------------------------------------------------------------------
     """
 
@@ -523,8 +527,19 @@ class SkyModel(object):
             
             if 'flux-scale' not in spec_parms:
                 spec_parms['flux-scale'] = NP.ones(self.location.shape[0])
-            elif NP.any(spec_parms['flux-scale'] <= 0.0):
-                raise ValueError('Flux scale values must be positive')
+            else:
+                if not isinstance(spec_parms['flux-scale'], (int,float,NP.ndarray)):
+                    raise TypeError('Flux scale must be a scalar or numpy array')
+                spec_parms['flux-scale'] = NP.asarray(spec_parms['flux-scale'])
+                if spec_parms['flux-scale'].size == 1:
+                    spec_parms['flux-scale'] = spec_parms['flux-scale'] + NP.zeros(self.location.shape[0])
+                elif spec_parms['flux-scale'].size == self.location.shape[0]:
+                    spec_parms['flux-scale'] = spec_parms['flux-scale'].ravel()
+                else:
+                    raise ValueError('Size of flux scale must be equal to the number of sky locations')
+                
+                if NP.any(spec_parms['flux-scale'] <= 0.0):
+                    raise ValueError('Flux scale values must be positive')
 
             if 'flux-offset' not in spec_parms:
                 spec_parms['flux-offset'] = NP.zeros(self.location.shape[0])
@@ -730,10 +745,10 @@ class SkyModel(object):
 
         tanh spectrum is defined as 
         spectrum=flux_offset+flux_scale*(exp(a*x)-exp(-a*x))/(exp(a*x)+exp(-a*x))
-        where, x = freq/freq0, and a = log((1+b)/(1-b)) / df, where 
-        df = two-sided frequency width at which the curve transitions by a 
-        fraction b relative to height difference between max and min, centered 
-        on the origin. 
+        where, x = freq/freq0, and a = log((1+b)/(1-b)) / dx, where 
+        dx = df/freq0, and df = two-sided frequency width at which the curve 
+        transitions by a fraction b relative to height difference between max 
+        and min, centered on the origin. 
 
         If the attribute spec_type is 'spectrum' the attribute spectrum is 
         returned without any modifications.
@@ -750,7 +765,7 @@ class SkyModel(object):
                 if NP.any(frequency <= 0.0):
                     raise ValueError('Input parameter frequency must contain positive values')
             else:
-                frequency = self.frequency
+                frequency = NP.copy(self.frequency)
 
             spectrum = NP.empty((self.location.shape[0], frequency.size))
             spectrum.fill(NP.nan)
@@ -779,11 +794,14 @@ class SkyModel(object):
                 if name == 'power-law':
                     spectrum[indices,:] = self.spec_parms['flux-offset'][indices].reshape(-1,1) + self.spec_parms['flux-scale'][indices].reshape(-1,1) * (frequency.reshape(1,-1)/self.spec_parms['freq-ref'][indices].reshape(-1,1))**self.spec_parms['power-law-index'][indices].reshape(-1,1)
                 if name == 'tanh':
+                    b = 0.5
                     x = 1 - frequency.reshape(1,-1)/self.spec_parms['freq-ref'][indices].reshape(-1,1)
-                    freq_width = self.spec_parms['freq-width'][indices]
-                    exp_scale_factor = NP.log((1+0.5)/(1-0.5)) / freq_width.reshape(-1,1)
-                    spectrum[indices,:] = self.spec_parms['flux-offset'][indices].reshape(-1,1) + 0.5*self.spec_parms['flux-scale'][indices].reshape(-1,1) * NP.tanh(exp_scale_factor*x)
-            
+                    df = self.spec_parms['freq-width'][indices]
+                    dx = df / self.spec_parms['freq-ref'][indices]
+                    a = NP.log((1+b)/(1-b)) / dx
+                    a = a.reshape(-1,1)
+                    spectrum[indices,:] = self.spec_parms['flux-offset'][indices].reshape(-1,1) + 0.5*self.spec_parms['flux-scale'][indices].reshape(-1,1) * NP.tanh(a*x)
+                    
             return spectrum
         else:
             return self.spectrum

@@ -451,10 +451,11 @@ def altaz2dircos(altaz, units=None):
     if NP.any(NP.abs(altaz[:,0]) > NP.pi/2):
         raise ValueError('Altitude(s) should lie between -90 and 90 degrees. Check inputs and units.')
 
-    altaz[:,1] = NP.pi/2 - altaz[:,1] # Convert azimuth (measured from north towards east) to angle measured from east towards north
-    l = NP.cos(altaz[:,0])*NP.cos(altaz[:,1]) # towards east
-    m = NP.cos(altaz[:,0])*NP.sin(altaz[:,1]) # towards north
-    n = NP.sin(altaz[:,0])                    # towards zenith
+    phi = NP.pi/2 - altaz[:,1] # Convert azimuth (measured from north towards east) to angle measured from east towards north
+    l = NP.cos(altaz[:,0])*NP.cos(phi) # towards east
+    m = NP.cos(altaz[:,0])*NP.sin(phi) # towards north
+    n = NP.sin(altaz[:,0])             # towards zenith
+
     return NP.asarray(zip(l,m,n))
 
 #################################################################################

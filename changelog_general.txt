@@ -1,3 +1,18 @@
+from 31049a0 of general:
+=======================
+
+In catalog.py,
+
+(*) Add type checking for flux-scale in input parameter in __init__()
+member function of class SkyModel
+(*) Enfore array broadcasting of flux_scale in member function
+generate_spectrum() of class SkyModel
+(*) Update docstring of class SkyModel
+
+In geometry.py,
+
+(*) Rename internal variables in altaz2dircos()
+
 from 0ed80ca of general:
 =======================
 
