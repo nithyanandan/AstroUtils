@@ -1,3 +1,12 @@
+From aa7710e of general:
+=======================
+
+In catalog.py,
+
+(*) Replace usage of 'freq-width' with 'z-width' throughtout in class
+SkyModel
+(*) Change docstring accordingly
+
 from 31049a0 of general:
 =======================
 

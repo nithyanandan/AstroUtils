@@ -2,6 +2,7 @@ import numpy as NP
 import geometry as GEOM
 import my_operations as OPS
 import lookup_operations as LKP
+import constants as CNST
 
 #################################################################################
 
@@ -388,12 +389,10 @@ class SkyModel(object):
                             for each object location. When value under the key
                             'name' is set to 'random', this amounts to setting
                             a mean flux density along the spectral axis.
-                   'freq-width'
-                            [numpy vector] Characteristic frequency full-width 
-                            of the spectrum. Used if value under key 'name' is 
-                            set to 'tanh' and it denotes the width of the inner 
-                            50% of transition from max to min. Same units and 
-                            size as value under key 'freq-ref'.
+                   'z-width'
+                            [numpy vector] Characteristic redshift full-wdith
+                            in the definition of tanh expression applicable to
+                            global EoR signal. 
 
     src_shape      [3-column numpy array or list of 3-element lists] source 
                    shape specified by major axis FWHM (first column), minor axis 
@@ -505,8 +504,7 @@ class SkyModel(object):
                 spec_parms['freq-ref'] = NP.mean(self.frequency) + NP.zeros(self.location.shape[0])
                 spec_parms['flux-scale'] = NP.ones(self.location.shape[0])
                 spec_parms['flux-offset'] = NP.zeros(self.location.shape[0])
-                spec_parms['freq-width'] = NP.zeros(self.location.shape[0])
-
+                spec_parms['z-width'] = NP.zeros(self.location.shape[0])
             elif not isinstance(spec_parms, dict):
                 raise TypeError('Spectral parameters in spec_parms must be specified as a dictionary')
 
@@ -552,10 +550,10 @@ class SkyModel(object):
             if 'power-law-index' not in spec_parms:
                 spec_parms['power-law-index'] = NP.zeros(self.location.shape[0])
 
-            if 'freq-width' not in spec_parms:
-                spec_parms['freq-width'] = NP.zeros(self.location.shape[0])                
-            elif NP.any(spec_parms['freq-width'] < 0.0):
-                raise ValueError('Characteristic frequency widths must not be negative')
+            if 'z-width' not in spec_parms:
+                spec_parms['z-width'] = NP.zeros(self.location.shape[0])
+            elif NP.any(spec_parms['z-width'] < 0.0):
+                raise ValueError('Characteristic redshift widths must not be negative')
 
             self.spec_parms = spec_parms
 
@@ -702,7 +700,7 @@ class SkyModel(object):
                 spec_parms['freq-ref'] = NP.take(self.spec_parms['freq-ref'], indices)
                 spec_parms['flux-scale'] = NP.take(self.spec_parms['flux-scale'], indices)
                 spec_parms['flux-offset'] = NP.take(self.spec_parms['flux-offset'], indices)
-                spec_parms['freq-width'] = NP.take(self.spec_parms['freq-width'], indices)
+                spec_parms['z-width'] = NP.take(self.spec_parms['z-width'], indices)                
                 if self.src_shape is not None:
                     return SkyModel(NP.take(self.name, indices), self.frequency, NP.take(self.location, indices, axis=0), self.spec_type, spec_parms=spec_parms, src_shape=NP.take(self.src_shape, indices, axis=0), epoch=self.epoch, coords=self.coords)
                 else:
@@ -720,12 +718,11 @@ class SkyModel(object):
 
         frequency  [scalar or numpy array] Frequencies at which the spectrum at
                    all object lcoations is to be created. Must be in same units
-                   as the attribute frequency and values under keys 'freq-ref' 
-                   and 'freq-width' of attribute spec_parms. If not provided 
-                   (default=None), a spectrum is generated for all the 
-                   frequencies specified in the attribute frequency and values 
-                   under keys 'freq-ref' and 'freq-width' of attribute 
-                   spec_parms. 
+                   as the attribute frequency and values under key 'freq-ref' 
+                   of attribute spec_parms. If not provided (default=None), a 
+                   spectrum is generated for all the frequencies specified in 
+                   the attribute frequency and values under keys 'freq-ref' and
+                   'z-width' of attribute spec_parms. 
 
         Outputs:
 
@@ -743,12 +740,10 @@ class SkyModel(object):
         Random (currently only gaussian) places random fluxes in the spectrum
         spectrum = flux_offset + flux_scale * random_normal(freq.size)
 
-        tanh spectrum is defined as 
-        spectrum=flux_offset+flux_scale*(exp(a*x)-exp(-a*x))/(exp(a*x)+exp(-a*x))
-        where, x = freq/freq0, and a = log((1+b)/(1-b)) / dx, where 
-        dx = df/freq0, and df = two-sided frequency width at which the curve 
-        transitions by a fraction b relative to height difference between max 
-        and min, centered on the origin. 
+        tanh spectrum is defined as (Bowman & Rogers 2010):
+        spectrum = flux_scale * sqrt((1+z)/10) * 0.5 * [tanh((z-zr)/dz) + 1]
+        where, flux_scale is typically 0.027 K, zr = reionization redshift 
+        when x_i = 0.5, and dz = redshift width (dz ~ 1)
 
         If the attribute spec_type is 'spectrum' the attribute spectrum is 
         returned without any modifications.
@@ -794,13 +789,13 @@ class SkyModel(object):
                 if name == 'power-law':
                     spectrum[indices,:] = self.spec_parms['flux-offset'][indices].reshape(-1,1) + self.spec_parms['flux-scale'][indices].reshape(-1,1) * (frequency.reshape(1,-1)/self.spec_parms['freq-ref'][indices].reshape(-1,1))**self.spec_parms['power-law-index'][indices].reshape(-1,1)
                 if name == 'tanh':
-                    b = 0.5
-                    x = 1 - frequency.reshape(1,-1)/self.spec_parms['freq-ref'][indices].reshape(-1,1)
-                    df = self.spec_parms['freq-width'][indices]
-                    dx = df / self.spec_parms['freq-ref'][indices]
-                    a = NP.log((1+b)/(1-b)) / dx
-                    a = a.reshape(-1,1)
-                    spectrum[indices,:] = self.spec_parms['flux-offset'][indices].reshape(-1,1) + 0.5*self.spec_parms['flux-scale'][indices].reshape(-1,1) * NP.tanh(a*x)
+                    z = CNST.rest_freq_HI/frequency.reshape(1,-1) - 1
+                    zr = CNST.rest_freq_HI/self.spec_parms['freq-ref'][indices].reshape(-1,1) - 1
+                    dz = self.spec_parms['z-width'][indices].reshape(-1,1)
+
+                    amp = self.spec_parms['flux-scale'][indices].reshape(-1,1) * NP.sqrt((1+z)/10)
+                    xh = 0.5 * (NP.tanh((z-zr)/dz) + 1)
+                    spectrum[indices,:] = amp * xh
                     
             return spectrum
         else:
