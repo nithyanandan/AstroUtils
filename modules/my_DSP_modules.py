@@ -437,6 +437,82 @@ def windowing(N_window, shape='rect', pad_width=0, pad_value=0.0,
 
 #################################################################################
 
+def window_N2width(n_window=None, shape='rect'):
+
+    """
+    -----------------------------------------------------------------------------
+    Determine effective width of a window as a fraction of the total width
+
+    Inputs:
+
+    n_window  [int] Number of samples in the window function. Default = None sets
+              it to 1000000
+
+    shape     [string] Specifies window shape. Accepted values are 'rect' 
+              (rectangular, default), 'bnw' (Blackman-Nuttall) and 'bhw' 
+              (Blackman-Harris)
+
+    Output:
+
+    frac_width is a fraction of the total number of samples. Thus the effective
+    width of the window function is frac_width * n_window. For instance, 
+    frac_width = 1 for shape = 'rect'.
+    -----------------------------------------------------------------------------
+    """
+
+    if n_window is None:
+        n_window = 1000000
+    elif not isinstance(n_window, int):
+        raise TypeError('Number of samples must be an integer')
+    elif n_window <= 0:
+        raise ValueError('Number of samples must be positive')
+
+    if not isinstance(shape, str):
+        raise TypeError('Window shape must be a string')
+    elif shape not in ['rect', 'RECT', 'bnw', 'BNW', 'bhw', 'BHW']:
+        raise ValueError('Invalid window shape specified')
+
+    if shape in ['rect', 'RECT', 'bnw', 'BNW', 'bhw', 'BHW']:
+        window = windowing(n_window, shape=shape)
+        
+    frac_width = NP.sum(window)/n_window
+
+    return frac_width
+
+#################################################################################
+
+# def window_width2N(shape='rect'):
+
+#     """
+#     -----------------------------------------------------------------------------
+#     Determine total fractional width to produce a window of a specified shape.
+
+#     Inputs:
+
+#     shape     [string] Specifies window shape. Accepted values are 'rect' 
+#               (rectangular, default), 'bnw' (Blackman-Nuttall) and 'bhw' 
+#               (Blackman-Harris)
+
+#     Output:
+
+#     f_window is the fractional width of the full window relative to the required 
+#     effective width for a given window shape. For instance, f_window = 1 for 
+#     shape = 'rect'
+#     -----------------------------------------------------------------------------
+#     """
+
+#     if not isinstance(shape, str):
+#         raise TypeError('Window shape must be a string')
+#     elif shape not in ['rect', 'RECT', 'bnw', 'BNW', 'bhw', 'BHW']:
+#         raise ValueError('Invalid window shape specified')
+
+#     frac_width = window_N2width(shape=shape)
+#     f_window = 1 / frac_width
+
+#     return f_window
+
+#################################################################################
+
 def downsampler(inp, factor, axis=-1, verbose=True, kind='linear',
                 fill_value=NP.nan):
 

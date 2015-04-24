@@ -1,3 +1,11 @@
+From 9ceee44 of general:
+=======================
+
+In my_DSP_modules.py,
+
+(*) Add function window_N2width() to compute effective width of window
+functions
+
 From aa7710e of general:
 =======================
 
