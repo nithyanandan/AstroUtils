@@ -666,7 +666,8 @@ def downsampler(inp, factor, axis=-1, verbose=True, kind='linear',
         intpfunc = interpolate.interp1d(NP.arange(inp.shape[axis]), inp,
                                         kind=kind, fill_value=fill_value,
                                         axis=axis) 
-        reqd_inds = NP.arange(0, inp.shape[axis], factor)
+        tol = 1e-10
+        reqd_inds = NP.arange(0, inp.shape[axis]-1+tol, factor)
         if verbose:
             print 'Returning the downsampled data.'
         return intpfunc(reqd_inds)

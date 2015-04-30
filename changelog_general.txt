@@ -1,3 +1,11 @@
+From ff89e45 of general:
+=======================
+
+In my_DSP_modules.py,
+
+(*) Check for out of bounds index in input to interpolating function
+in downsampler()
+
 From 9ceee44 of general:
 =======================
 
