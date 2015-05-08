@@ -1,3 +1,12 @@
+From 08b3d89 of general:
+=======================
+
+In catalog.py,
+
+(*) Add member function to_healpix() to class Catalog
+(*) Fix type checking bug in member function generate_spectrum() of
+class Catalog
+
 From ff89e45 of general:
 =======================
 

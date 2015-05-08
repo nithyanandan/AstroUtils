@@ -1,4 +1,11 @@
 import numpy as NP
+import healpy as HP
+from astropy.table import Table
+from astropy.io import fits, ascii
+from astropy.coordinates import SkyCoord
+import scipy.constants as FCNST
+import matplotlib.pyplot as PLT
+import matplotlib.colors as PLTC
 import geometry as GEOM
 import my_operations as OPS
 import lookup_operations as LKP
@@ -752,7 +759,7 @@ class SkyModel(object):
 
         if self.spec_type == 'func':
             if frequency is not None:
-                if isisntance(frequency, (int,float,NP.ndarray)):
+                if isinstance(frequency, (int,float,NP.ndarray)):
                     frequency = NP.asarray(frequency)
                 else:
                     raise ValueError('Input parameter frequency must be a scalar or a numpy array')
@@ -802,3 +809,201 @@ class SkyModel(object):
             return self.spectrum
 
     #############################################################################
+
+    def to_healpix(self, freq, nside, in_units='Jy', out_coords='equatorial',
+                   out_units='K', outfile=None, outfmt='fits'):
+
+        """
+        -------------------------------------------------------------------------
+        Convert catalog to a healpix format of given nside at specified 
+        frequencies.
+
+        Inputs:
+
+        freq         [scalar or numpy array] Frequencies at which HEALPIX output
+                     maps are to be generated
+
+        nside        [integer] HEALPIX nside parameter for the output map(s)
+
+        in_units     [string] Units of input map or catalog. Accepted values are
+                     'K' for Temperature of 'Jy' for flux density. Default='Jy'
+
+        out_coords   [string] Output coordinate system. Accepted values are 
+                     'galactic' and 'equatorial' (default)
+
+        out_units    [string] Units of output map. Accepted values are
+                     'K' for Temperature of 'Jy' for flux density. Default='K'
+
+        outfile      [string] Filename with full path to save the output HEALPIX
+                     map(s) to. Default=None
+
+        outfmt       [string] File format for output file. Accepted values are
+                     'fits' (default) and 'ascii'
+
+        Output(s):
+
+        A dictionary with the following keys and values:
+
+        'filename'   Pull path to the output file. Set only if input parameter 
+                     outfile is set. Default=None.
+
+        'spectrum'   A numpy array of size nsrc x nchan where nsrc is the number 
+                     sky locations depending on input parameter out_nside and 
+                     nchan is the number of frequencies in input parameter freq
+        -------------------------------------------------------------------------
+        """
+
+        try:
+            freq
+        except NameError:
+            freq = self.frequency.ravel()[self.frequency.size/2]
+        else:
+            if not isinstance(freq, (int,float,list,NP.ndarray)):
+                raise TypeError('Input parameter freq must be a scalar or numpy array')
+            else:
+                freq = NP.asarray(freq).reshape(-1)
+
+        try:
+            nside
+        except NameError:
+            raise NameError('Input parameter nside not specified')
+        else:
+            if not isinstance(nside, int):
+                raise TypeError('Input parameter nside must be an integer')
+
+        if not isinstance(out_coords, str):
+            raise TypeError('Input parameter out_coords must be a string')
+        elif out_coords not in ['equatorial', 'galactic']:
+            raise ValueError('Input parameter out_coords must be set to "equatorial" or "galactic"')
+
+        if not isinstance(in_units, str):
+            raise TypeError('in_units must be a string')
+        elif in_units not in ['K', 'Jy']:
+            raise ValueError('in_units must be "K" or "Jy"')
+
+        if not isinstance(out_units, str):
+            raise TypeError('out_units must be a string')
+        elif out_units not in ['K', 'Jy']:
+            raise ValueError('out_units must be "K" or "Jy"')
+
+        if outfile is not None:
+            if not isinstance(outfile, str):
+                raise TypeError('outfile must be a string')
+
+            if not isinstance(outfmt, str):
+                raise TypeError('outfile format must be specified by a string')
+            elif outfmt not in ['ascii', 'fits']:
+                raise ValueError('outfile format must be "ascii" or "fits"')
+
+        ec = SkyCoord(ra=self.location[:,0], dec=self.location[:,1], unit='deg', frame='icrs')
+        gc = ec.transform_to('galactic')
+        if out_coords == 'galactic':
+            phi = gc.l.radian
+            theta = NP.pi/2 - gc.b.radian
+        else:
+            phi = ec.ra.radian
+            theta = NP.pi/2 - ec.dec.radian
+
+        outmap = NP.zeros((HP.nside2npix(nside), freq.size))
+        pixarea = HP.nside2pixarea(nside)
+        pix = HP.ang2pix(nside, theta, phi)
+        spectrum = self.generate_spectrum(frequency=freq)
+        if in_units != out_units:
+            if out_units == 'K':
+                spectrum = (FCNST.c / freq.reshape(1,-1))**2 / (2*FCNST.k*pixarea) * spectrum * CNST.Jy # Convert into temperature
+            else:
+                spectrum = (freq.reshape(1,-1) / FCNST.c)**2 * (2*FCNST.k*pixarea) * spectrum / CNST.Jy # Convert into Jy
+
+        uniq_pix, uniq_pix_ind, pix_invind = NP.unique(pix, return_index=True, return_inverse=True)
+        counts, binedges, binnums, ri = OPS.binned_statistic(pix_invind, statistic='count', bins=NP.arange(uniq_pix.size+1))
+        ind_count_gt1, = NP.where(counts > 1)
+        ind_count_eq1, = NP.where(counts == 1)        
+        upix_1count = []
+        spec_ind = []
+        for i in ind_count_eq1:
+            ind = ri[ri[i]:ri[i+1]]
+            upix_1count += [uniq_pix[i]]
+            spec_ind += [ind]
+
+        upix_1count = NP.asarray(upix_1count)
+        spec_ind = NP.asarray(spec_ind).ravel()
+        outmap[upix_1count,:] = spectrum[spec_ind,:]
+
+        for i in ind_count_gt1:
+            upix = uniq_pix[i]
+            ind = ri[ri[i]:ri[i+1]]
+            outmap[upix,:] = NP.sum(spectrum[ind,:], axis=0)
+
+        # # Plot diagnostic begins
+        # if out_coords == 'galactic':
+        #     hpxgc = HP.cartview(outmap[:,0], coord='G', return_projected_map=True)
+        #     hpxec = HP.cartview(outmap[:,0], coord=['G', 'C'], return_projected_map=True)
+        # else:
+        #     hpxec = HP.cartview(outmap[:,0], coord='C', return_projected_map=True)
+        #     hpxgc = HP.cartview(outmap[:,0], coord=['C', 'G'], return_projected_map=True)
+            
+        # gcl = gc.l.degree
+        # gcb = gc.b.degree
+        # gcl[gcl > 180.0] -= 360.0
+        # ecra = ec.ra.degree
+        # ecdec = ec.dec.degree
+        # ecra[ecra > 180.0] -= 360.0
+
+        # fig, axs = PLT.subplots(nrows=2, sharex=True, sharey=True, figsize=(6,6))
+
+        # gcimg = axs[0].imshow(hpxgc, origin='lower', extent=[180,-180,-90,90], norm=PLTC.LogNorm(vmin=hpxgc[hpxgc>0.0].min(), vmax=hpxgc.max()))
+        # gcplt = axs[0].plot(gcl, gcb, 'o', mfc='none', mec='black')
+        # axs[0].set_xlim(180, -180)
+        # axs[0].set_ylim(-90, 90)
+
+        # ecimg = axs[1].imshow(hpxec, origin='lower', extent=[180,-180,-90,90], norm=PLTC.LogNorm(vmin=hpxec[hpxec>0.0].min(), vmax=hpxec.max()))
+        # ecplt = axs[1].plot(ecra, ecdec, 'o', mfc='none', mec='black')
+        # axs[1].set_xlim(180, -180)
+        # axs[1].set_ylim(-90, 90)
+        
+        # fig.subplots_adjust(hspace=0, wspace=0)
+        # PLT.show()
+
+        # # Plot diagnostic ends
+
+        # Save the healpix spectrum to file
+        if outfile is not None:
+            if outfmt == 'fits':
+                hdulist = []
+    
+                hdulist += [fits.PrimaryHDU()]
+                hdulist[0].header['EXTNAME'] = 'PRIMARY'
+                hdulist[0].header['NSIDE'] = nside
+                hdulist[0].header['UNTIS'] = out_units
+                hdulist[0].header['NFREQ'] = freq.size
+        
+                for chan, f in enumerate(freq):
+                    hdulist += [fits.ImageHDU(outmap[:,chan], name='{0:.1f} MHz'.format(f/1e6))]
+        
+                hdu = fits.HDUList(hdulist)
+                hdu.writeto(outfile+'.fits', clobber=True)
+
+                return {'hlpxfile': outfile+outfmt, 'hlpxspec': outmap}
+            else:
+                out_dict = {}
+                colnames = []
+                colfrmts = {}
+                for chan, f in enumerate(freq):
+                    out_dict['{0:.1f}_MHz'.format(f/1e6)] = outmap[:,chan]
+                    colnames += ['{0:.1f}_MHz'.format(f/1e6)]
+                    colfrmts['{0:.1f}_MHz'.format(f/1e6)] = '%0.5f'
+
+                tbdata = Table(out_dict, names=colnames)
+                ascii.write(tbdata, output=outfile+'.txt', format='fixed_width_two_line', formats=colfrmts, bookend=False, delimiter='|', delimiter_pad=' ')
+
+                return {'filename': outfile+outfmt, 'spectrum': outmap}
+        else:
+            return {'filename': outfile, 'spectrum': outmap}
+
+    ############################################################################
+
+        
+        
+
+            
+            
