@@ -1,11 +1,23 @@
+From 26762d3 of general:
+=======================
+
+In catalog.py,
+
+(*) Remove commented and defunct class Catalog
+
+In changelog.txt,
+
+(*) Change wrong mention of class Catalog to the correct class
+SkyModel in the previous commit
+
 From 08b3d89 of general:
 =======================
 
 In catalog.py,
 
-(*) Add member function to_healpix() to class Catalog
+(*) Add member function to_healpix() to class SkyModel
 (*) Fix type checking bug in member function generate_spectrum() of
-class Catalog
+class SkyModel
 
 From ff89e45 of general:
 =======================
