@@ -42,7 +42,14 @@ def grid(rangelist, pad=None, spacing=None, pow2=True, verbose=True):
 
     if pad is None:
         pad = NP.zeros(len(rangelist))
-    elif len(pad) == 1:
+    elif isinstance(pad, (int,float)):
+        pad = [pad]
+    elif isinstance(pad, NP.ndarray):
+        pad = pad.tolist()
+    elif not isinstance(pad, list):
+        raise TypeError('pad must be set to None, scalar, list or numpy array')
+        
+    if len(pad) == 1:
         pad = [pad] * len(rangelist)
     elif len(pad) > len(rangelist):
         pad = NP.asarray(pad[:len(rangelist)])
@@ -104,17 +111,17 @@ def grid(rangelist, pad=None, spacing=None, pow2=True, verbose=True):
 
 #################################################################################
 
-def grid_1d(range, pad=None, spacing=None, pow2=True, verbose=True):
+def grid_1d(ranges, pad=None, spacing=None, pow2=True, verbose=True):
 
     """
     -----------------------------------------------------------------------------
     1D wrapper for grid()
     
     Inputs:
-    range    [2-element list or a tuple with 2 elements] min and max with
+    ranges   [2-element list or a tuple with 2 elements] min and max with
              min < max.
              
-    pad      [Optional or Scalar] The padding (in same units as range) to be
+    pad      [Optional or Scalar] The padding (in same units as ranges) to be
              applied along the axis. Default=None implies no padding.
 
     spacing  [Optional or Scalar] The spacing for the grid along the axis. If not
@@ -131,29 +138,31 @@ def grid_1d(range, pad=None, spacing=None, pow2=True, verbose=True):
     -----------------------------------------------------------------------------
     """
 
-    if range is None:
+    if ranges is None:
         raise NameError('No range provided. Exiting from grid_1d()')
-    if isinstance(range, (list,tuple)) is False:
+    if not isinstance(ranges, (list,tuple)):
         raise TypeError('A 2-element list or tuple containing range with min < max should be provided.')
 
-    if isinstance(range, tuple):
-        grid_info = grid([range], pad=[pad], spacing=[spacing], pow2=pow2, verbose=verbose)
-    if isinstance(range, list):
-        grid_info = grid([tuple(range)], pad=[pad], spacing=[spacing], pow2=pow2, verbose=verbose)
+    if isinstance(ranges, tuple):
+        grid_info = grid([ranges], pad=[pad], spacing=[spacing], pow2=pow2, verbose=verbose)
+    if isinstance(ranges, list):
+        grid_info = grid([tuple(ranges)], pad=[pad], spacing=[spacing], pow2=pow2, verbose=verbose)
     return NP.linspace(grid_info[0][0], grid_info[0][1], int(grid_info[0][2]))
 
 #################################################################################
 
-def grid_2d(range, pad=None, spacing=None, pow2=True, verbose=True):
+def grid_2d(rangelist, pad=None, spacing=None, pow2=True, verbose=True):
+
     """
     -----------------------------------------------------------------------------
     2D wrapper for grid()
     
     Inputs:
-    range    [2-element list of tuples] Each tuple is made of two elements, the
+    rangelist   
+             [2-element list of tuples] Each tuple is made of two elements, the
              min and max with min < max.
              
-    pad      [Optional. Scalar or list] The padding (in same units as range) to
+    pad      [Optional. Scalar or list] The padding (in same units as rangelist) to
              be applied along the two axes. Default=None implies no padding.
 
     spacing  [Optional. Scalar or list] The spacing for the grid along each of
@@ -173,15 +182,15 @@ def grid_2d(range, pad=None, spacing=None, pow2=True, verbose=True):
     -----------------------------------------------------------------------------
     """
 
-    if range is None:
-        raise NameError('No range provided. Exiting from grid_2d()')
-    if isinstance(range, list) is False:
-        raise TypeError('A 2-element list of tuples specifying range with min < max should be provided. Exiting from grid_2d()')
-    elif isinstance(range, list) is True:
-        if isinstance(range[0], tuple) is False:
-            raise TypeError('A 2-element list of tuples specifying range with min < max should be provided. Exiting from grid_2d()')
+    if rangelist is None:
+        raise NameError('No ranges provided. Exiting from grid_2d()')
+    if not isinstance(rangelist, list):
+        raise TypeError('A 2-element list of tuples specifying ranges with min < max should be provided. Exiting from grid_2d()')
+    else:
+        if not isinstance(rangelist[0], tuple):
+            raise TypeError('A 2-element list of tuples specifying ranges with min < max should be provided. Exiting from grid_2d()')
 
-    grid_info = grid(range, pad=pad, spacing=spacing, pow2=pow2, verbose=verbose)
+    grid_info = grid(rangelist, pad=pad, spacing=spacing, pow2=pow2, verbose=verbose)
     return NP.meshgrid(NP.linspace(grid_info[0][0], grid_info[0][1], int(grid_info[0][2])), NP.linspace(grid_info[1][0], grid_info[1][1], int(grid_info[1][2])))
 
 #################################################################################

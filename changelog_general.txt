@@ -1,3 +1,18 @@
+From 03a62b4:
+============
+
+In my_gridding_modules.py,
+
+(*) Change input keyword from range to ranges in function grid_1d() to
+not confuse with in-built function range(). Modify docstring
+accordingly
+(*) Change input keyword from range to rangelist in function grid_2d()
+to not confuse with in-built function range(). Modify docstring
+accordingly
+(*) Add more rigorous type checking for input keyword pad in function
+grid()
+(*) Tighten type checking in functions grid_1d() and grid_2d() 
+
 From 26762d3 of general:
 =======================
 
