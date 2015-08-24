@@ -1,11 +1,22 @@
 import numpy as NP
 from astropy.io import ascii
 import multiprocessing as MP
+import itertools as IT
 try:
     from scipy.spatial import cKDTree as KDT
 except ImportError:
     from scipy.spatial import KDTree as KDT
-import ipdb as PDB
+
+#################################################################################
+
+def find_NN_arg_splitter(args, **kwargs):
+    return find_NN_pp(*args, **kwargs)
+
+def find_NN_pp(ngbrof, ngbrin, distance_ULIM):
+    kdtself = KDT(ngbrof)
+    kdtother = KDT(ngbrin)
+    indNN_list = kdtself.query_ball_tree(kdtother, distance_ULIM, p=2.0)
+    return indNN_list
 
 #################################################################################
 
@@ -780,7 +791,101 @@ def find_1NN_pp(ref, inp, pid, outq, distance_ULIM=NP.inf, remove_oob=True):
     outdict[pid]['distNN'] = distNN
     outdict[pid]['refind'] = refind
 
-    print MP.current_process().name
+    # print MP.current_process().name
     outq.put(outdict)
 
 #################################################################################
+
+def find_NN(ngbrof, ngbrin, distance_ULIM=NP.inf, flatten=False, parallel=False,
+            nproc=None):
+
+    """
+    -----------------------------------------------------------------------------
+    Find all nearest neighbours of one set of locations in another set of 
+    locations within a specified distance. 
+
+    Inputs:
+
+    ngbrof    [numpy array] Locations for nearest neighbours are to be 
+              determined. Has dimensions MxK where M is the number of locations.
+
+    ngbrin    [numpy array] Locations from which nearest neighbours are to be 
+              chosen for the locations in ngbrof. Has dimensions NxK.
+
+    distance_ULIM
+              [scalar] Maximum search radius to look for neighbours. 
+              Default=NP.inf
+
+    flatten   [boolean] If set to True, flattens the output of the nearest
+              neighbour search algorithm to yield two separate sets of matching
+              indices - one for ngbrof and the other for ngbrin. Default=False
+
+    parallel  [boolean] specifies if parallelization is to be invoked. False 
+              (default) means only serial processing. Parallelization is done
+              over ngbrof
+
+    nproc     [scalar] specifies number of independent processes to spawn.
+              Default=None, means automatically determines the number of 
+              process cores in the system and use one less than that to 
+              avoid locking the system for other processes. Applies only 
+              if input parameter 'parallel' (see above) is set to True. 
+              If nproc is set to a value more than the number of process
+              cores in the system, it will be reset to number of process 
+              cores in the system minus one to avoid locking the system out 
+              for other processes
+
+    Outputs:
+
+    List containing three items. The first item is a list of M lists where each 
+    of the M inner lists corresponds to one entry in ngbrof and the elements in 
+    the inner list contains indices to ngbrin that are the nearest neighbours of 
+    that specific ngbrof (same as output of cKDTree.query_ball_tree()). The 
+    second item in the output list is a numpy array of indices to ngbrof 
+    (obtained from the first item if input keyword flatten is set to True) or 
+    None (if input keyword flatten is set to False). The third item in the output 
+    list is a numpy array of indices to ngbrin that is a valid neighbour of 
+    ngbrof (obtained from the first item if input keyword flatten is set to 
+    True) or None (if input keyword flatten is set to False). 
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        ngbrof, ngbrin
+    except NameError:
+        raise NameError('ngbrof and ngbrin must be specified for finding nearest neighbours.')
+
+    if (ngbrof.shape[1] != ngbrin.shape[1]):
+        raise ValueError('ngbrof and ngbrin must contain same number of columns')
+
+    if parallel or (nproc is not None):
+        if nproc is None:
+            nproc = max(MP.cpu_count()-1, 1) 
+        else:
+            nproc = min(nproc, max(MP.cpu_count()-1, 1))
+
+        split_ind = NP.arange(ngbrof.shape[0]/nproc, ngbrof.shape[0], ngbrof.shape[0]/nproc)
+        split_ngbrof_list = NP.split(ngbrof, split_ind, axis=0)
+        ngbrin_list = [ngbrin] * len(split_ngbrof_list)
+        distance_ULIM_list = [distance_ULIM] * len(split_ngbrof_list)
+
+        pool = MP.Pool(processes=nproc)
+        lolol = pool.map(find_NN_arg_splitter, IT.izip(split_ngbrof_list, ngbrin_list, distance_ULIM_list))
+        pool.close()
+        pool.join()
+
+        indNN_list = [subitem for item in lolol for subitem in item]
+    else:
+        kdtself = KDT(ngbrof)
+        kdtother = KDT(ngbrin)
+        indNN_list = kdtself.query_ball_tree(kdtother, distance_ULIM, p=2.0)
+
+    ind_ngbrof = None
+    ind_ngbrin = None
+    if flatten:
+        list_of_ind_tuples = [(i,ind) for i,item in enumerate(indNN_list) for ind in item]
+        ind_ngbrof, ind_ngbrin = zip(*list_of_ind_tuples)
+
+    return [indNN_list, NP.asarray(ind_ngbrof), NP.asarray(ind_ngbrin)]
+    
+#################################################################################
+

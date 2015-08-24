@@ -1,3 +1,16 @@
+From a9bc243:
+============
+
+In lookup_operations.py,
+
+(*) Add function find_NN() (with docstring) to compute all nearest
+neighbours within a certain radius
+(*) Add functions find_NN_arg_splitter() and find_NN_pp() for parallel
+processing functionality and not intended to be used directly by the
+user
+(*) Import itertools module
+(*) Comment out printing of process name in case of parallel processing
+
 From 2e757e0:
 ============
 
