@@ -1,3 +1,10 @@
+From 2e757e0:
+============
+
+(*) Add ephemeris_timing.py to git repo
+(*) At the moment it consists of function gmst2gps() taken from David
+Kaplan
+
 From 03a62b4:
 ============
 
