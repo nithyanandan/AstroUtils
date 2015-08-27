@@ -20,7 +20,7 @@ def find_NN_pp(ngbrof, ngbrin, distance_ULIM):
 
 #################################################################################
 
-def gen_lookup(x, y, data, file):
+def gen_lookup(x, y, data, outfile):
 
     """
     -----------------------------------------------------------------------------
@@ -36,7 +36,7 @@ def gen_lookup(x, y, data, file):
     data       [numpy vector] data values at the coordinates given by x and y. x,
                y, and data must all have the same size
 
-    file       [string] Name of the output file to write the lookup table to. It 
+    outfile    [string] Name of the output file to write the lookup table to. It 
                will be created as an ascii table with 'x', 'y', 'real_value' and 
                'imag_value' (if imagianry value present) being the column headers
 
@@ -44,30 +44,30 @@ def gen_lookup(x, y, data, file):
     """
 
     try:
-        x, y, data, file
+        x, y, data, outfile
     except NameError:
-        raise NameError('To generate a lookup table, input parameters x, y, data, and file should be specified.')
+        raise NameError('To generate a lookup table, input parameters x, y, data, and outfile should be specified.')
 
     if (x.size != y.size) or (x.size != data.size):
         raise ValueError('x, y, and data must be of same size.')
 
-    if not isinstance(file, str):
-        raise TypeError('Input parameter file must be of string data type')
+    if not isinstance(outfile, str):
+        raise TypeError('Input parameter outfile must be of string data type')
 
     if NP.iscomplexobj(data):
         try:
-            ascii.write([x.ravel(), y.ravel(), data.ravel().real, data.ravel().imag], file, names=['x', 'y', 'real_value', 'imag_value'])
+            ascii.write([x.ravel(), y.ravel(), data.ravel().real, data.ravel().imag], outfile, names=['x', 'y', 'real_value', 'imag_value'])
         except IOError:
-            raise IOError('Could not write to specified file: '+file)
+            raise IOError('Could not write to specified file: '+outfile)
     else:
         try:
-            ascii.write([x.ravel(), y.ravel(), data.ravel()], file, names=['x', 'y', 'real_value'])
+            ascii.write([x.ravel(), y.ravel(), data.ravel()], outfile, names=['x', 'y', 'real_value'])
         except IOError:
-            raise IOError('Could not write to specified file: '+file)
+            raise IOError('Could not write to specified file: '+outfile)
     
 #################################################################################
 
-def read_lookup(file):
+def read_lookup(infile):
 
     """
     -----------------------------------------------------------------------------
@@ -75,7 +75,7 @@ def read_lookup(file):
 
     Inputs:
 
-    file      [string] Input file containing the lookup data base.
+    infile  [string] Input file containing the lookup data base.
 
     Outputs:
 
@@ -86,13 +86,13 @@ def read_lookup(file):
     -----------------------------------------------------------------------------
     """
 
-    if not isinstance(file, str):
-        raise TypeError('Input parameter file must be of string data type')
+    if not isinstance(infile, str):
+        raise TypeError('Input parameter infile must be of string data type')
 
     try:
-        cols = ascii.read(file, data_start=1, comment='#')
+        cols = ascii.read(infile, data_start=1, comment='#')
     except IOError:
-        raise IOError('Could not read the specified file: '+file)
+        raise IOError('Could not read the specified file: '+infile)
 
     if 'imag_value' in cols.colnames:
         return cols['x'].data, cols['y'].data, cols['real_value'].data+1j*cols['imag_value'].data
@@ -150,8 +150,8 @@ def lookup(x, y, val, xin, yin, distance_ULIM=NP.inf, oob_value=0.0,
             [scalar] A positive value indicating maximum number of input 
             locations (xin, yin) to be assigned. Default = None. If set to None, 
             all the input locations specified are assigned values. For instance,
-            to have only one input location to be populated per antenna, use
-            maxmatch=1. 
+            to have only one nearest neighbour from the lookup locations to be 
+            determined per input location, use maxmatch=1. 
 
     tol     [scalar] If set, only lookup data with abs(val) > tol will be 
             considered for nearest neighbour lookup. Default = None implies all
@@ -214,6 +214,162 @@ def lookup(x, y, val, xin, yin, distance_ULIM=NP.inf, oob_value=0.0,
 
     kdt = KDT(zip(x,y))
     dist, ind = kdt.query(NP.hstack((xin.reshape(-1,1), yin.reshape(-1,1))), k=1, distance_upper_bound=distance_ULIM)
+    nnval = NP.zeros(ind.size, dtype=val.dtype)
+    nnval[dist < distance_ULIM] = val[ind[dist < distance_ULIM]]
+    nnval[dist >= distance_ULIM] = oob_value
+    ibind = NP.arange(ind.size) # in-bound indices
+    distNN = dist
+    if remove_oob:
+        nnval = nnval[dist <= distance_ULIM]
+        ibind = ibind[dist <= distance_ULIM]
+        distNN = dist[dist <= distance_ULIM]
+
+    if maxmatch is not None:
+        if not isinstance(maxmatch, int):
+            raise TypeError('maxmatch must be an integer.')
+
+        if maxmatch < distNN.size:
+            if maxmatch > 0:
+                sortind = NP.argsort(distNN)[:maxmatch] # Indices of maxmatch nearest matches
+                nnval = nnval[sortind]
+                ibind = ibind[sortind]
+                distNN = distNN[sortind]
+            else:
+                raise ValueError('Maximum number of nearest neighbours must be positive.')
+
+    return ibind, nnval, distNN
+
+#################################################################################
+
+def lookup_new(ngbrin, val, ngbrof, distance_ULIM=NP.inf, oob_value=0.0,
+               remove_oob=True, tol=None, maxmatch=None):
+
+    """
+    -----------------------------------------------------------------------------
+    NEEDS SERIOUS DEVELOPMENT AND TESTING!!!
+
+    Perform a lookup operation based on nearest neighbour algorithm using
+    KD-Trees when the lookup database and required coordinate locations are
+    specified. 
+
+    Inputs:
+
+    ngbrin [numpy array] locations of neighbours from which neighbours of 
+           locations in ngbrof must be found. MxK numpy array corresponding
+           to M locations specified in K coordinates 
+    
+    val    [numpy array] array of M values at the ngbrin locations
+
+    ngbrof [numpy array] locations for which neighbours in locations specified
+           by ngbrin must be found. NxK array corresponding to N locations 
+           specified in K coordinates
+
+    distance_ULIM
+            [scalar] A positive number for the upper bound on distance while
+            searching for nearest neighbours. Neighbours outside of this upper
+            bound are not searched for. Default = NP.inf (infinite distance upper 
+            bound means nearest neighbours will be searched all the way out to 
+            infinite distance). Should be in the same units as x, y, xin and yin
+
+    oob_value
+            [scalar] Value to be returned at the location if the nearest
+            neighbour for the location is not found inside distance_ULIM.
+            Default = 0
+
+    remove_oob
+            [boolean] If set to True, results of nearest neighbour search and 
+            lookup are returned only for those input locations which have a 
+            neighbour within the distance upper bound. Locations with no 
+            neighbours inside the distance upper bound will not be in the 
+            returned results. Default = True. If set to False, even if no 
+            nearest neighbours are found within the distance upper bound, an
+            infinite distance and out of bound index from the lookup table are
+            returned.
+
+    maxmatch
+            [scalar] A positive value indicating maximum number of input 
+            locations (in ngbrof) to be assigned. Default = None. If set to 
+            None, only the first nrearest neighbour is searched for and the 
+            correspoding value assigned. all the input locations specified are 
+            assigned values. For instance, to have only one nearest neighbour 
+            from the lookup locations to be determined per input location, use 
+            maxmatch=1 or maxmatch=None. 
+
+    tol     [scalar] If set, only lookup data with abs(val) > tol will be 
+            considered for nearest neighbour lookup. Default = None implies all
+            lookup values will be considered for nearest neighbour determination.
+            tol is to be interpreted as a minimum value considered as significant
+            in the lookup table. Changing tol from default may result in
+            unpredictable indices especially to the lookup (ngbrin) indices
+
+    Outputs: 
+
+    Returns a tuple of nearest neighbour lookup value, the index of input
+    location and nearest neighbour distance in the lookup table. The tuple
+    consists of the following elements in this order. The number of pairs
+    matched will be the lesser of those determined by distNN and maxmatch
+
+    ibind   [numpy vector] indices of the input locations (ngbrof) for which 
+            nearest neighbours were found from the lookup table. If remove_oob is 
+            not set to True, size of ibind is equal to N (the number of 
+            locations in ngbrof, otherwise size of ibind is less than or equal 
+            to N. Values of ibind equal to size of lookup table values indicates 
+            the nearest neighbours for the corresponding input location could 
+            not be found within the distance upper bound from the lookup table. 
+            The corresponding values in distNN are returned as inf or NP.inf
+
+    nnval   [numpy vector] nearest neighbour lookup values for the given input
+            locations. If remove_oob is not set to True, size of nnval is equal
+            to N, otherwise size of nnval is less than or equal
+            to N. In such a case, out of bound locations are
+            filled with oob_value. Corresponding values in distNN are returned 
+            as inf or NP.inf
+
+    distNN  [numpy vector] distance to the nearest neighbour in the lookup table
+            for the given input locations. If remove_oob is not set to True, size 
+            of distNN is equal to N (number of locations in ngbrof), otherwise 
+            size of distNN is less than or equal to N. In such 
+            a case, out of bound locations are filled with inf or NP.inf. 
+    ----------------------------------------------------------------------------
+    """
+
+    try:
+        ngbrin, val, ngbrin
+    except NameError:
+        raise NameError('ngbrin, val, and ngbrin must be specified for lookup operation.')
+
+    if not isinstance(ngbrin, NP.ndarray):
+        raise TypeError('ngbrin must be a numpy array')
+    if not isinstance(ngbrof, NP.ndarray):
+        raise TypeError('ngbrof must be a numpy array')
+    if not isinstance(val, NP.ndarray):
+        raise TypeError('val must be a numpy array')
+
+    if ngbrin.shape[0] != val.size:
+        raise ValueError('Number of locations (number of rows) in ngbrin must be the same as the number of elements in val')
+
+    if ngbrin.shape[1] != ngbrof.shape[1]:
+        raise ValueError('Number of coordinate axes of ngbrin and ngbrof must be equal')
+
+    if not isinstance(distance_ULIM, (int,float)):
+        raise TypeError('Search distance upper limit must be a scalar')
+    elif distance_ULIM <= 0.0:
+        raise ValueError('Search distance upper limit must be positive')
+    else:
+        distance_ULIM = float(distance_ULIM)
+
+    if tol is not None:
+        if isinstance(tol, (int, float)):
+            if tol < 0.0:
+                raise ValueError('tol value must be non-negative')
+            
+            ngbrin = ngbrin[NP.abs(val) >= tol,:]
+            val = val[NP.abs(val) >= tol]
+        else:
+            raise TypeError('tol must be a scalar integer or float')
+
+    kdt = KDT(ngbrin)
+    dist, ind = kdt.query(ngbrof, k=maxmatch, distance_upper_bound=distance_ULIM)
     nnval = NP.zeros(ind.size, dtype=val.dtype)
     nnval[dist < distance_ULIM] = val[ind[dist < distance_ULIM]]
     nnval[dist >= distance_ULIM] = oob_value
@@ -494,8 +650,8 @@ def lookup_1NN(ref, val, inp, distance_ULIM=NP.inf, oob_value=0.0,
             [scalar] A positive value indicating maximum number of input 
             locations (xin, yin) to be assigned. Default = None. If set to None, 
             all the input locations specified are assigned values. For instance,
-            to have only one input location to be populated per antenna, use
-            maxmatch=1. 
+            to have only one nearest neighbour from the lookup locations to be 
+            determined per input location, use maxmatch=1. 
 
     tol     [scalar] If set, only lookup data with abs(val) > tol will be 
             considered for nearest neighbour lookup. Default = None implies all
@@ -600,7 +756,7 @@ def find_1NN(ref, inp, distance_ULIM=NP.inf, remove_oob=True):
 
     """
     -----------------------------------------------------------------------------
-    Find the first nearest neighbour of input locations to a set of reference 
+    Find the first nearest neighbour of input locations from a set of reference 
     locations using KD-Trees nearest neighbour algorithm.
 
     Inputs:
@@ -671,19 +827,11 @@ def find_1NN(ref, inp, distance_ULIM=NP.inf, remove_oob=True):
 
     kdt = KDT(ref)
     distNN, refind = kdt.query(inp, k=1, distance_upper_bound=distance_ULIM)
-    inpind = NP.arange(refind.size) # in-bound indices
+    inpind = NP.arange(refind.size) # in-bound indices of input locations
     if remove_oob:
         inpind = inpind[distNN <= distance_ULIM]
         refind = refind[distNN <= distance_ULIM]
         distNN = distNN[distNN <= distance_ULIM]
-
-    # kdt = KDT(inp)
-    # distNN, inpind = kdt.query(ref, k=1, distance_upper_bound=distance_ULIM)
-    # refind = NP.arange(inpind.size) # in-bound indices
-    # if remove_oob:
-    #     inpind = inpind[distNN <= distance_ULIM]
-    #     refind = refind[distNN <= distance_ULIM]
-    #     distNN = distNN[distNN <= distance_ULIM]
 
     return inpind, refind, distNN
 
@@ -793,6 +941,122 @@ def find_1NN_pp(ref, inp, pid, outq, distance_ULIM=NP.inf, remove_oob=True):
 
     # print MP.current_process().name
     outq.put(outdict)
+
+#################################################################################
+
+def lookup_1NN_new(ngbrin, val, ngbrof, distance_ULIM=NP.inf, oob_value=0.0,
+                   remove_oob=True):
+
+    """
+    -----------------------------------------------------------------------------
+    Perform a lookup operation based on nearest neighbour algorithm using
+    KD-Trees when the lookup database and required coordinate locations are
+    specified. 
+
+    Inputs:
+
+    ngbrin [numpy array] locations of neighbours from which first nearest 
+           neighbours of locations in ngbrof must be found. MxK numpy array 
+           corresponding to M locations specified in K coordinates 
+    
+    val    [numpy array] array of M values at the ngbrin locations
+
+    ngbrof [numpy array] locations for which neighbours in locations specified
+           by ngbrin must be found. NxK array corresponding to N locations 
+           specified in K coordinates
+
+    distance_ULIM
+            [scalar] A positive number for the upper bound on distance while
+            searching for nearest neighbours. Neighbours outside of this upper
+            bound are not searched for. Default = NP.inf (infinite distance upper 
+            bound means nearest neighbours will be searched all the way out to 
+            infinite distance). Should be in the same units as x, y, xin and yin
+
+    oob_value
+            [scalar] Value to be returned at the location if the nearest
+            neighbour for the location is not found inside distance_ULIM.
+            Default = 0
+
+    remove_oob
+            [boolean] If set to True, results of nearest neighbour search and 
+            lookup are returned only for those input locations which have a 
+            neighbour within the distance upper bound. Locations with no 
+            neighbours inside the distance upper bound will not be in the 
+            returned results. Default = True. If set to False, even if no 
+            nearest neighbours are found within the distance upper bound, an
+            infinite distance and out of bound index from the lookup table are
+            returned.
+
+    Outputs: 
+
+    Returns a tuple of nearest neighbour lookup value, the index of nearest
+    neighbour location in the lookup table and nearest neighbour distance in 
+    the lookup table. The tuple consists of the following elements in this 
+    order. The number of pairs matched will be the lesser of those determined 
+    by distNN and the nearest match
+
+    ibind   [numpy vector] indices of the input locations (ngbrof) for which 
+            nearest neighbours were found from the lookup table. If remove_oob is 
+            not set to True, size of ibind is equal to N (the number of 
+            locations in ngbrof, otherwise size of ibind is less than or equal 
+            to N. Values of ibind equal to size of lookup table values indicates 
+            the nearest neighbours for the corresponding input location could 
+            not be found within the distance upper bound from the lookup table. 
+            The corresponding values in distNN are returned as inf or NP.inf
+
+    nnval   [numpy vector] nearest neighbour lookup values for the given input
+            locations. If remove_oob is not set to True, size of nnval is equal
+            to N, otherwise size of nnval is less than or equal
+            to N. In such a case, out of bound locations are
+            filled with oob_value. Corresponding values in distNN are returned 
+            as inf or NP.inf
+
+    distNN  [numpy vector] distance to the nearest neighbour in the lookup table
+            for the given input locations. If remove_oob is not set to True, size 
+            of distNN is equal to N (number of locations in ngbrof), otherwise 
+            size of distNN is less than or equal to N. In such 
+            a case, out of bound locations are filled with inf or NP.inf. 
+    ----------------------------------------------------------------------------
+    """
+
+    try:
+        ngbrin, val, ngbrin
+    except NameError:
+        raise NameError('ngbrin, val, and ngbrin must be specified for lookup operation.')
+
+    if not isinstance(ngbrin, NP.ndarray):
+        raise TypeError('ngbrin must be a numpy array')
+    if not isinstance(ngbrof, NP.ndarray):
+        raise TypeError('ngbrof must be a numpy array')
+    if not isinstance(val, NP.ndarray):
+        raise TypeError('val must be a numpy array')
+
+    if ngbrin.shape[0] != val.size:
+        raise ValueError('Number of locations (number of rows) in ngbrin must be the same as the number of elements in val')
+
+    if ngbrin.shape[1] != ngbrof.shape[1]:
+        raise ValueError('Number of coordinate axes of ngbrin and ngbrof must be equal')
+
+    if not isinstance(distance_ULIM, (int,float)):
+        raise TypeError('Search distance upper limit must be a scalar')
+    elif distance_ULIM <= 0.0:
+        raise ValueError('Search distance upper limit must be positive')
+    else:
+        distance_ULIM = float(distance_ULIM)
+
+    kdt = KDT(ngbrin)
+    dist, ind = kdt.query(ngbrof, k=1, distance_upper_bound=distance_ULIM)
+    nnval = NP.zeros(ind.size, dtype=val.dtype)
+    nnval[dist < distance_ULIM] = val[ind[dist < distance_ULIM]]
+    nnval[dist >= distance_ULIM] = oob_value
+    ibind = NP.arange(ind.size) # in-bound indices of ngbrof
+    distNN = dist
+    if remove_oob:
+        nnval = nnval[dist <= distance_ULIM]
+        ibind = ibind[dist <= distance_ULIM]
+        distNN = dist[dist <= distance_ULIM]
+
+    return ibind, nnval, distNN
 
 #################################################################################
 

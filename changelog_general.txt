@@ -1,3 +1,20 @@
+From 4742777:
+============
+
+In lookup_operations.py,
+
+(*) Add function lookup_1NN_new() with docstring. Tested.
+(*) Add function lookup_NN_new() with docstring. Needs serious
+development and testing
+(*) Rename input parameter file to outfile in function gen_lookup()
+to avoid confusion with python's in-built variable file. Update
+docstring accordingly
+(*) Rename input parameter file to infile in function read_lookup()
+to avoid confusion with python's in-built variable file. Update
+docstring accordingly
+(*) Minor change to docstring of find_1NN()
+(*) Remove commented lines in find_1NN()
+
 From a9bc243:
 ============
 
