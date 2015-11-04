@@ -1,3 +1,11 @@
+From e296dbd:
+============
+
+In my_operations.py,
+
+(*) Change some special character encoding in docstring to normal
+single quotes
+
 From 1c68102:
 ============
 
