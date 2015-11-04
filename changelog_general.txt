@@ -1,3 +1,13 @@
+From 1c68102:
+============
+
+In my_operations.py,
+
+(*) Add function healpix_interp_along_axis() with docstring that can
+interpolate using HEALPIX and SciPy routines along spherical angle and
+one other specified axis respectively
+(*) Remove import of ipdb module
+
 From 4742777:
 ============
 
