@@ -1,3 +1,13 @@
+From 12a1a76:
+============
+
+In catalog.py,
+
+(*) Add capability to member function subset() of class SkyModel to
+create subsets along position as well as spectral direction.
+(*) Add input keyword axis to member function subset() of class
+SkyModel, update docstring of member function and the class
+
 From e296dbd:
 ============
 
