@@ -1,7 +1,8 @@
 import numpy as NP
 import scipy as SP
 import my_DSP_modules as DSP
-import ipdb as PDB
+from scipy import interpolate
+import healpy as HP
 
 #################################################################################
 
@@ -371,7 +372,121 @@ def rms(inp, axis=None, filter_dict=None, mask=None, verbose=True):
     return rms
             
 #################################################################################
-            
-            
 
+def healpix_interp_along_axis(indata, theta_phi=None, inloc_axis=None,
+                              outloc_axis=None, axis=-1, kind='linear',
+                              bounds_error=True, fill_value=NP.nan,
+                              assume_sorted=False, nest=False):
 
+    """
+    -----------------------------------------------------------------------------
+    Interpolate healpix data to specified angular locations (HEALPIX 
+    interpolation) and along one other specified axis (usually frequency axis, 
+    for instance) via SciPy interpolation. Wraps HEALPIX and SciPy interpolations
+    into one routine.
+
+    Inputs:
+
+    indata      [numpy array] input data to be interpolated. Must be of shape 
+                (nhpy x nax1 x nax2 x ...). Currently works only for 
+                (nhpy x nax1). nhpy is a HEALPIX compatible npix
+
+    theta_phi   [numpy array] spherical angle locations (in radians) at which
+                the healpix data is to be interpolated to at each of the other 
+                given axes. It must be of size nang x 2 where nang is the number 
+                of spherical angle locations, 2 denotes theta and phi. If set to
+                None (default), no healpix interpolation is performed
+
+    inloc_axis  [numpy array] locations along the axis specified in axis (to be 
+                interpolated with SciPy) in which indata is specified. It 
+                should be of size nax1, nax2, ... or naxm. Currently it works 
+                only if set to nax1
+
+    outloc_axis [numpy array] locations along the axis specified in axis to be 
+                interpolated to with SciPy. The axis over which this 
+                interpolation is to be done is specified in axis. It must be of
+                size nout
+
+    axis        [integer] axis along which SciPy interpolation is to be done. 
+                If set to -1 (default), the interpolation happens over the last
+                axis. Since the first axis of indata is reserved for the healpix
+                pixels, axis must be set to 1 or above (upto indata.ndim-1).
+
+    kind        [str or int] Specifies the kind of interpolation as a 
+                string ('linear', 'nearest', 'zero', 'slinear', 'quadratic', 
+                'cubic' where 'slinear', 'quadratic' and 'cubic' refer to a 
+                spline interpolation of first, second or third order) or as an 
+                integer specifying the order of the spline interpolator to use. 
+                Default is 'linear'.
+
+    bounds_error 
+                [bool, optional] If True, a ValueError is raised any time 
+                interpolation is attempted on a value outside of the range of x 
+                (where extrapolation is necessary). If False, out of bounds 
+                values are assigned fill_value. By default, an error is raised.
+
+    fill_value  [float] If provided, then this value will be used to fill in 
+                for requested points outside of the data range. If not provided, 
+                then the default is NaN.
+
+    assume_sorted 
+                [bool] If False, values of x can be in any order and they are 
+                sorted first. If True, x has to be an array of monotonically 
+                increasing values.
+    
+    nest        [bool] if True, the is assumed to be in NESTED ordering.
+
+    Outputs:
+
+    HEALPIX interpolated and SciPy interpolated output. Will be of size
+    nang x ... x nout x ... x naxm. Currently returns an array of shape 
+    nang x nout
+    
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        indata
+    except NameError:
+        raise NameError('input data not specified')
+
+    if not isinstance(indata, NP.ndarray):
+        raise TypeError('input data must be a numpy array')
+
+    if theta_phi is not None:
+        if not isinstance(theta_phi, NP.ndarray):
+            raise TypeError('output locations must be a numpy array')
+
+        if theta_phi.ndim != 2:
+            raise ValueError('Output locations must be a 2D array')
+
+    if axis == -1:
+        axis = indata.ndim - 1
+
+    if (axis < 1) or (axis >= indata.ndim):
+        raise ValueError('input axis out of range')
+
+    if theta_phi is not None:
+        intermediate_data_shape = list(indata.shape)
+        intermediate_data_shape[0] = theta_phi.shape[0]
+        intermediate_data_shape = tuple(intermediate_data_shape)
+        
+        intermediate_data = NP.zeros(intermediate_data_shape, dtype=NP.float32)
+        for ax in range(1,indata.ndim):
+            for i in xrange(indata.shape[ax]):
+                intermediate_data[:,i] = HP.get_interp_val(indata[:,i], theta_phi[:,0], theta_phi[:,1], nest=nest)
+    else:
+        intermediate_data = NP.copy(indata)
+
+    if outloc_axis is not None:
+        if inloc_axis is not None:
+            interp_func = interpolate.interp1d(inloc_axis, intermediate_data, axis=axis, kind=kind, bounds_error=bounds_error, fill_value=fill_value, assume_sorted=assume_sorted)
+            outdata = interp_func(outloc_axis)
+        else:
+            raise ValueError('input inloc_axis not specified')
+    else:
+        outdata = intermediate_data
+
+    return outdata
+
+#################################################################################

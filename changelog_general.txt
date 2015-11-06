@@ -1,3 +1,40 @@
+From 15b9777:
+============
+
+In catalog.py,
+
+(*) Add member function save() to class SkyModel with docstring
+(*) Update docstring of class SkyModel with descriptions of member
+functions to_healpix() and save()
+
+From 12a1a76:
+============
+
+In catalog.py,
+
+(*) Add capability to member function subset() of class SkyModel to
+create subsets along position as well as spectral direction.
+(*) Add input keyword axis to member function subset() of class
+SkyModel, update docstring of member function and the class
+
+From e296dbd:
+============
+
+In my_operations.py,
+
+(*) Change some special character encoding in docstring to normal
+single quotes
+
+From 1c68102:
+============
+
+In my_operations.py,
+
+(*) Add function healpix_interp_along_axis() with docstring that can
+interpolate using HEALPIX and SciPy routines along spherical angle and
+one other specified axis respectively
+(*) Remove import of ipdb module
+
 From 4742777:
 ============
 
