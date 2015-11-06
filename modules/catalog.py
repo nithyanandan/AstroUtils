@@ -2,7 +2,8 @@ import numpy as NP
 import healpy as HP
 from astropy.table import Table
 from astropy.io import fits, ascii
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import Angle, SkyCoord
+from astropy import units
 import scipy.constants as FCNST
 import matplotlib.pyplot as PLT
 import matplotlib.colors as PLTC
@@ -124,6 +125,11 @@ class SkyModel(object):
     generate_spectrum()
                    Generate and return a spectrum from functional spectral 
                    parameters
+
+    to_healpix()   Convert catalog to a healpix format of given nside at 
+                   specified frequencies.
+
+    save()         Save sky model to the specified output file
     ------------------------------------------------------------------------------
     """
 
@@ -721,8 +727,57 @@ class SkyModel(object):
 
     ############################################################################
 
-        
-        
+    def save(self, outfile, fileformat='ascii'):
 
-            
-            
+        """
+        -------------------------------------------------------------------------
+        Save sky model to the specified output file
+
+        Inputs:
+
+        outfile     [string] Output filename including full path
+
+        fileformat  [string] format for the output. Accepted values are 'ascii'
+                    (default). Currently works only with 'ascii'. Needs serious
+                    development for other formats
+        -------------------------------------------------------------------------
+        """
+
+        try:
+            outfile
+        except NameError:
+            raise NameError('outfile not specified')
+
+        frmts = {}
+        frmts['ID'] = '%s19'
+        frmts['RA (deg)'] = '%10.6f'
+        frmts['DEC (deg)'] = '%+10.6f'
+        frmts['S (Jy)'] = '%8.3f'
+        frmts['FREQ (MHz)'] = '%12.7f'
+
+        data_dict = {}
+        if self.coords == 'radec':
+            if self.epoch == 'B1950':
+                data_dict['ID'] = NP.char.replace('B'+NP.char.array(Angle(self.location[:,0],unit=units.degree).to_string(unit=units.hour,sep=':',alwayssign=False,pad=True,precision=2))+NP.char.array(Angle(self.location[:,1],unit=units.degree).to_string(unit=units.degree,sep=':',alwayssign=True,pad=True,precision=1)), ':', '')
+            else:
+                data_dict['ID'] = NP.char.replace('J'+NP.char.array(Angle(self.location[:,0],unit=units.degree).to_string(unit=units.hour,sep=':',alwayssign=False,pad=True,precision=2))+NP.char.array(Angle(self.location[:,1],unit=units.degree).to_string(unit=units.degree,sep=':',alwayssign=True,pad=True,precision=1)), ':', '')                
+        data_dict['RA (deg)'] = self.location[:,0]
+        data_dict['DEC (deg)'] = self.location[:,1]
+        data_dict['S (Jy)'] = self.spec_parms['flux-scale']
+        data_dict['FREQ (MHz)'] = self.spec_parms['freq-ref']/1e6 # in MHz
+        if self.spec_type == 'func':
+            if NP.all(self.spec_parms['name'] == 'power-law'):
+                data_dict['SPINDEX'] = self.spec_parms['power-law-index']
+                frmts['SPINDEX'] = '%0.2f'
+                field_names = ['ID', 'RA (deg)', 'DEC (deg)', 'S (Jy)', 'FREQ (MHz)', 'SPINDEX']
+            else:
+                field_names = ['ID', 'RA (deg)', 'DEC (deg)', 'S (Jy)', 'FREQ (MHz)']
+        else:
+            field_names = ['ID', 'RA (deg)', 'DEC (deg)', 'S (Jy)', 'FREQ (MHz)']
+
+        tbdata = Table(data_dict, names=field_names)
+        ascii.write(tbdata, output=outfile, format='fixed_width_two_line', formats=frmts, delimiter=' ', delimiter_pad=' ', bookend=False)
+
+    ############################################################################
+
+        
