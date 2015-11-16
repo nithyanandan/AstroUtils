@@ -405,7 +405,8 @@ def healpix_interp_along_axis(indata, theta_phi=None, inloc_axis=None,
     outloc_axis [numpy array] locations along the axis specified in axis to be 
                 interpolated to with SciPy. The axis over which this 
                 interpolation is to be done is specified in axis. It must be of
-                size nout
+                size nout. If this is set exactly equal to inloc_axis, no 
+                interpolation along this axis is performed
 
     axis        [integer] axis along which SciPy interpolation is to be done. 
                 If set to -1 (default), the interpolation happens over the last
@@ -480,8 +481,14 @@ def healpix_interp_along_axis(indata, theta_phi=None, inloc_axis=None,
 
     if outloc_axis is not None:
         if inloc_axis is not None:
-            interp_func = interpolate.interp1d(inloc_axis, intermediate_data, axis=axis, kind=kind, bounds_error=bounds_error, fill_value=fill_value, assume_sorted=assume_sorted)
-            outdata = interp_func(outloc_axis)
+            outloc_axis = outloc_axis.flatten()
+            inloc_axis = inloc_axis.flatten()
+            eps = 1e-8
+            if (outloc_axis.size == inloc_axis.size) and (NP.abs(inloc_axis-outloc_axis).max() <= eps):
+                outdata = intermediate_data
+            else:
+                interp_func = interpolate.interp1d(inloc_axis, intermediate_data, axis=axis, kind=kind, bounds_error=bounds_error, fill_value=fill_value, assume_sorted=assume_sorted)
+                outdata = interp_func(outloc_axis)
         else:
             raise ValueError('input inloc_axis not specified')
     else:

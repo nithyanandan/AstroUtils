@@ -1,3 +1,12 @@
+From 3b82651:
+============
+
+In my_operations.py,
+
+(*) Add more checking to decide whether to interpolate along the
+specified axis or not in healpix_interp_along_axis(). Update
+docstring accordingly
+
 From 15b9777:
 ============
 
