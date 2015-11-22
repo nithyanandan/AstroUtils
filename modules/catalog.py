@@ -763,9 +763,9 @@ class SkyModel(object):
                 data_dict['ID'] = NP.char.replace('J'+NP.char.array(Angle(self.location[:,0],unit=units.degree).to_string(unit=units.hour,sep=':',alwayssign=False,pad=True,precision=2))+NP.char.array(Angle(self.location[:,1],unit=units.degree).to_string(unit=units.degree,sep=':',alwayssign=True,pad=True,precision=1)), ':', '')                
         data_dict['RA (deg)'] = self.location[:,0]
         data_dict['DEC (deg)'] = self.location[:,1]
-        data_dict['S (Jy)'] = self.spec_parms['flux-scale']
-        data_dict['FREQ (MHz)'] = self.spec_parms['freq-ref']/1e6 # in MHz
         if self.spec_type == 'func':
+            data_dict['S (Jy)'] = self.spec_parms['flux-scale']
+            data_dict['FREQ (MHz)'] = self.spec_parms['freq-ref']/1e6 # in MHz
             if NP.all(self.spec_parms['name'] == 'power-law'):
                 data_dict['SPINDEX'] = self.spec_parms['power-law-index']
                 frmts['SPINDEX'] = '%0.2f'
@@ -773,7 +773,8 @@ class SkyModel(object):
             else:
                 field_names = ['ID', 'RA (deg)', 'DEC (deg)', 'S (Jy)', 'FREQ (MHz)']
         else:
-            field_names = ['ID', 'RA (deg)', 'DEC (deg)', 'S (Jy)', 'FREQ (MHz)']
+            data_dict['FREQ (MHz)'] = self.frequency.flatten()[self.frequency.size/2] / 1e6 + NP.zeros(self.location.shape[0]) # MHz
+            field_names = ['ID', 'RA (deg)', 'DEC (deg)', 'FREQ (MHz)']
 
         tbdata = Table(data_dict, names=field_names)
         ascii.write(tbdata, output=outfile, format='fixed_width_two_line', formats=frmts, delimiter=' ', delimiter_pad=' ', bookend=False)

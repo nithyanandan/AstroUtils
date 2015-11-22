@@ -1,3 +1,11 @@
+From 158e87b:
+============
+
+In catalog.py,
+
+(*) Add value checking in save() member function of class SkyModel
+before saving certain attributes of the class
+
 From 3b82651:
 ============
 
