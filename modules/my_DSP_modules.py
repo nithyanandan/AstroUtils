@@ -1235,7 +1235,7 @@ def pfbshape(freq):
     
 #################################################################################  
 
-def fft_filter(inp, axis=None, wts=None, width=None, passband='low', verbose=True):    
+def fft_filter(inp, axis=None, wts=None, width=None, passband='low', verbose=True):
     
     """
     -----------------------------------------------------------------------------

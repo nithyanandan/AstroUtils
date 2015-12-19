@@ -1,8 +1,9 @@
 import numpy as NP
 import scipy as SP
-import my_DSP_modules as DSP
 from scipy import interpolate
 import healpy as HP
+import my_DSP_modules as DSP
+import lookup_operations as LKP
 
 #################################################################################
 
@@ -487,8 +488,52 @@ def healpix_interp_along_axis(indata, theta_phi=None, inloc_axis=None,
             if (outloc_axis.size == inloc_axis.size) and (NP.abs(inloc_axis-outloc_axis).max() <= eps):
                 outdata = intermediate_data
             else:
-                interp_func = interpolate.interp1d(inloc_axis, intermediate_data, axis=axis, kind=kind, bounds_error=bounds_error, fill_value=fill_value, assume_sorted=assume_sorted)
-                outdata = interp_func(outloc_axis)
+                if kind == 'fft':
+                    df_inp = NP.mean(NP.diff(inloc_axis))
+                    df_out = NP.mean(NP.diff(outloc_axis))
+                    ntau = df_inp / df_out * inloc_axis.size
+                    ntau = NP.round(ntau).astype(int)
+                    tau_inp = DSP.spectral_axis(inloc_axis.size, delx=df_inp, shift=True)
+                    fftinp = NP.fft.fft(intermediate_data, axis=axis)
+                    fftinp_shifted = NP.fft.fftshift(fftinp, axes=axis)
+                    if fftinp.size % 2 == 0:
+                        fftinp_shifted[0,0] = 0.0
+                    
+                    npad = ntau - inloc_axis.size
+                    if npad % 2 == 0:
+                        npad_before = npad/2
+                        npad_after = npad/2
+                    else:
+                        npad_before = npad/2 + 1
+                        npad_after = npad/2
+
+                    fftinp_shifted_padded = NP.pad(fftinp_shifted, [(0,0), (npad_before, npad_after)], mode='constant')
+                    fftinp_padded = NP.fft.ifftshift(fftinp_shifted_padded, axes=axis)
+                    ifftout = NP.fft.ifft(fftinp_padded, axis=axis) * (1.0 * ntau / inloc_axis.size)
+                    eps_imag = 1e-10
+                    if NP.any(NP.abs(ifftout.imag) > eps_imag):
+                        raise ValueError('Significant imaginary component has been introduced unintentionally during the FFT based interpolation. Debug the code.')
+                    else:
+                        ifftout = ifftout.real
+                    fout = DSP.spectral_axis(ntau, delx=tau_inp[1]-tau_inp[0], shift=True)
+                    fout -= fout.min()
+                    fout += inloc_axis.min() 
+                    ind_outloc, ind_fout, dfreq = LKP.find_1NN(fout.reshape(-1,1), outloc_axis.reshape(-1,1), distance_ULIM=0.5*(fout[1]-fout[0]), remove_oob=True)
+                    outdata = ifftout[:,ind_fout]
+                    
+                    # npad = 2 * (outloc_axis.size - inloc_axis.size)
+                    # dt_inp = DSP.spectral_axis(2*inloc_axis.size, delx=inloc_axis[1]-inloc_axis[0], shift=True)
+                    # dt_out = DSP.spectral_axis(2*outloc_axis.size, delx=outloc_axis[1]-outloc_axis[0], shift=True)
+                    # fftinp = NP.fft.fft(NP.pad(intermediate_data, [(0,0), (0,inloc_axis.size)], mode='constant'), axis=axis) * (1.0 * outloc_axis.size / inloc_axis.size)
+                    # fftinp = NP.fft.fftshift(fftinp, axes=axis)
+                    # fftinp[0,0] = 0.0  # Blank out the N/2 element for conjugate symmetry
+                    # fftout = NP.pad(fftinp, [(0,0), (npad/2, npad/2)], mode='constant')
+                    # fftout = NP.fft.ifftshift(fftout, axes=axis)
+                    # outdata = NP.fft.ifft(fftout, axis=axis)
+                    # outdata = outdata[0,:outloc_axis.size]
+                else:
+                    interp_func = interpolate.interp1d(inloc_axis, intermediate_data, axis=axis, kind=kind, bounds_error=bounds_error, fill_value=fill_value, assume_sorted=assume_sorted)
+                    outdata = interp_func(outloc_axis)
         else:
             raise ValueError('input inloc_axis not specified')
     else:
