@@ -1,3 +1,12 @@
+From 86f12df (master):
+=====================
+
+(*) Add writer_module.py to git repo
+
+In my_operations.py,
+
+(*) Add a comment to a line in function healpix_interp_along_axis()
+
 From f5262d8:
 ============
 

@@ -497,8 +497,7 @@ def healpix_interp_along_axis(indata, theta_phi=None, inloc_axis=None,
                     fftinp = NP.fft.fft(intermediate_data, axis=axis)
                     fftinp_shifted = NP.fft.fftshift(fftinp, axes=axis)
                     if fftinp.size % 2 == 0:
-                        fftinp_shifted[0,0] = 0.0
-                    
+                        fftinp_shifted[0,0] = 0.0 # Blank out the N/2 element for conjugate symmetry
                     npad = ntau - inloc_axis.size
                     if npad % 2 == 0:
                         npad_before = npad/2
