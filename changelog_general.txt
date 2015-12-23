@@ -1,3 +1,12 @@
+From 64fa4b3 (master):
+=====================
+
+In my_operations.py,
+
+(*) Fix bug in function healpix_interp_along_axis() by zeroing an
+entire column to ensure the inverse FFT is real while using FFT-based
+interpolation
+
 From 86f12df (master):
 =====================
 
