@@ -449,7 +449,7 @@ class SkyModel(object):
         Inputs:
 
         frequency  [scalar or numpy array] Frequencies at which the spectrum at
-                   all object lcoations is to be created. Must be in same units
+                   all object locations is to be created. Must be in same units
                    as the attribute frequency and values under key 'freq-ref' 
                    of attribute spec_parms. If not provided (default=None), a 
                    spectrum is generated for all the frequencies specified in 

@@ -1,3 +1,15 @@
+From ee57554 (master):
+=====================
+
+In constants.py,
+
+(*) Add value for sidereal day duration
+
+In catalog.py,
+
+(*) Minor change in docstring in member function generate_spectrum()
+of class SkyModel
+
 From 64fa4b3 (master):
 =====================
 
