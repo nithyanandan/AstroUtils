@@ -1,3 +1,12 @@
+From 9a029b0 (master):
+=====================
+
+In my_DSP_modules.py,
+
+(*) Add keywords area_normalize and power_normalize in function
+window_N2width(). Add conditions to compute fractional width
+depending on these keywords. Update docstring accordingly
+
 From dc62745 (master):
 =====================
 
