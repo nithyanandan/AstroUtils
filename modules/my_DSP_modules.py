@@ -309,7 +309,8 @@ def shaping(N_samples, fraction=1.0, shape='rect', area_normalize=False,
 #################################################################################
 
 def windowing(N_window, shape='rect', pad_width=0, pad_value=0.0, 
-              area_normalize=False, peak=None, verbose=True, centering=True):
+              area_normalize=False, peak=None, power_normalize=False,
+              verbose=True, centering=True):
     
     """
     -----------------------------------------------------------------------------
@@ -331,12 +332,18 @@ def windowing(N_window, shape='rect', pad_width=0, pad_value=0.0,
                  non-negative. Padding values are provided in pad_values.
 
     area_normalize
-                 [Boolean] True mean re-normalize the window to have unit
+                 [Boolean] True means re-normalize the window to have unit
                  area. False means no re-normalization is performed. Cannot be
-                 set simulataneously if peak is set.
+                 set simulataneously if peak or power_normalize is set.
 
     peak         [Float] If set, rescale the window so the peak is set to the
-                 specified value. 
+                 specified value. Only one of peak, area_normalize or 
+                 power_normalize can be set
+
+    power_normalize
+                 [Boolean] True means re-normalize the window to have unit
+                 power. False means no re-normalization is performed. Cannot be
+                 set simulataneously if peak or area_normalize is set. 
 
     verbose      [Boolean] If set, print progress and/or diagnostic messages.
 
@@ -357,15 +364,21 @@ def windowing(N_window, shape='rect', pad_width=0, pad_value=0.0,
     except NameError:
         raise NameError('Window size undefined. Aborting windowing().')
 
-    if (area_normalize) and (peak is not None):
-        raise ValueError('Both area_normalize and peak cannot be set at the same time in windowing().')
-
     if not isinstance(area_normalize, bool):
         raise TypeError('area_normalize should be a boolean value. Aborting windowing().')
+
+    if not isinstance(power_normalize, bool):
+        raise TypeError('power_normalize should be a boolean value. Aborting windowing().')
 
     if peak is not None:
         if not isinstance(peak, (int, float)):
             raise ValueError('Peak should be a scalar value. Aborting windowing().')
+
+    num_norms = area_normalize + power_normalize + (peak is not None)
+    if num_norms > 1:
+        raise ValueError('Only one of peak, area_normalize or power_normalize can be set at the same time in windowing().')
+    # if (area_normalize) and (peak is not None):
+    #     raise ValueError('Both area_normalize and peak cannot be set at the same time in windowing().')
 
     if not isinstance(N_window, (int, float)):
         raise TypeError('N_window should be a positive integer. Aborting windowing().')
@@ -432,12 +445,18 @@ def windowing(N_window, shape='rect', pad_width=0, pad_value=0.0,
         window /= area
         if verbose:
             print '\tRenormalized the shaping window to unit area.'
+    elif power_normalize:
+        powr = NP.sum(NP.abs(window)**2)
+        window /= NP.sqrt(powr)
+        if verbose:
+            print '\tRenormalized the shaping window to unit power.'
 
     return window
 
 #################################################################################
 
-def window_N2width(n_window=None, shape='rect'):
+def window_N2width(n_window=None, shape='rect', area_normalize=True,
+                   power_normalize=False):
 
     """
     -----------------------------------------------------------------------------
@@ -452,6 +471,15 @@ def window_N2width(n_window=None, shape='rect'):
               (rectangular, default), 'bnw' (Blackman-Nuttall) and 'bhw' 
               (Blackman-Harris)
 
+    area_normalize
+              [Boolean] True gives fractional width relative to a 
+              rectangular by computing area under window. One and only one 
+              of area_normalize or power_normalize can bet set
+
+    power_normalize
+              [Boolean] True gives fractional width relative to a 
+              rectangular by computing power under window. One and only one 
+              of area_normalize or power_normalize can bet set
     Output:
 
     frac_width is a fraction of the total number of samples. Thus the effective
@@ -467,15 +495,23 @@ def window_N2width(n_window=None, shape='rect'):
     elif n_window <= 0:
         raise ValueError('Number of samples must be positive')
 
+    num_norms = area_normalize + power_normalize
+    if num_norms != 1:
+        raise ValueError('One and only one of area_normalize or power_normalize can be set at the same time.')
+
     if not isinstance(shape, str):
         raise TypeError('Window shape must be a string')
     elif shape not in ['rect', 'RECT', 'bnw', 'BNW', 'bhw', 'BHW']:
         raise ValueError('Invalid window shape specified')
 
     if shape in ['rect', 'RECT', 'bnw', 'BNW', 'bhw', 'BHW']:
-        window = windowing(n_window, shape=shape)
-        
-    frac_width = NP.sum(window)/n_window
+        window = windowing(n_window, shape=shape, peak=None,
+                           area_normalize=False, power_normalize=False)
+
+    if area_normalize:
+        frac_width = NP.sum(window/window.max())/n_window
+    elif power_normalize:
+        frac_width = NP.sqrt(NP.sum((window/window.max())**2)/n_window)
 
     return frac_width
 
@@ -1235,7 +1271,7 @@ def pfbshape(freq):
     
 #################################################################################  
 
-def fft_filter(inp, axis=None, wts=None, width=None, passband='low', verbose=True):    
+def fft_filter(inp, axis=None, wts=None, width=None, passband='low', verbose=True):
     
     """
     -----------------------------------------------------------------------------

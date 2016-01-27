@@ -1,3 +1,76 @@
+From 9a029b0 (master):
+=====================
+
+In my_DSP_modules.py,
+
+(*) Add keywords area_normalize and power_normalize in function
+window_N2width(). Add conditions to compute fractional width
+depending on these keywords. Update docstring accordingly
+
+From dc62745 (master):
+=====================
+
+In my_DSP_modules.py,
+
+(*) Add normalization by power by using keyword input power_normalize
+in function windowing(). Update docstring accordingly
+
+From ee57554 (master):
+=====================
+
+In constants.py,
+
+(*) Add value for sidereal day duration
+
+In catalog.py,
+
+(*) Minor change in docstring in member function generate_spectrum()
+of class SkyModel
+
+From 64fa4b3 (master):
+=====================
+
+In my_operations.py,
+
+(*) Fix bug in function healpix_interp_along_axis() by zeroing an
+entire column to ensure the inverse FFT is real while using FFT-based
+interpolation
+
+From 86f12df (master):
+=====================
+
+(*) Add writer_module.py to git repo
+
+In my_operations.py,
+
+(*) Add a comment to a line in function healpix_interp_along_axis()
+
+From f5262d8:
+============
+
+In my_operations.py,
+
+(*) Modify FFT-based interpolation functionality in
+healpix_interp_along_axis()
+(*) Import lookup_operations module
+
+From 158e87b:
+============
+
+In catalog.py,
+
+(*) Add value checking in save() member function of class SkyModel
+before saving certain attributes of the class
+
+From 3b82651:
+============
+
+In my_operations.py,
+
+(*) Add more checking to decide whether to interpolate along the
+specified axis or not in healpix_interp_along_axis(). Update
+docstring accordingly
+
 From 15b9777:
 ============
 
