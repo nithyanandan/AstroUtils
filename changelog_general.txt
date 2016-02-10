@@ -1,3 +1,13 @@
+From ca84415 (master):
+=====================
+
+In my_DSP_modules.py,
+
+(*) Add keyword input method in function downsampler(). Update
+docstring accordingly
+(*) Add ability to function downsampler() to resample based on both
+FFT-based and interpolation-based methods
+
 From 9a029b0 (master):
 =====================
 

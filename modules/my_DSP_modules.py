@@ -3,7 +3,6 @@ from scipy import signal
 from scipy import interpolate
 import my_operations as OPS
 import lookup_operations as LKP
-import ipdb as PDB
 
 #################################################################################
 
@@ -28,7 +27,7 @@ def FT1D(inp, ax=-1, use_real=False, shift=False, inverse=False, verbose=True):
     shift:      [Boolean] If True, shift the result to make the zeroth component
                 move to the center. Default=False
 
-    inverse:    [Boolean] If True, compute the inverse FFT. If False, compute the
+    inverse:    [olean] If True, compute the inverse FFT. If False, compute the
                 FFT. Default=False
 
     oututs:    
@@ -549,8 +548,8 @@ def window_N2width(n_window=None, shape='rect', area_normalize=True,
 
 #################################################################################
 
-def downsampler(inp, factor, axis=-1, verbose=True, kind='linear',
-                fill_value=NP.nan):
+def downsampler(inp, factor, axis=-1, verbose=True, method='interp',
+                kind='linear', fill_value=NP.nan):
 
     """
     -----------------------------------------------------------------------------
@@ -576,10 +575,17 @@ def downsampler(inp, factor, axis=-1, verbose=True, kind='linear',
                   diagnostic messages. If False, will suppress printing such
                   messages. Default = True
 
-    kind          [string] Spcifies the kind of interpolation. This is used only
-                  if factor is not an integer thus requiring interpolation. 
-                  Accepted values are 'linear', 'quadratic' and 'cubic'.
-                  Default = 'linear'
+    method        [string] Specifies the method for resampling. Accepted values
+                  are 'FFT' and 'interp' (default) for FFT-based and 
+                  interpolation based techniques respectively. If method chosen
+                  is 'interp' then value in input keyword kind determines the
+                  the kind of interpolation. 
+
+    kind          [string] Spcifies the kind of interpolation. Applies only if 
+                  value of keyword input method is set to 'interp'. This is 
+                  used only if factor is not an integer thus requiring 
+                  interpolation. Accepted values are 'linear', 'quadratic' and 
+                  'cubic'. Default = 'linear'
 
     fill_value    [scalar] Value to fill locations outside the index range of 
                   input array. Default = NaN
@@ -607,31 +613,33 @@ def downsampler(inp, factor, axis=-1, verbose=True, kind='linear',
     if factor < 1.0:
         raise ValueError('Downsampling factor must be greater than 1.')
 
-    if len(inp.shape) < 2:
-        inp = inp.reshape(1,-1)
+    # if inp.ndim < 2:
+    #     inp = inp.reshape(1,-1)
 
-    if (axis <= -len(inp.shape)) or (axis > len(inp.shape)):
+    if (axis < -inp.ndim) or (axis > inp.ndim):
         raise IndexError('The axis specified does not exist in the input. Aborting downsampler().')
 
-    if len(inp.shape) > 8:
+    if inp.ndim > 8:
         raise ValueError('The routine cannot handle inputs with more than 8 dimensions. Aborting downsampler().')
 
-    axis = range(len(inp.shape))[axis]
+    axis = range(inp.ndim)[axis]
     if (factor % 1) == 0:
         factor = int(factor)
-        if len(inp.shape) == 2:
+        if inp.ndim == 1:
+            return inp[::factor]
+        elif inp.ndim == 2:
             if (axis + 8) % 8 == 0:
                 return inp[::factor,:]
             elif (axis + 8) % 8 == 1:
                 return inp[:,::factor]
-        elif len(inp.shape) == 3:
+        elif inp.ndim == 3:
             if (axis + 8) % 8 == 0:
                 return inp[::factor,:,:]
             elif (axis + 8) % 8 == 1:
                 return inp[:,::factor,:]
             elif (axis + 8) % 8 == 2:
                 return inp[:,:,::factor]
-        elif len(inp.shape) == 4:
+        elif inp.ndim == 4:
             if (axis + 8) % 8 == 0:
                 return inp[::factor,:,:,:]
             elif (axis + 8) % 8 == 1:
@@ -640,7 +648,7 @@ def downsampler(inp, factor, axis=-1, verbose=True, kind='linear',
                 return inp[:,:,::factor,:]
             elif (axis + 8) % 8 == 3:
                 return inp[:,:,:,::factor]
-        elif len(inp.shape) == 5:
+        elif inp.ndim == 5:
             if (axis + 8) % 8 == 0:
                 return inp[::factor,:,:,:,:]
             elif (axis + 8) % 8 == 1:
@@ -651,7 +659,7 @@ def downsampler(inp, factor, axis=-1, verbose=True, kind='linear',
                 return inp[:,:,:,::factor,:]
             elif (axis + 8) % 8 == 4:      
                 return inp[:,:,:,:,::factor]
-        elif len(inp.shape) == 6:
+        elif inp.ndim == 6:
             if (axis + 8) % 8 == 0:
                 return inp[::factor,:,:,:,:,:]
             elif (axis + 8) % 8 == 1:
@@ -664,7 +672,7 @@ def downsampler(inp, factor, axis=-1, verbose=True, kind='linear',
                 return inp[:,:,:,:,::factor,:]
             elif (axis + 8) % 8 == 5:      
                 return inp[:,:,:,:,:,::factor]
-        elif len(inp.shape) == 7:
+        elif inp.ndim == 7:
             if (axis + 8) % 8 == 0:
                 return inp[::factor,:,:,:,:,:,:]
             elif (axis + 8) % 8 == 1:
@@ -679,7 +687,7 @@ def downsampler(inp, factor, axis=-1, verbose=True, kind='linear',
                 return inp[:,:,:,:,:,::factor,:]
             elif (axis + 8) % 8 == 6:      
                 return inp[:,:,:,:,:,:,::factor]
-        elif len(inp.shape) == 8:
+        elif inp.ndim == 8:
             if (axis + 8) % 8 == 0:
                 return inp[::factor,:,:,:,:,:,:,:]
             elif (axis + 8) % 8 == 1:
@@ -697,16 +705,24 @@ def downsampler(inp, factor, axis=-1, verbose=True, kind='linear',
             elif (axis + 8) % 8 == 7:      
                 return inp[:,:,:,:,:,:,:,::factor]
     else:
-        if verbose:
-            print 'Determining the interpolating function for downsampling.'
-        intpfunc = interpolate.interp1d(NP.arange(inp.shape[axis]), inp,
-                                        kind=kind, fill_value=fill_value,
-                                        axis=axis) 
-        tol = 1e-10
-        reqd_inds = NP.arange(0, inp.shape[axis]-1+tol, factor)
+        if method == 'interp':
+            if verbose:
+                print 'Determining the interpolating function for downsampling.'
+            intpfunc = interpolate.interp1d(NP.arange(inp.shape[axis]), inp,
+                                            kind=kind, fill_value=fill_value,
+                                            axis=axis) 
+            tol = 1e-10
+            reqd_inds = NP.arange(0, inp.shape[axis]-1+tol, factor)
+            result = intpfunc(reqd_inds)
+        elif method in ['FFT', 'fft']:
+            nout = NP.round(inp.shape[axis] / factor).astype(int)
+            result = signal.resample(inp, nout, t=None, axis=axis, window=None)
+        else:
+            raise ValueError('Invalid method specified for downsampling')
+
         if verbose:
             print 'Returning the downsampled data.'
-        return intpfunc(reqd_inds)
+        return result
 
 #################################################################################
 
