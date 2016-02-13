@@ -1,3 +1,13 @@
+From de4ac5a (master):
+=====================
+
+In my_DSP_modules.py,
+
+(*) Add function window_fftpow() to compute window functions of
+specified shapes whose FFT is raised to a given power. In the
+original domain this can be considered as multiple convolutions
+of the power is an integer.
+
 From ca84415 (master):
 =====================
 

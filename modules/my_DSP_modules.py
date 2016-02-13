@@ -3,6 +3,7 @@ from scipy import signal
 from scipy import interpolate
 import my_operations as OPS
 import lookup_operations as LKP
+import ipdb as PDB
 
 #################################################################################
 
@@ -433,6 +434,272 @@ def windowing(N_window, shape='rect', pad_width=0, pad_value=0.0,
                 window = NP.pad(win, (1, pad_width), mode='constant', constant_values=(pad_value, pad_value))
             else:
                 window = NP.pad(win, (NP.ceil(0.5*(pad_width+1)), NP.floor(0.5*(pad_width+1))), mode='constant', constant_values=(pad_value, pad_value))
+
+    if peak is not None:
+        window *= peak/NP.amax(NP.abs(window))
+        if verbose:
+            print '\tRescaled the shaping window to peak value.'
+    elif area_normalize:
+        # area = NP.trapz(window) # Beware that NP.trapz could differ from NP.cumsum due to edge effects. Sufficient padding will make them converge
+        area = NP.sum(window) # Using sum is preferable to using trapz although less accurate especially when FFT is going to be involved later on.
+        window /= area
+        if verbose:
+            print '\tRenormalized the shaping window to unit area.'
+    elif power_normalize:
+        powr = NP.sum(NP.abs(window)**2)
+        window /= NP.sqrt(powr)
+        if verbose:
+            print '\tRenormalized the shaping window to unit power.'
+
+    return window
+
+#################################################################################
+
+def window_fftpow(N_window, shape='rect', pad_width=0, pad_value=0.0,
+                  fftpow=1.0, area_normalize=False, peak=None,
+                  power_normalize=False, verbose=True, centering=True):
+    
+    """
+    -----------------------------------------------------------------------------
+    Routine to produce window functions including ability to raise the FFT to a
+    given power
+
+    Inputs:
+
+    N_window     [Integer] Number of samples in the actual window. Should be
+                 positive
+
+    Keyword inputs:
+
+    shape        [string] Shape type. Currently allowed values are 'rect',
+                 'bnw' and 'bhw' for rectangular, Blackman-Nuttall and 
+                 Blackman-Harris windows respectively
+
+    pad_width    [scalar integer] Number of padding samples. it has to be 
+                 non-negative. Padding values are provided in pad_values.
+
+    fftpow       [scalar] The FFT of the window will be raised to this power.
+                 Must be positive. Default = 1.0
+
+    area_normalize
+                 [Boolean] True means re-normalize the window to have unit
+                 area. False means no re-normalization is performed. Cannot be
+                 set simulataneously if peak or power_normalize is set.
+
+    peak         [Float] If set, rescale the window so the peak is set to the
+                 specified value. Only one of peak, area_normalize or 
+                 power_normalize can be set
+
+    power_normalize
+                 [Boolean] True means re-normalize the window to have unit
+                 power. False means no re-normalization is performed. Cannot be
+                 set simulataneously if peak or area_normalize is set. 
+
+    verbose      [Boolean] If set, print progress and/or diagnostic messages.
+
+    centering    [Boolean] If set to True, centers the window with close to 
+                 symmetric on either side. If False, padding is done on the 
+                 right side. Default = True
+
+    Output:
+
+    window       [Numpy array] window containing the required shape and padding
+                 if pad_width > 0
+    
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        N_window
+    except NameError:
+        raise NameError('Window size undefined. Aborting windowing().')
+
+    if not isinstance(area_normalize, bool):
+        raise TypeError('area_normalize should be a boolean value. Aborting windowing().')
+
+    if not isinstance(power_normalize, bool):
+        raise TypeError('power_normalize should be a boolean value. Aborting windowing().')
+
+    if peak is not None:
+        if not isinstance(peak, (int, float)):
+            raise ValueError('Peak should be a scalar value. Aborting windowing().')
+
+    num_norms = area_normalize + power_normalize + (peak is not None)
+    if num_norms > 1:
+        raise ValueError('Only one of peak, area_normalize or power_normalize can be set at the same time in windowing().')
+    # if (area_normalize) and (peak is not None):
+    #     raise ValueError('Both area_normalize and peak cannot be set at the same time in windowing().')
+
+    if not isinstance(N_window, (int, float)):
+        raise TypeError('N_window should be a positive integer. Aborting windowing().')
+    else:
+        N_window = int(N_window)
+        if N_window < 1:
+            raise ValueError('N_window should be a positive integer. Aborting windowing().')
+
+    if not isinstance(pad_width, (int, float)):
+        raise TypeError('pad_width must be an integer.')
+    else:
+        pad_width = int(pad_width)
+
+    if pad_width < 0:
+        raise ValueError('pad_width should be non-negative. Aborting windowing().')
+    
+    if not isinstance(fftpow, (int,float)):
+        raise TypeError('Input fftpow must be a scalar')
+    else:
+        fftpow = float(fftpow)
+        if fftpow < 0.0:
+            raise ValueError('Input fftpow must be non-negative')
+
+    eps = 1e-10
+    if (shape == 'rect') or (shape == 'RECT'):
+        if fftpow != 1.0:
+            nwin = int(NP.ceil(N_window/NP.float(fftpow)))
+        else:
+            nwin = N_window
+
+        win = NP.zeros(N_window)
+        if fftpow != 1.0:
+            
+            win[:nwin] = 1.0
+            fftwin = NP.fft.fft(win)
+            fftwin = fftwin ** fftpow
+            win = NP.fft.ifft(fftwin)
+            if NP.any(NP.abs(win.imag) >= eps):
+                raise ValueError('Significant imaginary component found in FFT-based window generation. Need to investigate. Aborting...')
+            else:
+                win = win.real
+                nshift = 0
+                if NP.abs(fftpow % 1.0) < 1e-6:
+                    nzeros = max(N_window - (fftpow * nwin - (fftpow - 1)), 0)
+                    if nzeros > 0:
+                        win[-int(nzeros):] = 0.0
+                    nshift = int(NP.ceil(0.5*nzeros))
+                win = NP.roll(win, nshift)
+        else:
+            win = NP.ones(N_window)
+
+        if not centering:
+            window = NP.pad(win, (0, pad_width), mode='constant', constant_values=(pad_value, pad_value))
+        else:
+            window = NP.pad(win, (NP.ceil(0.5*pad_width), NP.floor(0.5*pad_width)), mode='constant', constant_values=(pad_value, pad_value))
+    elif (shape == 'bnw') or (shape == 'BNW'):
+        a = [0.3635819, -0.4891775, 0.1365995, -0.0106411]
+        if fftpow != 1.0:
+            nwin = int(NP.ceil(N_window/NP.float(fftpow)))
+        else:
+            nwin = N_window
+
+        win = NP.zeros(N_window)
+        if (nwin % 2 == 1):
+            win[:nwin] = a[0]*NP.ones(nwin) + a[1]*NP.cos(2*NP.pi*NP.arange(nwin)/(nwin-1)) + a[2]*NP.cos(4*NP.pi*NP.arange(nwin)/(nwin-1)) + a[3]*NP.cos(6*NP.pi*NP.arange(nwin)/(nwin-1))
+            if fftpow != 1.0:
+                fftwin = NP.fft.fft(win)
+                fftwin = fftwin ** fftpow
+                win = NP.fft.ifft(fftwin)
+                if NP.any(NP.abs(win.imag) >= eps):
+                    raise ValueError('Significant imaginary component found in FFT-based window generation. Need to investigate. Aborting...')
+                else:
+                    win = win.real
+                    nshift = 0
+                    if NP.abs(fftpow % 1.0) < 1e-6:
+                        nzeros = max(N_window - (fftpow * nwin - (fftpow - 1)), 0)
+                        if nzeros > 0:
+                            win[-int(nzeros):] = 0.0
+                        nshift = int(NP.ceil(0.5*nzeros))
+                    win = NP.roll(win, nshift)
+
+            if not centering:
+                if pad_width >= 1:
+                    window = NP.pad(win, (1, pad_width-1), mode='constant', constant_values=(pad_value, pad_value))
+                else:
+                    window = win
+            else:
+                window = NP.pad(win, (NP.ceil(0.5*pad_width), NP.floor(0.5*pad_width)), mode='constant', constant_values=(pad_value, pad_value))
+        else:
+            if nwin == N_window:
+                win[1:] = a[0]*NP.ones(nwin-1) + a[1]*NP.cos(2*NP.pi*NP.arange(nwin-1)/(nwin-2)) + a[2]*NP.cos(4*NP.pi*NP.arange(nwin-1)/(nwin-2)) + a[3]*NP.cos(6*NP.pi*NP.arange(nwin-1)/(nwin-2))
+            else:
+                win[:nwin] = a[0]*NP.ones(nwin) + a[1]*NP.cos(2*NP.pi*NP.arange(nwin)/(nwin-1)) + a[2]*NP.cos(4*NP.pi*NP.arange(nwin)/(nwin-1)) + a[3]*NP.cos(6*NP.pi*NP.arange(nwin)/(nwin-1))
+            if fftpow != 1.0:
+                fftwin = NP.fft.fft(win)
+                fftwin = fftwin ** fftpow
+                win = NP.fft.ifft(fftwin)
+                if NP.any(NP.abs(win.imag) >= eps):
+                    raise ValueError('Significant imaginary component found in FFT-based window generation. Need to investigate. Aborting...')
+                else:
+                    win = win.real
+                    nshift = 0
+                    if NP.abs(fftpow % 1.0) < 1e-6:
+                        nzeros = max(N_window - (fftpow * nwin - (fftpow - 1)), 0)
+                        if nzeros > 0:
+                            win[-int(nzeros):] = 0.0
+                        nshift = int(NP.ceil(0.5*nzeros))
+                    win = NP.roll(win, nshift)
+
+            if not centering:
+                window = NP.pad(win, (0, pad_width), mode='constant', constant_values=(pad_value, pad_value))
+            else:
+                window = NP.pad(win, (NP.ceil(0.5*pad_width), NP.floor(0.5*pad_width)), mode='constant', constant_values=(pad_value, pad_value))
+    elif (shape == 'bhw') or (shape == 'BHW'):
+        a = [0.35875, -0.48829, 0.14128, -0.01168]
+        if fftpow != 1.0:
+            nwin = int(NP.ceil(N_window/NP.float(fftpow)))
+        else:
+            nwin = N_window
+
+        win = NP.zeros(N_window)
+        if (nwin % 2 == 1):
+            win[:nwin] = a[0]*NP.ones(nwin) + a[1]*NP.cos(2*NP.pi*NP.arange(nwin)/(nwin-1)) + a[2]*NP.cos(4*NP.pi*NP.arange(nwin)/(nwin-1)) + a[3]*NP.cos(6*NP.pi*NP.arange(nwin)/(nwin-1))
+            if fftpow != 1.0:
+                fftwin = NP.fft.fft(win)
+                fftwin = fftwin ** fftpow
+                win = NP.fft.ifft(fftwin)
+                if NP.any(NP.abs(win.imag) >= eps):
+                    raise ValueError('Significant imaginary component found in FFT-based window generation. Need to investigate. Aborting...')
+                else:
+                    win = win.real
+                    nshift = 0
+                    if NP.abs(fftpow % 1.0) < 1e-6:
+                        nzeros = max(N_window - (fftpow * nwin - (fftpow - 1)), 0)
+                        if nzeros > 0:
+                            win[-int(nzeros):] = 0.0
+                        nshift = int(NP.ceil(0.5*nzeros))
+                    win = NP.roll(win, nshift)
+
+            if not centering:
+                if pad_width >= 1:
+                    window = NP.pad(win, (1, pad_width-1), mode='constant', constant_values=(pad_value, pad_value))
+                else:
+                    window = win
+            else:
+                window = NP.pad(win, (NP.ceil(0.5*pad_width), NP.floor(0.5*pad_width)), mode='constant', constant_values=(pad_value, pad_value))
+        else:
+            if nwin == N_window:
+                win[1:] = a[0]*NP.ones(nwin-1) + a[1]*NP.cos(2*NP.pi*NP.arange(nwin-1)/(nwin-2)) + a[2]*NP.cos(4*NP.pi*NP.arange(nwin-1)/(nwin-2)) + a[3]*NP.cos(6*NP.pi*NP.arange(nwin-1)/(nwin-2))
+            else:
+                win[:nwin] = a[0]*NP.ones(nwin) + a[1]*NP.cos(2*NP.pi*NP.arange(nwin)/(nwin-1)) + a[2]*NP.cos(4*NP.pi*NP.arange(nwin)/(nwin-1)) + a[3]*NP.cos(6*NP.pi*NP.arange(nwin)/(nwin-1))
+            if fftpow != 1.0:
+                fftwin = NP.fft.fft(win)
+                fftwin = fftwin ** fftpow
+                win = NP.fft.ifft(fftwin)
+                if NP.any(NP.abs(win.imag) >= eps):
+                    raise ValueError('Significant imaginary component found in FFT-based window generation. Need to investigate. Aborting...')
+                else:
+                    win = win.real
+                    nshift = 0
+                    if NP.abs(fftpow % 1.0) < 1e-6:
+                        nzeros = max(N_window - (fftpow * nwin - (fftpow - 1)), 0)
+                        if nzeros > 0:
+                            win[-int(nzeros):] = 0.0
+                        nshift = int(NP.ceil(0.5*nzeros))
+                    win = NP.roll(win, nshift)
+
+            if not centering:
+                window = NP.pad(win, (0, pad_width), mode='constant', constant_values=(pad_value, pad_value))
+            else:
+                window = NP.pad(win, (NP.ceil(0.5*pad_width), NP.floor(0.5*pad_width)), mode='constant', constant_values=(pad_value, pad_value))
 
     if peak is not None:
         window *= peak/NP.amax(NP.abs(window))
