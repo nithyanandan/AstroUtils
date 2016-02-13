@@ -1,3 +1,13 @@
+From 7a1ebc1 (master):
+=====================
+
+In my_DSP_modules.py,
+
+(*) Add keyword input fftpow in window_N2width(). Update docstring
+accordingly.
+(*) Modify window_N2width() to use newly created function
+window_fftpow()
+
 From de4ac5a (master):
 =====================
 

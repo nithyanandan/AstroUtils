@@ -566,7 +566,7 @@ def window_fftpow(N_window, shape='rect', pad_width=0, pad_value=0.0,
             fftwin = NP.fft.fft(win)
             fftwin = fftwin ** fftpow
             win = NP.fft.ifft(fftwin)
-            if NP.any(NP.abs(win.imag) >= eps):
+            if NP.abs(win.imag).max()/NP.abs(win).max() >= eps:
                 raise ValueError('Significant imaginary component found in FFT-based window generation. Need to investigate. Aborting...')
             else:
                 win = win.real
@@ -598,7 +598,7 @@ def window_fftpow(N_window, shape='rect', pad_width=0, pad_value=0.0,
                 fftwin = NP.fft.fft(win)
                 fftwin = fftwin ** fftpow
                 win = NP.fft.ifft(fftwin)
-                if NP.any(NP.abs(win.imag) >= eps):
+                if NP.abs(win.imag).max()/NP.abs(win).max() >= eps:
                     raise ValueError('Significant imaginary component found in FFT-based window generation. Need to investigate. Aborting...')
                 else:
                     win = win.real
@@ -626,7 +626,7 @@ def window_fftpow(N_window, shape='rect', pad_width=0, pad_value=0.0,
                 fftwin = NP.fft.fft(win)
                 fftwin = fftwin ** fftpow
                 win = NP.fft.ifft(fftwin)
-                if NP.any(NP.abs(win.imag) >= eps):
+                if NP.abs(win.imag).max()/NP.abs(win).max() >= eps:
                     raise ValueError('Significant imaginary component found in FFT-based window generation. Need to investigate. Aborting...')
                 else:
                     win = win.real
@@ -656,7 +656,7 @@ def window_fftpow(N_window, shape='rect', pad_width=0, pad_value=0.0,
                 fftwin = NP.fft.fft(win)
                 fftwin = fftwin ** fftpow
                 win = NP.fft.ifft(fftwin)
-                if NP.any(NP.abs(win.imag) >= eps):
+                if NP.abs(win.imag).max()/NP.abs(win).max() >= eps:
                     raise ValueError('Significant imaginary component found in FFT-based window generation. Need to investigate. Aborting...')
                 else:
                     win = win.real
@@ -684,7 +684,7 @@ def window_fftpow(N_window, shape='rect', pad_width=0, pad_value=0.0,
                 fftwin = NP.fft.fft(win)
                 fftwin = fftwin ** fftpow
                 win = NP.fft.ifft(fftwin)
-                if NP.any(NP.abs(win.imag) >= eps):
+                if NP.abs(win.imag).max()/NP.abs(win).max() >= eps:
                     raise ValueError('Significant imaginary component found in FFT-based window generation. Need to investigate. Aborting...')
                 else:
                     win = win.real
@@ -722,7 +722,7 @@ def window_fftpow(N_window, shape='rect', pad_width=0, pad_value=0.0,
 #################################################################################
 
 def window_N2width(n_window=None, shape='rect', area_normalize=True,
-                   power_normalize=False):
+                   power_normalize=False, fftpow=1.0):
 
     """
     -----------------------------------------------------------------------------
@@ -746,6 +746,10 @@ def window_N2width(n_window=None, shape='rect', area_normalize=True,
               [Boolean] True gives fractional width relative to a 
               rectangular by computing power under window. One and only one 
               of area_normalize or power_normalize can bet set
+
+    fftpow    [scalar] The FFT of the window will be raised to this power.
+              Must be positive. Default = 1.0
+
     Output:
 
     frac_width is a fraction of the total number of samples. Thus the effective
@@ -761,6 +765,13 @@ def window_N2width(n_window=None, shape='rect', area_normalize=True,
     elif n_window <= 0:
         raise ValueError('Number of samples must be positive')
 
+    if not isinstance(fftpow, (int,float)):
+        raise TypeError('Input fftpow must be a scalar')
+    else:
+        fftpow = float(fftpow)
+        if fftpow < 0.0:
+            raise ValueError('Input fftpow must be non-negative')
+
     num_norms = area_normalize + power_normalize
     if num_norms != 1:
         raise ValueError('One and only one of area_normalize or power_normalize can be set at the same time.')
@@ -771,8 +782,11 @@ def window_N2width(n_window=None, shape='rect', area_normalize=True,
         raise ValueError('Invalid window shape specified')
 
     if shape in ['rect', 'RECT', 'bnw', 'BNW', 'bhw', 'BHW']:
-        window = windowing(n_window, shape=shape, peak=None,
-                           area_normalize=False, power_normalize=False)
+        window = window_fftpow(n_window, shape=shape, peak=None, fftpow=fftpow,
+                               area_normalize=False, power_normalize=False)
+
+        # window = windowing(n_window, shape=shape, peak=None,
+        #                    area_normalize=False, power_normalize=False)
 
     if area_normalize:
         frac_width = NP.sum(window/window.max())/n_window
