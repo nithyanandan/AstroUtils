@@ -3,7 +3,6 @@ from scipy import signal
 from scipy import interpolate
 import my_operations as OPS
 import lookup_operations as LKP
-import ipdb as PDB
 
 #################################################################################
 
@@ -559,7 +558,7 @@ def window_fftpow(N_window, shape='rect', pad_width=0, pad_value=0.0,
         else:
             nwin = N_window
 
-        win = NP.zeros(N_window)
+        win = NP.zeros(N_window, dtype=NP.float_)
         if fftpow != 1.0:
             
             win[:nwin] = 1.0
@@ -578,7 +577,7 @@ def window_fftpow(N_window, shape='rect', pad_width=0, pad_value=0.0,
                     nshift = int(NP.ceil(0.5*nzeros))
                 win = NP.roll(win, nshift)
         else:
-            win = NP.ones(N_window)
+            win = NP.ones(N_window, dtype=NP.float_)
 
         if not centering:
             window = NP.pad(win, (0, pad_width), mode='constant', constant_values=(pad_value, pad_value))
@@ -591,7 +590,7 @@ def window_fftpow(N_window, shape='rect', pad_width=0, pad_value=0.0,
         else:
             nwin = N_window
 
-        win = NP.zeros(N_window)
+        win = NP.zeros(N_window, dtype=NP.float_)
         if (nwin % 2 == 1):
             win[:nwin] = a[0]*NP.ones(nwin) + a[1]*NP.cos(2*NP.pi*NP.arange(nwin)/(nwin-1)) + a[2]*NP.cos(4*NP.pi*NP.arange(nwin)/(nwin-1)) + a[3]*NP.cos(6*NP.pi*NP.arange(nwin)/(nwin-1))
             if fftpow != 1.0:
@@ -649,7 +648,7 @@ def window_fftpow(N_window, shape='rect', pad_width=0, pad_value=0.0,
         else:
             nwin = N_window
 
-        win = NP.zeros(N_window)
+        win = NP.zeros(N_window, dtype=NP.float_)
         if (nwin % 2 == 1):
             win[:nwin] = a[0]*NP.ones(nwin) + a[1]*NP.cos(2*NP.pi*NP.arange(nwin)/(nwin-1)) + a[2]*NP.cos(4*NP.pi*NP.arange(nwin)/(nwin-1)) + a[3]*NP.cos(6*NP.pi*NP.arange(nwin)/(nwin-1))
             if fftpow != 1.0:

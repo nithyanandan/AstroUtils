@@ -1,3 +1,10 @@
+From 0e76f8d (master):
+=====================
+
+In my_DSP_modules.py,
+
+(*) Typecast returned window function in window_fftpow() to float64
+
 From 7a1ebc1 (master):
 =====================
 
