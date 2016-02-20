@@ -473,7 +473,7 @@ def healpix_interp_along_axis(indata, theta_phi=None, inloc_axis=None,
         intermediate_data_shape[0] = theta_phi.shape[0]
         intermediate_data_shape = tuple(intermediate_data_shape)
         
-        intermediate_data = NP.zeros(intermediate_data_shape, dtype=NP.float32)
+        intermediate_data = NP.zeros(intermediate_data_shape, dtype=NP.float64)
         for ax in range(1,indata.ndim):
             for i in xrange(indata.shape[ax]):
                 intermediate_data[:,i] = HP.get_interp_val(indata[:,i], theta_phi[:,0], theta_phi[:,1], nest=nest)

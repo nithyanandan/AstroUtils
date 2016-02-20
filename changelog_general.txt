@@ -1,3 +1,10 @@
+From f7d0b72 (master):
+=====================
+
+In my_operations.py,
+
+(*) Enforce double precision in healpix_interp_along_axis()
+
 From 0e76f8d (master):
 =====================
 
