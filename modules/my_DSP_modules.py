@@ -432,7 +432,7 @@ def windowing(N_window, shape='rect', pad_width=0, pad_value=0.0,
             if not centering:
                 window = NP.pad(win, (1, pad_width), mode='constant', constant_values=(pad_value, pad_value))
             else:
-                window = NP.pad(win, (NP.ceil(0.5*(pad_width+1)), NP.floor(0.5*(pad_width+1))), mode='constant', constant_values=(pad_value, pad_value))
+                window = NP.pad(win, (NP.int(NP.ceil(0.5*(pad_width+1))), NP.int(NP.floor(0.5*(pad_width+1)))), mode='constant', constant_values=(pad_value, pad_value))
 
     if peak is not None:
         window *= peak/NP.amax(NP.abs(window))
