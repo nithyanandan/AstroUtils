@@ -1,3 +1,10 @@
+From 89688af (utest):
+====================
+
+(*) Add more unittest modules
+(*) Test package installation
+(*) Make init files empty
+
 From 326cdfa (pkg):
 ==================
 
