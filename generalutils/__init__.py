@@ -1,1 +1,5 @@
-
+__version__='0.1.0'
+__description__='General Purpose Radio Astronomy and Data Analysis Utilities'
+__author__='Nithyanandan Thyagarajan'
+__authoremail__='nithyanandan.t@gmail.com'
+__url__='http://github.com/nithyanandan/general'

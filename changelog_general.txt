@@ -1,3 +1,14 @@
+From 16def05 (pkg):
+==================
+
+In generalutils/__init__.py,
+
+(*) Add metadata used in setup
+
+In setup.py,
+
+(*) Read setup parameters from package __init__.py
+
 From 89688af (utest):
 ====================
 
