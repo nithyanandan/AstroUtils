@@ -1,3 +1,10 @@
+From beca8d2 (pkg):
+==================
+
+In setup.py,
+
+(*) Remove commented lines
+
 From 16def05 (pkg):
 ==================
 
