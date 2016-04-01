@@ -1,3 +1,12 @@
+From 16def05 (utest):
+====================
+
+In geometry_test.py,
+
+(*) Add more tests test_enu2xyz(), test_xyz2enu(), test_sph2xyz(),
+test_sphdist(), test_spherematch_1match() and
+test_spherematch_allmatch()
+
 From 89688af (utest):
 ====================
 
