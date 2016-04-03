@@ -195,6 +195,50 @@ def grid_2d(rangelist, pad=None, spacing=None, pow2=True, verbose=True):
 
 #################################################################################
 
+def grid_3d(rangelist, pad=None, spacing=None, pow2=True, verbose=True):
+
+    """
+    -----------------------------------------------------------------------------
+    3D wrapper for grid()
+    
+    Inputs:
+    rangelist   
+             [3-element list of tuples] Each tuple is made of two elements, the
+             min and max with min < max.
+             
+    pad      [Optional. Scalar or list] The padding (in same units as rangelist) to
+             be applied along the two axes. Default=None implies no padding.
+
+    spacing  [Optional. Scalar or list] The spacing for the grid along each of
+             the axes. If not supplied, a default of sqrt(max-min) is used. If a
+             scalar is supplied, it applies for all axes. A list applies for each
+             of the axes.
+
+    pow2     [Optional, default=True] If set, the grid produced is a power of 2
+             in all axes, which is useful for FFT.
+
+    verbose  [Default=True]
+
+    Outputs:
+
+    Three 3D numpy arrays. The first array with x-values, the second with 
+    y-values, and the third with z-values on the grid.
+    -----------------------------------------------------------------------------
+    """
+
+    if rangelist is None:
+        raise NameError('No ranges provided. Exiting from grid_3d()')
+    if not isinstance(rangelist, list):
+        raise TypeError('A 3-element list of tuples specifying ranges with min < max should be provided. Exiting from grid_2d()')
+    else:
+        if not isinstance(rangelist[0], tuple):
+            raise TypeError('A 3-element list of tuples specifying ranges with min < max should be provided. Exiting from grid_3d()')
+
+    grid_info = grid(rangelist, pad=pad, spacing=spacing, pow2=pow2, verbose=verbose)
+    return NP.meshgrid(NP.linspace(grid_info[0][0], grid_info[0][1], int(grid_info[0][2])), NP.linspace(grid_info[1][0], grid_info[1][1], int(grid_info[1][2])), NP.linspace(grid_info[2][0], grid_info[2][1], int(grid_info[2][2])))
+
+#################################################################################
+
 def conv_grid1d(xc, xkern, kernel, xgrid, method='NN'):
     """
     -----------------------------------------------------------------------------
