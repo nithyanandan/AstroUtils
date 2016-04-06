@@ -1,3 +1,10 @@
+From ec2b1d6 (pkg):
+==================
+
+In setup.py,
+
+(*) Modify indentation to 4 spaces
+
 From 89748c9 (pkg), 98e0d2f (utest):
 ===================================
 
