@@ -1,3 +1,9 @@
+From f8b61b2 (pkg):
+==================
+
+(*) Rename modules by removing prefix 'my_' in filenames
+(*) Make appropriate changes in modules that use the renamed modules
+
 From d0603dc (pkg):
 ==================
 

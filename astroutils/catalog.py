@@ -8,7 +8,7 @@ import scipy.constants as FCNST
 import matplotlib.pyplot as PLT
 import matplotlib.colors as PLTC
 import geometry as GEOM
-import my_operations as OPS
+import mathops as OPS
 import lookup_operations as LKP
 import constants as CNST
 
