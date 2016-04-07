@@ -1,3 +1,16 @@
+From f6bd5f6 (pkg):
+==================
+
+In mathops.py,
+(*) Import correctly renamed module DSP_modules instead of my_DSP_modules
+
+In DSP_modules.py,
+(*) Import correctly renamed module mathops instead of my_operations
+
+(*) Rename my_operations_test.py to mathops_test.py
+In mathops_test.py,
+(*) Import correctly renamed module mathops instead of my_operations
+
 From f8b61b2 (pkg):
 ==================
 
