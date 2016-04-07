@@ -1,3 +1,14 @@
+From 109d1eb (pkg):
+==================
+
+In setup.py,
+
+(*) Add keywords classifiers, maintainer, and maintainer_email
+
+In astroutils/__init__.py,
+
+(*) Add info on maintainer and maintainer_email
+
 From 03af18c (pkg):
 ==================
 
