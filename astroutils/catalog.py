@@ -5,8 +5,6 @@ from astropy.io import fits, ascii
 from astropy.coordinates import Angle, SkyCoord
 from astropy import units
 import scipy.constants as FCNST
-import matplotlib.pyplot as PLT
-import matplotlib.colors as PLTC
 import geometry as GEOM
 import mathops as OPS
 import lookup_operations as LKP
@@ -658,38 +656,6 @@ class SkyModel(object):
             upix = uniq_pix[i]
             ind = ri[ri[i]:ri[i+1]]
             outmap[upix,:] = NP.sum(spectrum[ind,:], axis=0)
-
-        # # Plot diagnostic begins
-        # if out_coords == 'galactic':
-        #     hpxgc = HP.cartview(outmap[:,0], coord='G', return_projected_map=True)
-        #     hpxec = HP.cartview(outmap[:,0], coord=['G', 'C'], return_projected_map=True)
-        # else:
-        #     hpxec = HP.cartview(outmap[:,0], coord='C', return_projected_map=True)
-        #     hpxgc = HP.cartview(outmap[:,0], coord=['C', 'G'], return_projected_map=True)
-            
-        # gcl = gc.l.degree
-        # gcb = gc.b.degree
-        # gcl[gcl > 180.0] -= 360.0
-        # ecra = ec.ra.degree
-        # ecdec = ec.dec.degree
-        # ecra[ecra > 180.0] -= 360.0
-
-        # fig, axs = PLT.subplots(nrows=2, sharex=True, sharey=True, figsize=(6,6))
-
-        # gcimg = axs[0].imshow(hpxgc, origin='lower', extent=[180,-180,-90,90], norm=PLTC.LogNorm(vmin=hpxgc[hpxgc>0.0].min(), vmax=hpxgc.max()))
-        # gcplt = axs[0].plot(gcl, gcb, 'o', mfc='none', mec='black')
-        # axs[0].set_xlim(180, -180)
-        # axs[0].set_ylim(-90, 90)
-
-        # ecimg = axs[1].imshow(hpxec, origin='lower', extent=[180,-180,-90,90], norm=PLTC.LogNorm(vmin=hpxec[hpxec>0.0].min(), vmax=hpxec.max()))
-        # ecplt = axs[1].plot(ecra, ecdec, 'o', mfc='none', mec='black')
-        # axs[1].set_xlim(180, -180)
-        # axs[1].set_ylim(-90, 90)
-        
-        # fig.subplots_adjust(hspace=0, wspace=0)
-        # PLT.show()
-
-        # # Plot diagnostic ends
 
         # Save the healpix spectrum to file
         if outfile is not None:

@@ -1,3 +1,15 @@
+From 03af18c (pkg):
+==================
+
+In setup.py,
+
+(*) Add package dependencies under keywords install_requires and
+setup_requires
+
+In astroutils/catalog.py,
+
+(*) Remove lines importing and using matplotlib
+
 From f6bd5f6 (pkg):
 ==================
 
