@@ -1,4 +1,4 @@
-from generalutils import geometry as GEOM
+from astroutils import geometry as GEOM
 import numpy as NP
 
 def test_altaz2dircos():

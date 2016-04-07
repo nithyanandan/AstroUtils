@@ -2,10 +2,10 @@ import setuptools
 from setuptools import setup, find_packages
 import re
 
-metafile = open('./generalutils/__init__.py').read()
+metafile = open('./astroutils/__init__.py').read()
 metadata = dict(re.findall("__([a-z]+)__\s*=\s*'([^']+)'", metafile))
 
-setup(name='generalutils',
+setup(name='AstroUtils',
     version=metadata['version'],
     description=metadata['description'],
     long_description=open("README.txt").read(),

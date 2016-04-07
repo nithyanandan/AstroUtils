@@ -1,3 +1,9 @@
+From d0603dc (pkg):
+==================
+
+(*) Rename package from 'generalutils' to 'AstroUtils'
+(*) Make ppropriate changes in setup.py, folder structure, and tests
+
 From ec2b1d6 (pkg):
 ==================
 

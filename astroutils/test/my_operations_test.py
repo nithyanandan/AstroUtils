@@ -1,4 +1,4 @@
-from generalutils import my_operations as OPS
+from astroutils import my_operations as OPS
 import numpy as NP
 
 def test_reverse():
