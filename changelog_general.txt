@@ -1,3 +1,27 @@
+From 6fbb2c8 (pkg):
+==================
+
+In astroutils/,
+
+(*) Add module nonmathops.py to git repo
+
+In astroutils/nonmathops.py,
+
+(*) Add function recursive_find_notNone_in_dict() to reduce a
+dictionary recursively to contain only non-None values. Also
+create docstring
+
+In astroutils/test/,
+
+(*) Add test module nonmathops_test.py to git repo
+
+In astroutils/test/nonmathops_test.py,
+
+(*) Add tests test_recursive_find_notNone_in_dict() and
+test_recursive_find_notNone_in_allNone_dict() to test the
+function function recursive_find_notNone_in_dict() in the
+newly created module 
+
 From 109d1eb (pkg):
 ==================
 
