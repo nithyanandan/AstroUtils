@@ -1,3 +1,17 @@
+From 5190e34 (nonmath):
+======================
+
+In astroutils/nonmathops.py,
+
+(*) Add function is_dict1_subset_of_dict2() to check if one
+dictionary is a subset of another. Also create docstring
+
+In astroutils/test/nonmathops_test.py,
+
+(*) Add tests test_is_dict1_subset_of_dict1_case1() and
+test_is_dict1_subset_of_dict1_case2() to test the
+function is_dict1_subset_of_dict1() in the module nonmathops.py
+
 From 6fbb2c8 (pkg):
 ==================
 
