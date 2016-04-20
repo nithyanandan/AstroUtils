@@ -432,9 +432,9 @@ def healpix_interp_along_axis(indata, theta_phi=None, inloc_axis=None,
                 then the default is NaN.
 
     assume_sorted 
-                [bool] If False, values of x can be in any order and they are 
-                sorted first. If True, x has to be an array of monotonically 
-                increasing values.
+                [bool] If False, values of inloc_axis can be in any order and 
+                they are sorted first. If True, inloc_axis has to be an array 
+                of monotonically increasing values.
     
     nest        [bool] if True, the is assumed to be in NESTED ordering.
 
@@ -443,7 +443,6 @@ def healpix_interp_along_axis(indata, theta_phi=None, inloc_axis=None,
     HEALPIX interpolated and SciPy interpolated output. Will be of size
     nang x ... x nout x ... x naxm. Currently returns an array of shape 
     nang x nout
-    
     -----------------------------------------------------------------------------
     """
 
