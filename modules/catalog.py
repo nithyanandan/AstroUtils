@@ -138,7 +138,7 @@ class SkyModel(object):
 
     def __init__(self, name, frequency, location, spec_type, spec_parms=None, 
                  spectrum=None, src_shape=None, epoch='J2000', coords='radec', 
-                 src_shape_units=None):
+                 src_shape_units=None, init_file=None):
 
         """
         --------------------------------------------------------------------------
@@ -150,11 +150,18 @@ class SkyModel(object):
 
         Other input(s):
 
-        src_shape_units  [3-element list or tuple of strings] Specifies the units 
-                         of major axis FWHM, minor axis FWHM, and position angle.
-                         Accepted values for major and minor axes units are 
-                         'arcsec', 'arcmin', 'degree', or 'radian'. Accepted
-                         values for position angle units are 'degree' or 'radian'
+        src_shape_units [3-element list or tuple of strings] Specifies the units 
+                        of major axis FWHM, minor axis FWHM, and position angle.
+                        Accepted values for major and minor axes units are 
+                        'arcsec', 'arcmin', 'degree', or 'radian'. Accepted
+                        values for position angle units are 'degree' or 'radian'
+
+        init_file       [string] Pull path to the file containing saved 
+                        information of an instance of class SkyModel. If set to
+                        None (default), other input parameters will be used to
+                        initialize an instance of this class. If set to a 
+                        filename, the instance will be initialized from this 
+                        file, and other parameters will be ignored.
 
         Read docstring of class SkyModel for details on these attributes.
         --------------------------------------------------------------------------
@@ -163,143 +170,172 @@ class SkyModel(object):
         try:
             name, frequency, location, spec_type
         except NameError:
-            raise NameError('Catalog name, frequency, location, and spectral type must be provided.')
+            if init_file is None:
+                raise NameError('Catalog name, frequency, location, and spectral type must be provided.')
 
-        self.location = NP.asarray(location)
-        self.epoch = epoch
-        self.coords = coords
-        self.src_shape = None
-        self.spec_parms = None
-
-        if isinstance(name, (int, float, str)):
-            self.name = NP.repeat(NP.asarray(name).reshape(-1), location.shape[0])
-        elif isinstance(name, NP.ndarray):
-            if name.size == 1:
+        if init_file is not None:
+            with h5py.File(init_file, 'r') as fileobj:
+                # for key in fileobj.keys():
+                for key in ['header', 'object', 'spectral_info']:
+                    grp = fileobj[key]
+                    if key == 'header':
+                        self.spec_type = grp['spec_type'].value
+                    if key == 'object':
+                        self.epoch = grp.attrs['epoch']
+                        self.coords = grp.attrs['coords']
+                        self.name = grp['name'].value
+                        if self.coords == 'radec':
+                            self.location = NP.hstack((grp['RA'].value.reshape(-1,1), grp['Dec'].value.reshape(-1,1)))
+                        elif self.coords == 'altaz':
+                            self.location = NP.hstack((grp['Alt'].value.reshape(-1,1), grp['Az'].value.reshape(-1,1)))
+                        self.src_shape = grp['shape'].value
+                    if key == 'spectral_info':
+                        self.spec_parms = {}
+                        if self.spec_type == 'func':
+                            self.spec_parms['name'] = grp['func-name'].value
+                            self.spec_parms['freq-ref'] = grp['freq'].value
+                            self.spec_parms['flux-scale'] = grp['flux_density'].value
+                            if 'spindex' in grp:
+                                self.spec_parms['power-law-index'] = grp['spindex'].value
+                        else:
+                            self.frequency = grp['freq'].value.reshape(1,-1)
+                            self.spectrum = grp['spectrum'].value
+        else:
+            self.location = NP.asarray(location)
+            self.epoch = epoch
+            self.coords = coords
+            self.src_shape = None
+            self.spec_parms = None
+    
+            if isinstance(name, (int, float, str)):
                 self.name = NP.repeat(NP.asarray(name).reshape(-1), location.shape[0])
-            elif (name.size == location.shape[0]):
-                self.name = name.reshape(-1)
-            else:
-                raise ValueError('Size of input "name" does not match number of objects')
-        else:
-            raise TypeError('Catalog name must be a integer, float, string or numpy array')
-
-        if isinstance(spec_type, str):
-            if spec_type in ['func', 'spectrum']:
-                self.spec_type = spec_type
-            else:
-                raise ValueError('Spectrum specification in spec_type must be "func" or "spectrum"')
-        else:
-            raise TypeError('Spectrum specification in spec_type must be a string')
-
-        if isinstance(frequency, (int, float, NP.ndarray)):
-            self.frequency = NP.asarray(frequency).reshape(1,-1)
-        else:
-            raise TypeError('Sky model frequency must be a integer, float, or numpy array')
-
-        if self.spec_type == 'spectrum':
-            if spectrum is None:
-                raise ValueError('Sky model spectrum not provided.')
-            if not isinstance(spectrum, NP.ndarray):
-                raise TypeError('Sky model spectrum must be a numpy array')
-            if spectrum.shape != (self.location.shape[0], self.frequency.size):
-                raise ValueError('Sky model spectrum must have same number of rows as number of object locations and same number of columns as number of frequency channels')
-            self.spectrum = spectrum
-        else:
-            if spec_parms is None:
-                spec_parms = {}
-                spec_parms['name'] = NP.repeat('power-law', self.location.shape[0])
-                spec_parms['power-law-index'] = NP.zeros(self.location.shape[0])
-                spec_parms['freq-ref'] = NP.mean(self.frequency) + NP.zeros(self.location.shape[0])
-                spec_parms['flux-scale'] = NP.ones(self.location.shape[0])
-                spec_parms['flux-offset'] = NP.zeros(self.location.shape[0])
-                spec_parms['z-width'] = NP.zeros(self.location.shape[0])
-            elif not isinstance(spec_parms, dict):
-                raise TypeError('Spectral parameters in spec_parms must be specified as a dictionary')
-
-            if 'name' not in spec_parms:
-                spec_parms['name'] = NP.repeat('power-law', self.location.shape[0])
-
-            if isinstance(spec_parms['name'], (list, NP.ndarray)):
-                spec_parms['name'] = NP.asarray(spec_parms['name'])
-                if spec_parms['name'].size != self.location.shape[0]:
-                    raise ValueError('Number of spectral functional names should match the number of object locations.')
-                uniq_names = NP.unique(spec_parms['name'])
-                for name in uniq_names:
-                    if name not in ['random', 'monotone', 'power-law', 'tanh']:
-                        raise ValueError('Spectral functional names must be from "random", "monotone", "power-law" and "tanh".')
-
-            else:
-                raise TypeError('Values under key "name" in dictionary spec_parms must be a list or numpy array of strings')
-            
-            if 'flux-scale' not in spec_parms:
-                spec_parms['flux-scale'] = NP.ones(self.location.shape[0])
-            else:
-                if not isinstance(spec_parms['flux-scale'], (int,float,NP.ndarray)):
-                    raise TypeError('Flux scale must be a scalar or numpy array')
-                spec_parms['flux-scale'] = NP.asarray(spec_parms['flux-scale'])
-                if spec_parms['flux-scale'].size == 1:
-                    spec_parms['flux-scale'] = spec_parms['flux-scale'] + NP.zeros(self.location.shape[0])
-                elif spec_parms['flux-scale'].size == self.location.shape[0]:
-                    spec_parms['flux-scale'] = spec_parms['flux-scale'].ravel()
+            elif isinstance(name, NP.ndarray):
+                if name.size == 1:
+                    self.name = NP.repeat(NP.asarray(name).reshape(-1), location.shape[0])
+                elif (name.size == location.shape[0]):
+                    self.name = name.reshape(-1)
                 else:
-                    raise ValueError('Size of flux scale must be equal to the number of sky locations')
+                    raise ValueError('Size of input "name" does not match number of objects')
+            else:
+                raise TypeError('Catalog name must be a integer, float, string or numpy array')
+    
+            if isinstance(spec_type, str):
+                if spec_type in ['func', 'spectrum']:
+                    self.spec_type = spec_type
+                else:
+                    raise ValueError('Spectrum specification in spec_type must be "func" or "spectrum"')
+            else:
+                raise TypeError('Spectrum specification in spec_type must be a string')
+    
+            if isinstance(frequency, (int, float, NP.ndarray)):
+                self.frequency = NP.asarray(frequency).reshape(1,-1)
+            else:
+                raise TypeError('Sky model frequency must be a integer, float, or numpy array')
+    
+            if self.spec_type == 'spectrum':
+                if spectrum is None:
+                    raise ValueError('Sky model spectrum not provided.')
+                if not isinstance(spectrum, NP.ndarray):
+                    raise TypeError('Sky model spectrum must be a numpy array')
+                if spectrum.shape != (self.location.shape[0], self.frequency.size):
+                    raise ValueError('Sky model spectrum must have same number of rows as number of object locations and same number of columns as number of frequency channels')
+                self.spectrum = spectrum
+            else:
+                if spec_parms is None:
+                    spec_parms = {}
+                    spec_parms['name'] = NP.repeat('power-law', self.location.shape[0])
+                    spec_parms['power-law-index'] = NP.zeros(self.location.shape[0])
+                    spec_parms['freq-ref'] = NP.mean(self.frequency) + NP.zeros(self.location.shape[0])
+                    spec_parms['flux-scale'] = NP.ones(self.location.shape[0])
+                    spec_parms['flux-offset'] = NP.zeros(self.location.shape[0])
+                    spec_parms['z-width'] = NP.zeros(self.location.shape[0])
+                elif not isinstance(spec_parms, dict):
+                    raise TypeError('Spectral parameters in spec_parms must be specified as a dictionary')
+    
+                if 'name' not in spec_parms:
+                    spec_parms['name'] = NP.repeat('power-law', self.location.shape[0])
+    
+                if isinstance(spec_parms['name'], (list, NP.ndarray)):
+                    spec_parms['name'] = NP.asarray(spec_parms['name'])
+                    if spec_parms['name'].size != self.location.shape[0]:
+                        raise ValueError('Number of spectral functional names should match the number of object locations.')
+                    uniq_names = NP.unique(spec_parms['name'])
+                    for name in uniq_names:
+                        if name not in ['random', 'monotone', 'power-law', 'tanh']:
+                            raise ValueError('Spectral functional names must be from "random", "monotone", "power-law" and "tanh".')
+    
+                else:
+                    raise TypeError('Values under key "name" in dictionary spec_parms must be a list or numpy array of strings')
                 
-                if NP.any(spec_parms['flux-scale'] <= 0.0):
-                    raise ValueError('Flux scale values must be positive')
-
-            if 'flux-offset' not in spec_parms:
-                spec_parms['flux-offset'] = NP.zeros(self.location.shape[0])
-
-            if 'freq-ref' not in spec_parms:
-                spec_parms['freq-ref'] = NP.mean(self.frequency) + NP.zeros(self.location.shape[0])
-            elif NP.any(spec_parms['freq-ref'] <= 0.0):
-                raise ValueError('Reference frequency values must be positive')
-
-            if 'power-law-index' not in spec_parms:
-                spec_parms['power-law-index'] = NP.zeros(self.location.shape[0])
-
-            if 'z-width' not in spec_parms:
-                spec_parms['z-width'] = NP.zeros(self.location.shape[0])
-            elif NP.any(spec_parms['z-width'] < 0.0):
-                raise ValueError('Characteristic redshift widths must not be negative')
-
-            self.spec_parms = spec_parms
-
-            if src_shape is not None:
-                self.src_shape = NP.asarray(src_shape)
-                if self.src_shape.shape[1] != 3:
-                    raise ValueError('Source shape must consist of three columns (major axis FWHM, minor axis FWHM, position angle) per source.')
-                if src_shape_units is not None:
-                    if not isinstance(src_shape_units, (list, tuple)):
-                        raise TypeError('Source shape units must be provided as a list or tuple')
-                    if len(src_shape_units) != 3:
-                        raise ValueError('Source shape units must contain three elements.')
+                if 'flux-scale' not in spec_parms:
+                    spec_parms['flux-scale'] = NP.ones(self.location.shape[0])
+                else:
+                    if not isinstance(spec_parms['flux-scale'], (int,float,NP.ndarray)):
+                        raise TypeError('Flux scale must be a scalar or numpy array')
+                    spec_parms['flux-scale'] = NP.asarray(spec_parms['flux-scale'])
+                    if spec_parms['flux-scale'].size == 1:
+                        spec_parms['flux-scale'] = spec_parms['flux-scale'] + NP.zeros(self.location.shape[0])
+                    elif spec_parms['flux-scale'].size == self.location.shape[0]:
+                        spec_parms['flux-scale'] = spec_parms['flux-scale'].ravel()
+                    else:
+                        raise ValueError('Size of flux scale must be equal to the number of sky locations')
+                    
+                    if NP.any(spec_parms['flux-scale'] <= 0.0):
+                        raise ValueError('Flux scale values must be positive')
     
-                    if src_shape_units[0] == 'arcsec':
-                        self.src_shape[:,0] = self.src_shape[:,0]/3.6e3
-                    elif src_shape_units[0] == 'arcmin':
-                        self.src_shape[:,0] = self.src_shape[:,0]/60.0
-                    elif src_shape_units[0] == 'radian':
-                        self.src_shape[:,0] = NP.degrees(self.src_shape[:,0])
-                    elif src_shape_units[0] != 'degree':
-                        raise ValueError('major axis FWHM must be specified as "arcsec", "arcmin", "degree" or "radian"')
+                if 'flux-offset' not in spec_parms:
+                    spec_parms['flux-offset'] = NP.zeros(self.location.shape[0])
     
-                    if src_shape_units[1] == 'arcsec':
-                        self.src_shape[:,1] = self.src_shape[:,1]/3.6e3
-                    elif src_shape_units[1] == 'arcmin':
-                        self.src_shape[:,1] = self.src_shape[:,1]/60.0
-                    elif src_shape_units[1] == 'radian':
-                        self.src_shape[:,1] = NP.degrees(self.src_shape[:,1])
-                    elif src_shape_units[0] != 'degree':
-                        raise ValueError('minor axis FWHM must be specified as "arcsec", "arcmin", "degree" or "radian"')
+                if 'freq-ref' not in spec_parms:
+                    spec_parms['freq-ref'] = NP.mean(self.frequency) + NP.zeros(self.location.shape[0])
+                elif NP.any(spec_parms['freq-ref'] <= 0.0):
+                    raise ValueError('Reference frequency values must be positive')
     
-                    if src_shape_units[2] == 'radian':
-                        self.src_shape[:,2] = NP.degrees(self.src_shape[:,2])
-                    elif src_shape_units[2] != 'degree':
-                        raise ValueError('position angle must be specified as "degree" or "radian" measured from north towards east.')
-
-                if src_shape.shape[0] != self.location.shape[0]:
-                    raise ValueError('Number of source shapes in src_shape must match the number of object lcoations')
+                if 'power-law-index' not in spec_parms:
+                    spec_parms['power-law-index'] = NP.zeros(self.location.shape[0])
+    
+                if 'z-width' not in spec_parms:
+                    spec_parms['z-width'] = NP.zeros(self.location.shape[0])
+                elif NP.any(spec_parms['z-width'] < 0.0):
+                    raise ValueError('Characteristic redshift widths must not be negative')
+    
+                self.spec_parms = spec_parms
+    
+                if src_shape is not None:
+                    self.src_shape = NP.asarray(src_shape)
+                    if self.src_shape.shape[1] != 3:
+                        raise ValueError('Source shape must consist of three columns (major axis FWHM, minor axis FWHM, position angle) per source.')
+                    if src_shape_units is not None:
+                        if not isinstance(src_shape_units, (list, tuple)):
+                            raise TypeError('Source shape units must be provided as a list or tuple')
+                        if len(src_shape_units) != 3:
+                            raise ValueError('Source shape units must contain three elements.')
+        
+                        if src_shape_units[0] == 'arcsec':
+                            self.src_shape[:,0] = self.src_shape[:,0]/3.6e3
+                        elif src_shape_units[0] == 'arcmin':
+                            self.src_shape[:,0] = self.src_shape[:,0]/60.0
+                        elif src_shape_units[0] == 'radian':
+                            self.src_shape[:,0] = NP.degrees(self.src_shape[:,0])
+                        elif src_shape_units[0] != 'degree':
+                            raise ValueError('major axis FWHM must be specified as "arcsec", "arcmin", "degree" or "radian"')
+        
+                        if src_shape_units[1] == 'arcsec':
+                            self.src_shape[:,1] = self.src_shape[:,1]/3.6e3
+                        elif src_shape_units[1] == 'arcmin':
+                            self.src_shape[:,1] = self.src_shape[:,1]/60.0
+                        elif src_shape_units[1] == 'radian':
+                            self.src_shape[:,1] = NP.degrees(self.src_shape[:,1])
+                        elif src_shape_units[0] != 'degree':
+                            raise ValueError('minor axis FWHM must be specified as "arcsec", "arcmin", "degree" or "radian"')
+        
+                        if src_shape_units[2] == 'radian':
+                            self.src_shape[:,2] = NP.degrees(self.src_shape[:,2])
+                        elif src_shape_units[2] != 'degree':
+                            raise ValueError('position angle must be specified as "degree" or "radian" measured from north towards east.')
+    
+                    if src_shape.shape[0] != self.location.shape[0]:
+                        raise ValueError('Number of source shapes in src_shape must match the number of object lcoations')
 
     #############################################################################
 

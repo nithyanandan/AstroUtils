@@ -1,3 +1,11 @@
+From dabb3d7 (catalog-save):
+===========================
+
+In catalog.py,
+
+(*) Add option init_file in member function __init__() of class
+SkyModel. Update docstring accordingly.
+
 From 2a882ab (master):
 =====================
 
