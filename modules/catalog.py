@@ -2,6 +2,7 @@ import numpy as NP
 import healpy as HP
 from astropy.table import Table
 from astropy.io import fits, ascii
+import h5py
 from astropy.coordinates import Angle, SkyCoord
 from astropy import units
 import scipy.constants as FCNST
@@ -215,7 +216,7 @@ class SkyModel(object):
             elif not isinstance(spec_parms, dict):
                 raise TypeError('Spectral parameters in spec_parms must be specified as a dictionary')
 
-            if not 'name' in spec_parms:
+            if 'name' not in spec_parms:
                 spec_parms['name'] = NP.repeat('power-law', self.location.shape[0])
 
             if isinstance(spec_parms['name'], (list, NP.ndarray)):
@@ -727,7 +728,7 @@ class SkyModel(object):
 
     ############################################################################
 
-    def save(self, outfile, fileformat='ascii'):
+    def save(self, outfile, fileformat='hdf5'):
 
         """
         -------------------------------------------------------------------------
@@ -735,11 +736,11 @@ class SkyModel(object):
 
         Inputs:
 
-        outfile     [string] Output filename including full path
+        outfile     [string] Output filename including full path omitting the
+                    extension which will be appended automatically
 
         fileformat  [string] format for the output. Accepted values are 'ascii'
-                    (default). Currently works only with 'ascii'. Needs serious
-                    development for other formats
+                    and 'hdf5' (default). 
         -------------------------------------------------------------------------
         """
 
@@ -748,36 +749,79 @@ class SkyModel(object):
         except NameError:
             raise NameError('outfile not specified')
 
-        frmts = {}
-        frmts['ID'] = '%s19'
-        frmts['RA (deg)'] = '%10.6f'
-        frmts['DEC (deg)'] = '%+10.6f'
-        frmts['S (Jy)'] = '%8.3f'
-        frmts['FREQ (MHz)'] = '%12.7f'
+        if fileformat not in ['hdf5', 'ascii']:
+            raise ValueError('Output fileformat must be set to "hdf5" or "ascii"')
 
-        data_dict = {}
-        if self.coords == 'radec':
-            if self.epoch == 'B1950':
-                data_dict['ID'] = NP.char.replace('B'+NP.char.array(Angle(self.location[:,0],unit=units.degree).to_string(unit=units.hour,sep=':',alwayssign=False,pad=True,precision=2))+NP.char.array(Angle(self.location[:,1],unit=units.degree).to_string(unit=units.degree,sep=':',alwayssign=True,pad=True,precision=1)), ':', '')
-            else:
-                data_dict['ID'] = NP.char.replace('J'+NP.char.array(Angle(self.location[:,0],unit=units.degree).to_string(unit=units.hour,sep=':',alwayssign=False,pad=True,precision=2))+NP.char.array(Angle(self.location[:,1],unit=units.degree).to_string(unit=units.degree,sep=':',alwayssign=True,pad=True,precision=1)), ':', '')                
-        data_dict['RA (deg)'] = self.location[:,0]
-        data_dict['DEC (deg)'] = self.location[:,1]
-        if self.spec_type == 'func':
-            data_dict['S (Jy)'] = self.spec_parms['flux-scale']
-            data_dict['FREQ (MHz)'] = self.spec_parms['freq-ref']/1e6 # in MHz
-            if NP.all(self.spec_parms['name'] == 'power-law'):
-                data_dict['SPINDEX'] = self.spec_parms['power-law-index']
-                frmts['SPINDEX'] = '%0.2f'
-                field_names = ['ID', 'RA (deg)', 'DEC (deg)', 'S (Jy)', 'FREQ (MHz)', 'SPINDEX']
-            else:
-                field_names = ['ID', 'RA (deg)', 'DEC (deg)', 'S (Jy)', 'FREQ (MHz)']
+        if fileformat == 'hdf5':
+            outfile = outfile + '.hdf5'
+            with h5py.File(outfile, 'w') as fileobj:
+                hdr_group = fileobj.create_group('header')
+                hdr_group['spec_type'] = self.spec_type
+
+                object_group = fileobj.create_group('object')
+                object_group.attrs['epoch'] = self.epoch
+                object_group.attrs['coords'] = self.coords
+                name_dset = object_group.create_dataset('name', data=self.name, compression='gzip', compression_opts=9)
+                if self.coords == 'radec':
+                    ra_dset = object_group.create_dataset('RA', data=self.location[:,0], compression='gzip', compression_opts=9)
+                    ra_dset.attrs['units'] = 'degrees'
+                    dec_dset = object_group.create_dataset('Dec', data=self.location[:,1], compression='gzip', compression_opts=9)
+                    dec_dset.attrs['units'] = 'degrees'
+                elif self.coords == 'altaz':
+                    alt_dset = object_group.create_dataset('Alt', data=self.location[:,0], compression='gzip', compression_opts=9)
+                    alt_dset.attrs['units'] = 'degrees'
+                    az_dset = object_group.create_dataset('Az', data=self.location[:,1], compression='gzip', compression_opts=9)
+                    az_dset.attrs['units'] = 'degrees'
+                else:
+                    raise ValueError('This coordinate system is not currently supported')
+                src_shape_dset = object_group.create_dataset('shape', data=self.src_shape, compression='gzip', compression_opts=9)
+                src_shape_dset.attrs['units'] = 'degrees'
+
+                spec_group = fileobj.create_group('spectral_info')
+                if self.spec_type == 'func':
+                    spec_group['func-name'] = self.spec_parms['name']
+                    freq_dset = spec_group.create_dataset('freq', data=self.spec_parms['freq-ref'], compression='gzip', compression_opts=9)
+                    freq_dset.attrs['units'] = 'Hz'
+                    flux_dset = spec_group.create_dataset('flux_density', data=self.spec_parms['flux-scale'], compression='gzip', compression_opts=9)
+                    flux_dset.attrs['units'] = 'Jy'
+                    if NP.all(self.spec_parms['name'] == 'power-law'):
+                        spindex_dset = spec_group.create_dataset('spindex', data=self.spec_parms['power-law-index'], compression='gzip', compression_opts=9)
+                else:
+                    freq_dset = spec_group.create_dataset('freq', data=self.frequency.ravel(), compression='gzip', compression_opts=9)
+                    freq_dset.attrs['units'] = 'Hz'
+                    spectrum_dset = spec_group.create_dataset('spectrum', data=self.spectrum, compression='gzip', compression_opts=9)
         else:
-            data_dict['FREQ (MHz)'] = self.frequency.flatten()[self.frequency.size/2] / 1e6 + NP.zeros(self.location.shape[0]) # MHz
-            field_names = ['ID', 'RA (deg)', 'DEC (deg)', 'FREQ (MHz)']
-
-        tbdata = Table(data_dict, names=field_names)
-        ascii.write(tbdata, output=outfile, format='fixed_width_two_line', formats=frmts, delimiter=' ', delimiter_pad=' ', bookend=False)
+            outfile = outfile + '.txt'
+            frmts = {}
+            frmts['ID'] = '%s19'
+            frmts['RA (deg)'] = '%10.6f'
+            frmts['DEC (deg)'] = '%+10.6f'
+            frmts['S (Jy)'] = '%8.3f'
+            frmts['FREQ (MHz)'] = '%12.7f'
+    
+            data_dict = {}
+            if self.coords == 'radec':
+                if self.epoch == 'B1950':
+                    data_dict['ID'] = NP.char.replace('B'+NP.char.array(Angle(self.location[:,0],unit=units.degree).to_string(unit=units.hour,sep=':',alwayssign=False,pad=True,precision=2))+NP.char.array(Angle(self.location[:,1],unit=units.degree).to_string(unit=units.degree,sep=':',alwayssign=True,pad=True,precision=1)), ':', '')
+                else:
+                    data_dict['ID'] = NP.char.replace('J'+NP.char.array(Angle(self.location[:,0],unit=units.degree).to_string(unit=units.hour,sep=':',alwayssign=False,pad=True,precision=2))+NP.char.array(Angle(self.location[:,1],unit=units.degree).to_string(unit=units.degree,sep=':',alwayssign=True,pad=True,precision=1)), ':', '')                
+            data_dict['RA (deg)'] = self.location[:,0]
+            data_dict['DEC (deg)'] = self.location[:,1]
+            if self.spec_type == 'func':
+                data_dict['S (Jy)'] = self.spec_parms['flux-scale']
+                data_dict['FREQ (MHz)'] = self.spec_parms['freq-ref']/1e6 # in MHz
+                if NP.all(self.spec_parms['name'] == 'power-law'):
+                    data_dict['SPINDEX'] = self.spec_parms['power-law-index']
+                    frmts['SPINDEX'] = '%0.2f'
+                    field_names = ['ID', 'RA (deg)', 'DEC (deg)', 'S (Jy)', 'FREQ (MHz)', 'SPINDEX']
+                else:
+                    field_names = ['ID', 'RA (deg)', 'DEC (deg)', 'S (Jy)', 'FREQ (MHz)']
+            else:
+                data_dict['FREQ (MHz)'] = self.frequency.flatten()[self.frequency.size/2] / 1e6 + NP.zeros(self.location.shape[0]) # MHz
+                field_names = ['ID', 'RA (deg)', 'DEC (deg)', 'FREQ (MHz)']
+    
+            tbdata = Table(data_dict, names=field_names)
+            ascii.write(tbdata, output=outfile, format='fixed_width_two_line', formats=frmts, delimiter=' ', delimiter_pad=' ', bookend=False)
 
     ############################################################################
 

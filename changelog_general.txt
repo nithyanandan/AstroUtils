@@ -1,3 +1,12 @@
+From 2a882ab (master):
+=====================
+
+In catalog.py,
+
+(*) Add option to save sky model in HDF5 format in member function
+save() of class SkyModel. Update docstring accordingly.
+(*) Import module h5py to save sky model information in HDF5 format
+
 From 607728a (master):
 =====================
 
