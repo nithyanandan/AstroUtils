@@ -578,13 +578,14 @@ class SkyModel(object):
         if (indices is None) or (len(indices) == 0):
             return self
         else:
+            init_parms = {}
             if axis == 'position':
                 indices = NP.asarray(indices).ravel()
+                init_parms = {'name': NP.take(self.name, indices), 'frequency': self.frequency, 'location': NP.take(self.location, indices, axis=0), 'spec_type': self.spec_type, 'epoch': self.epoch, 'coords': self.coords}
                 if self.spec_type == 'spectrum':
+                    init_parms['spectrum'] = NP.take(self.spectrum, indices, axis=0)
                     if self.src_shape is not None:
-                        return SkyModel(NP.take(self.name, indices), self.frequency, NP.take(self.location, indices, axis=0), self.spec_type, spectrum=NP.take(self.spectrum, indices, axis=0), src_shape=NP.take(self.src_shape, indices, axis=0), epoch=self.epoch, coords=self.coords)
-                    else:
-                        return SkyModel(NP.take(self.name, indices), self.frequency, NP.take(self.location, indices, axis=0), self.spec_type, spectrum=NP.take(self.spectrum, indices, axis=0), epoch=self.epoch, coords=self.coords)
+                        init_parms['src_shape'] = NP.take(self.src_shape, indices, axis=0)
                 else:
                     spec_parms = {}
                     spec_parms['name'] = NP.take(self.spec_parms['name'], indices)
@@ -593,22 +594,22 @@ class SkyModel(object):
                     spec_parms['flux-scale'] = NP.take(self.spec_parms['flux-scale'], indices)
                     spec_parms['flux-offset'] = NP.take(self.spec_parms['flux-offset'], indices)
                     spec_parms['z-width'] = NP.take(self.spec_parms['z-width'], indices)                
+                    init_parms['spec_parms'] = spec_parms
                     if self.src_shape is not None:
-                        return SkyModel(NP.take(self.name, indices), self.frequency, NP.take(self.location, indices, axis=0), self.spec_type, spec_parms=spec_parms, src_shape=NP.take(self.src_shape, indices, axis=0), epoch=self.epoch, coords=self.coords)
-                    else:
-                        return SkyModel(NP.take(self.name, indices), self.frequency, NP.take(self.location, indices, axis=0), self.spec_type, spec_parms=spec_parms, epoch=self.epoch, coords=self.coords)
+                        init_parms['src_shape'] = NP.take(self.src_shape, indices, axis=0)
             else:
                 indices = NP.asarray(indices).ravel()
+                init_parms = {'name': self.name, 'frequency': NP.take(self.frequency, indices, axis=1), 'location': self.location, 'spec_type': self.spec_type, 'epoch': self.epoch, 'coords': self.coords}
                 if self.spec_type == 'func':
+                    init_parms['spec_parms'] = self.spec_parms                        
                     if self.src_shape is not None:
-                        return SkyModel(self.name, NP.take(self.frequency, indices, axis=1), self.location, self.spec_type, spec_parms=self.spec_parms, src_shape=self.src_shape, epoch=self.epoch, coords=self.coords)
-                    else:
-                        return SkyModel(self.name, NP.take(self.frequency, indices, axis=1), self.location, self.spec_type, spec_parms=self.spec_parms, epoch=self.epoch, coords=self.coords)                        
+                        init_parms['src_shape'] = self.src_shape
                 else:
+                    init_parms['spectrum'] = NP.take(self.spectrum, indices, axis=1)
                     if self.src_shape is not None:
-                        return SkyModel(self.name, NP.take(self.frequency, indices, axis=1), self.location, self.spec_type, spectrum=NP.take(self.spectrum, indices, axis=1), src_shape=self.src_shape, epoch=self.epoch, coords=self.coords)
-                    else:
-                        return SkyModel(self.name, NP.take(self.frequency, indices, axis=1), self.location, self.spec_type, spectrum=NP.take(self.spectrum, indices, axis=1), epoch=self.epoch, coords=self.coords)
+                        init_parms['src_shape'] = self.src_shape
+
+            return SkyModel(init_parms=init_parms, init_file=None)
 
     #############################################################################
 

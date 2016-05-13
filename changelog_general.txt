@@ -1,3 +1,12 @@
+From e04d796 (catalog-save):
+===========================
+
+In catalog.py,
+
+(*) Modify subset() member function of class SkyModel to return a
+subset instance using the updated requirements for calling the
+__init__() member function
+
 From ee1746e (catalog-save):
 ===========================
 
