@@ -1,7 +1,7 @@
 import numpy as NP
 from scipy import signal
 from scipy import interpolate
-import my_operations as OPS
+import mathops as OPS
 import lookup_operations as LKP
 
 #################################################################################

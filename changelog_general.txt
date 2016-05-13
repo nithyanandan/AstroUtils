@@ -1,3 +1,8 @@
+Merge 75abfe4 (master,catalog-save) + 3ea71e1 (pkg):
+===================================================
+
+(*) Merge branch pkg onto master
+
 From e04d796 (catalog-save):
 ===========================
 
@@ -46,6 +51,148 @@ From c1a87db (master):
 In my_gridding_modules.py,
 
 (*) Add function grid_3d() along with docstring
+
+From 5190e34 (nonmath):
+======================
+
+In astroutils/nonmathops.py,
+
+(*) Add function is_dict1_subset_of_dict2() to check if one
+dictionary is a subset of another. Also create docstring
+
+In astroutils/test/nonmathops_test.py,
+
+(*) Add tests test_is_dict1_subset_of_dict1_case1() and
+test_is_dict1_subset_of_dict1_case2() to test the
+function is_dict1_subset_of_dict1() in the module nonmathops.py
+
+From 6fbb2c8 (pkg):
+==================
+
+In astroutils/,
+
+(*) Add module nonmathops.py to git repo
+
+In astroutils/nonmathops.py,
+
+(*) Add function recursive_find_notNone_in_dict() to reduce a
+dictionary recursively to contain only non-None values. Also
+create docstring
+
+In astroutils/test/,
+
+(*) Add test module nonmathops_test.py to git repo
+
+In astroutils/test/nonmathops_test.py,
+
+(*) Add tests test_recursive_find_notNone_in_dict() and
+test_recursive_find_notNone_in_allNone_dict() to test the
+function function recursive_find_notNone_in_dict() in the
+newly created module 
+
+From 109d1eb (pkg):
+==================
+
+In setup.py,
+
+(*) Add keywords classifiers, maintainer, and maintainer_email
+
+In astroutils/__init__.py,
+
+(*) Add info on maintainer and maintainer_email
+
+From 03af18c (pkg):
+==================
+
+In setup.py,
+
+(*) Add package dependencies under keywords install_requires and
+setup_requires
+
+In astroutils/catalog.py,
+
+(*) Remove lines importing and using matplotlib
+
+From f6bd5f6 (pkg):
+==================
+
+In mathops.py,
+(*) Import correctly renamed module DSP_modules instead of my_DSP_modules
+
+In DSP_modules.py,
+(*) Import correctly renamed module mathops instead of my_operations
+
+(*) Rename my_operations_test.py to mathops_test.py
+In mathops_test.py,
+(*) Import correctly renamed module mathops instead of my_operations
+
+From f8b61b2 (pkg):
+==================
+
+(*) Rename modules by removing prefix 'my_' in filenames
+(*) Make appropriate changes in modules that use the renamed modules
+
+From d0603dc (pkg):
+==================
+
+(*) Rename package from 'generalutils' to 'AstroUtils'
+(*) Make ppropriate changes in setup.py, folder structure, and tests
+
+From ec2b1d6 (pkg):
+==================
+
+In setup.py,
+
+(*) Modify indentation to 4 spaces
+
+From 89748c9 (pkg), 98e0d2f (utest):
+===================================
+
+(*) Merge 89748c9 (pkg) + 98e0d2f (utest)
+
+From beca8d2 (pkg):
+==================
+
+In setup.py,
+
+(*) Remove commented lines
+
+From 16def05 (pkg):
+==================
+
+In generalutils/__init__.py,
+
+(*) Add metadata used in setup
+
+In setup.py,
+
+(*) Read setup parameters from package __init__.py
+
+From 16def05 (utest):
+====================
+
+In geometry_test.py,
+
+(*) Add more tests test_enu2xyz(), test_xyz2enu(), test_sph2xyz(),
+test_sphdist(), test_spherematch_1match() and
+test_spherematch_allmatch()
+
+From 89688af (utest):
+====================
+
+(*) Add more unittest modules
+(*) Test package installation
+(*) Make init files empty
+
+From 326cdfa (pkg):
+==================
+
+(*) Start adding unittest for my_operations.py module
+
+From c1a87db (pkg):
+==================
+
+(*) Start making it an installable package
 
 From f7d0b72 (master):
 =====================

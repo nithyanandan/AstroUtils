@@ -2,7 +2,7 @@ import numpy as NP
 import scipy as SP
 from scipy import interpolate
 import healpy as HP
-import my_DSP_modules as DSP
+import DSP_modules as DSP
 import lookup_operations as LKP
 
 #################################################################################
