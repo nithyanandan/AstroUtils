@@ -136,42 +136,143 @@ class SkyModel(object):
 
     ##############################################################################
 
-    def __init__(self, name, frequency, location, spec_type, spec_parms=None, 
-                 spectrum=None, src_shape=None, epoch='J2000', coords='radec', 
-                 src_shape_units=None, init_file=None):
+    def __init__(self, init_file=None, init_parms=None):
 
         """
         --------------------------------------------------------------------------
         Initialize an instance of class SkyModel
 
         Class attributes initialized are:
-        frequency, location, flux_density, epoch, spectral_index, coords, and 
-        src_shape
+        frequency, location, flux_density, epoch, spectral_index, coords, 
+        spectrum, src_shape
 
-        Other input(s):
+        Inputs:
 
-        src_shape_units [3-element list or tuple of strings] Specifies the units 
-                        of major axis FWHM, minor axis FWHM, and position angle.
-                        Accepted values for major and minor axes units are 
-                        'arcsec', 'arcmin', 'degree', or 'radian'. Accepted
-                        values for position angle units are 'degree' or 'radian'
+        init_file   [string] Full path to the file containing saved 
+                    information of an instance of class SkyModel. If set to
+                    None (default), parameters in the input init_parms 
+                    will be used to initialize an instance of this class. 
+                    If set to a filename, the instance will be initialized from 
+                    this file, and init_parms and its parameters will be 
+                    ignored.
 
-        init_file       [string] Pull path to the file containing saved 
-                        information of an instance of class SkyModel. If set to
-                        None (default), other input parameters will be used to
-                        initialize an instance of this class. If set to a 
-                        filename, the instance will be initialized from this 
-                        file, and other parameters will be ignored.
+        init_parms  [dictionary] Dictionary containing parameters used to create
+                    an instance of class SkyModel. Used only if init_file is set
+                    to None. Initialization parameters are specified using the
+                    following keys and values:
+                    'name'      [scalar or vector] Name of the catalog. If 
+                                scalar, will be used for all sources in the sky 
+                                model. If vector, will be used for corresponding 
+                                object. If vector, size must equal the number of 
+                                objects.
+                    'frequency' [scalar or vector] Frequency range for which sky 
+                                model is applicable. Units in Hz.
+                    'location'  [numpy array or list of lists] Positions of the 
+                                sources in sky model. Each position is specified 
+                                as a row (numpy array) or a 2-element list which 
+                                is input as a list of lists for all the sources 
+                                in the sky model
+                    'spec_type' [string] specifies the flux variation along the 
+                                spectral axis. Allowed values are 'func' and 
+                                'spectrum'
+                    'spec_parms'
+                                [dictionary] specifies spectral parameters 
+                                applicable for different spectral types. It 
+                                contains values in the following keys:
+                                'name'   [string] Specifies name of the 
+                                         functional variation of spectrum. 
+                                         Applicable when spec_type is set to 
+                                         'func'. Allowed values are 'random', 
+                                         'monotone', 'power-law', and 'tanh'. 
+                                         Default='power-law' (with power law 
+                                         index set to 0). See member functions 
+                                         for these function definitions.
+                                'power-law-index' 
+                                         [scalar numpy vector or list] Power 
+                                         law index for each object 
+                                         (flux ~ freq^power_law_index). Will be 
+                                         specified and applicable when value in 
+                                         key 'name' is set to 'power-law'. Same 
+                                         size as the number of object locations.
+                                'freq-ref'
+                                         [scalar or numpy array or list] 
+                                         Reference or pivot frequency as 
+                                         applicable. If a scalar, it is 
+                                         identical at all object locations. If a 
+                                         list or numpy array it must of size 
+                                         equal to the number of objects, one 
+                                         value at each location. If value under 
+                                         key 'name' is set to 'power-law', this 
+                                         specifies the reference frequency at 
+                                         which the flux density is specified 
+                                         under key 'flux-scale'. If value under 
+                                         key 'name' is 'monotone', this 
+                                         specifies the frequency at which the 
+                                         spectrum of the object contains a spike 
+                                         and zero elsewhere. If value under key 
+                                         'name' is 'tanh', this specifies the 
+                                         frequency at which the spectrum is 
+                                         mid-way between min and max of the tanh 
+                                         function. This is not applicable when 
+                                         value under key 'name' is set to 
+                                         'random' or 'flat'. 
+                                'flux-scale' 
+                                         [scalar or numpy array] Flux scale of 
+                                         the flux densities at object locations. 
+                                         If a scalar, it is common for all 
+                                         object locations. If it is a vector, it 
+                                         has a size equal to the number of 
+                                         object locations, one value for each 
+                                         object location. If value in 'name' is 
+                                         set to 'power-law', this refers to the 
+                                         flux density scale at the reference 
+                                         frequency specified under key 
+                                         'freq-ref'. If value under key 'name' 
+                                         is 'tanh', the flux density scale is 
+                                         half of the value specified under this 
+                                         key.
+                                'flux-offset'
+                                         [numpy vector] Flux density offset 
+                                         applicable after applying the flux 
+                                         scale. Same units as the flux scale. If 
+                                         a scalar, it is common for all object 
+                                         locations. If it is a vector, it has a 
+                                         size equal to the number of object 
+                                         locations, one value for each object 
+                                         location. When value under the key 
+                                         'name' is set to 'random', this amounts 
+                                         to setting a mean flux density along 
+                                         the spectral axis.
+                                'z-width'
+                                         [numpy vector] Characteristic redshift 
+                                         full-wdith in the definition of tanh 
+                                         expression applicable to global EoR 
+                                         signal. 
+                    'src_shape' [3-column numpy array or list of 3-element 
+                                lists] source shape specified by major axis 
+                                FWHM (first column), minor axis FWHM (second 
+                                column), and position angle (third column). The 
+                                major and minor axes and position angle are 
+                                stored in degrees. The number of rows must match 
+                                the number of sources. Position angle is in 
+                                degrees east of north (same convention as local 
+                                azimuth)
+                    
+                    'epoch'     [string] Epoch appropriate for the coordinate 
+                                system. Default is 'J2000'
+                    'coords'    [string] Coordinate system used for the source 
+                                positions in the sky model. Currently accepted 
+                                values are 'radec' (RA-Dec)
 
-        Read docstring of class SkyModel for details on these attributes.
+                    'src_shape_units' 
+                                [3-element list or tuple of strings] Specifies 
+                                the units of major axis FWHM, minor axis FWHM, 
+                                and position angle. Accepted values for major 
+                                and minor axes units are 'arcsec', 'arcmin', 
+                                'degree', or 'radian'. Accepted values for 
+                                position angle units are 'degree' or 'radian'
         --------------------------------------------------------------------------
         """
-
-        try:
-            name, frequency, location, spec_type
-        except NameError:
-            if init_file is None:
-                raise NameError('Catalog name, frequency, location, and spectral type must be provided.')
 
         if init_file is not None:
             with h5py.File(init_file, 'r') as fileobj:
@@ -200,13 +301,45 @@ class SkyModel(object):
                         else:
                             self.frequency = grp['freq'].value.reshape(1,-1)
                             self.spectrum = grp['spectrum'].value
+        elif (init_parms is None):
+            raise ValueError('In the absence of init_file, init_parms must be provided for initialization')
         else:
-            self.location = NP.asarray(location)
-            self.epoch = epoch
-            self.coords = coords
-            self.src_shape = None
-            self.spec_parms = None
-    
+            if not isinstance(init_parms, dict):
+                raise TypeError('Input init_parms must be a dictionary')
+
+            try:
+                name = init_parms['name']
+                frequency = init_parms['frequency']
+                location = init_parms['location']
+                spec_type = init_parms['spec_type']
+            except KeyError:
+                raise KeyError('Catalog name, frequency, location, and spectral type must be provided.')
+
+            if 'spec_parms' in init_parms:
+                spec_parms = init_parms['spec_parms']
+            else:
+                spec_parms = None
+
+            if 'src_shape' in init_parms:
+                src_shape = init_parms['src_shape']
+            else:
+                src_shape = None
+
+            if 'src_shape_units' in init_parms:
+                src_shape_units = init_parms['src_shape_units']
+            else:
+                src_shape_units = None
+                
+            if 'coords' in init_parms:
+                self.coords = init_parms['coords']
+            else:
+                self.coords = 'radec'
+
+            if 'epoch' in init_parms:
+                self.epoch = init_parms['epoch']
+            else:
+                self.epoch = 'J2000'
+                
             if isinstance(name, (int, float, str)):
                 self.name = NP.repeat(NP.asarray(name).reshape(-1), location.shape[0])
             elif isinstance(name, NP.ndarray):
@@ -232,9 +365,11 @@ class SkyModel(object):
             else:
                 raise TypeError('Sky model frequency must be a integer, float, or numpy array')
     
+            self.location = location
             if self.spec_type == 'spectrum':
-                if spectrum is None:
-                    raise ValueError('Sky model spectrum not provided.')
+                if 'spectrum' not in init_parms:
+                    raise KeyError('Sky model spectrum not provided.')
+                spectrum = init_parms['spectrum']
                 if not isinstance(spectrum, NP.ndarray):
                     raise TypeError('Sky model spectrum must be a numpy array')
                 if spectrum.shape != (self.location.shape[0], self.frequency.size):

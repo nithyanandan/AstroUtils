@@ -1,3 +1,12 @@
+From ee1746e (catalog-save):
+===========================
+
+In catalog.py,
+
+(*) Add option init_parms in member function __init__() of class
+SkyModel. This replaces all the other individual arguments that were
+used in intializing earlier. Update docstring accordingly. 
+
 From dabb3d7 (catalog-save):
 ===========================
 
