@@ -35,10 +35,13 @@ class SkyModel(object):
                    the sources in the sky model
 
     spec_type      [string] specifies the flux variation along the spectral 
-                   axis. Allowed values are 'func' and 'spectrum'
+                   axis. Allowed values are 'func' and 'spectrum'. If set to 
+                   'func', values under spec_parms are applicable. If set to 
+                   'spectrum', values under key 'spectrum' are applicable.
 
     spec_parms     [dictionary] specifies spectral parameters applicable for 
-                   different spectral types. It contains values in the following
+                   different spectral types. Only applicable if spec_type is 
+                   set to 'func'. It contains values in the following
                    keys:
                    'name'   [string] Specifies name of the functional variation
                             of spectrum. Applicable when spec_type is set to 
@@ -93,6 +96,11 @@ class SkyModel(object):
                             [numpy vector] Characteristic redshift full-wdith
                             in the definition of tanh expression applicable to
                             global EoR signal. 
+
+    spectrum       [numpy array] Spectrum of the catalog. Will be applicable 
+                   if attribute spec_type is set to 'spectrum' or if spectrum
+                   was computed using the member function. It will be of shape
+                   nsrc x nchan
 
     src_shape      [3-column numpy array or list of 3-element lists] source 
                    shape specified by major axis FWHM (first column), minor axis 
@@ -172,10 +180,13 @@ class SkyModel(object):
                                 in the sky model
                     'spec_type' [string] specifies the flux variation along the 
                                 spectral axis. Allowed values are 'func' and 
-                                'spectrum'
+                                'spectrum'. If set to 'func', values under 
+                                spec_parms are applicable. If set to 'spectrum', 
+                                values under key 'spectrum' are applicable.
                     'spec_parms'
                                 [dictionary] specifies spectral parameters 
-                                applicable for different spectral types. It 
+                                applicable for different spectral types. Only 
+                                applicable if spec_type is set to 'func'. It 
                                 contains values in the following keys:
                                 'name'   [string] Specifies name of the 
                                          functional variation of spectrum. 
@@ -246,6 +257,10 @@ class SkyModel(object):
                                          full-wdith in the definition of tanh 
                                          expression applicable to global EoR 
                                          signal. 
+                    'spectrum'  [numpy array] Spectrum of the catalog. Will be 
+                                applicable if attribute spec_type is set to 
+                                'spectrum'. It must be of shape nsrc x nchan
+
                     'src_shape' [3-column numpy array or list of 3-element 
                                 lists] source shape specified by major axis 
                                 FWHM (first column), minor axis FWHM (second 

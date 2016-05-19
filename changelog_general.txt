@@ -1,3 +1,11 @@
+From 534df49 (master):
+=====================
+
+In astroutils/catalog.py,
+
+(*) Update docstrings of member function __init__() and of class
+SkyModel
+
 Merge 75abfe4 (master,catalog-save) + 3ea71e1 (pkg):
 ===================================================
 
