@@ -1111,6 +1111,100 @@ def ecef2enu(xyz, ref_info):
 
 #################################################################################
 
+def enu2ecef(enu, ref_info):
+
+    """
+    -----------------------------------------------------------------------------
+    Convert local ENU coordinates to XYZ in ECEF based on WGS 84 parameters
+    (Refer to Wikipedia 
+    https://en.wikipedia.org/wiki/Geographic_coordinate_conversion)
+
+    Inputs:
+
+    enu     [numpy array] local ENU-coordinates (in m). It is of size nloc x 3.
+
+    ref_info
+            [dictionary] contains information about the reference point relative 
+            to which all the ECEF coordinates will be estimated. It consists of 
+            the following keys and information:
+            'xyz'   [3-element numpy array] ECEF XYZ location of the reference
+                    point
+            'lat'   [scalar] geodetic latitude (in radians or degrees as 
+                    specified by key 'units') of reference point 
+            'lon'   [scalar] geodetic longitude (in radians or degrees as 
+                    specified by key 'units') of reference point 
+            'units' [string] Specifies units of lat and lon of reference point. 
+                    Accepted values are 'radians' (default) or 'degrees'
+
+    Outputs:
+
+    Numpy array containing converted ECEF XYZ locations of the input local ENU 
+    locations. It will be of size nloc x 3
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        enu, ref_info
+    except NameError:
+        raise NameError('Inputs enu and ref_info must be specified')
+
+    if not isinstance(enu, NP.ndarray):
+        raise TypeError('Input enu must be a numpy array')
+    if enu.ndim == 1:
+        if enu.size != 3:
+            raise ValueError('Input enu must be a 3-column array')
+        enu = enu.reshape(1,-1)
+    elif enu.ndim == 2:
+        if enu.shape[1] != 3:
+            raise ValueError('Input enu must be a 3-column array')
+    else:
+        raise ValueError('Input enu must be a 2D 3-column array')
+
+    if isinstance(ref_info, dict):
+        if 'enu' in ref_info:
+            if isinstance(ref_info['enu'], NP.ndarray):
+                if ref_info['enu'].size != 3:
+                    raise ValueError('Value under key "enu" in input ref_info must be a 3-element numpy array')
+                ref_info['enu'] = ref_info['enu'].ravel()
+            else:
+                raise TypeError('Value under key "enu" in input ref_info must be a numpy array')
+        else:
+            raise KeyError('Key "enu" not found in input ref_info')
+
+        if 'lat' in ref_info:
+            if not isinstance(ref_info['lat'], (int,scalar)):
+                raise TypeError('Value under key "lat" in input ref_info must be a scalar number')
+            ref_info['lat'] = float(ref_info['lat'])
+        else:
+            raise KeyError('Key "lat" not found in input ref_info')
+        if 'lon' in ref_info:
+            if not isinstance(ref_info['lon'], (int,scalar)):
+                raise TypeError('Value under key "lon" in input ref_info must be a scalar number')
+            ref_info['lon'] = float(ref_info['lon'])
+        else:
+            raise KeyError('Key "lon" not found in input ref_info')
+        if 'units' in ref_info:
+            if ref_info['units'] not in ['degrees', 'radians']:
+                raise ValueError('Invalid specification for value under key "units" in input ref_info')
+        else:
+            print 'Value under key "units" in input ref_info not specified. Assuming the units are in radians.'
+    else:
+        raise TypeError('Input ref_info must be a dictionary')
+
+    ref_lat = ref_info['lat']
+    ref_lon = ref_info['lon']
+    if ref_info['units'] != 'radians':
+        ref_lat = NP.radians(ref_lat)
+        ref_lon = NP.radians(ref_lon)
+
+    rot_matrix = NP.asarray([[-NP.sin(ref_lon), -NP.sin(ref_lat)*NP.cos(ref_lon), NP.cos(ref_lat)*NP.cos(ref_lon)],
+                             [NP.cos(ref_lon), -NP.sin(ref_lat)*NP.sin(ref_lon), NP.cos(ref_lat)*NP.sin(ref_lon)],
+                             [0.0, NP.cos(ref_lat), NP.sin(ref_lat)]])
+    xyz = NP.dot(enu, rot_matrix.T) + ref_info['xyz'].reshape(1,-1)
+    return xyz
+
+#################################################################################
+
 # def angular_ring(skypos, angles, npoints=100, skyunits='radec', angleunits='degrees'):
 
 #     skypos = NP.radians(skypos).reshape(-1,2)
