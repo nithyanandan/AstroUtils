@@ -878,6 +878,143 @@ def xyz2enu(xyz, latitude, units='radians'):
 
 #################################################################################
 
+def lla2ecef(lat, lon, alt=None, units='radians'):
+
+    """
+    -----------------------------------------------------------------------------
+    Convert geodetic latitude, longitude and altitude to XYZ in ECEF coordinates
+    based on WGS84 parameters
+
+    Inputs:
+
+    lat     [numpy array] Geodetic latitude in units specified by input units.
+            Same size as lon and alt
+
+    lon     [numpy array] Geodetic longitude in units specified by input units.
+            Same size as lat and alt.
+
+    alt     [numpy array] Geodetic altitude in meters. Same size as lat and lon.
+            If set to None, it is assumed to be zeros.
+
+    units   [string] Specifies units of inputs lat and lon. Accepted values are
+            'radians' (default) or 'degrees'
+
+    Outputs:
+
+    Tuple (x,y,z) where x, y and z in meters are the components in the ECEF 
+    system. 
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        lat, lon
+    except NameError:
+        raise NameError('Inputs lat and lon must be specified')
+
+    if units not in ['degrees', 'radians']:
+        raise ValueError('Invalid input specified for "units"')
+    if not isinstance(lat, NP.ndarray):
+        raise TypeError('Input lat must be a numpy array')
+    if not isinstance(lon, NP.ndarray):
+        raise TypeError('Input lon must be a numpy array')
+    if lat.size != lon.size:
+        raise ValueError('Inputs lat and lon must be of same size')
+    if alt is not None:
+        if not isinstance(alt, NP.ndarray):
+            raise TypeError('Input alt must be a numpy array')
+        if alt.size != lat.size:
+            raise ValueError('Input alt must have same size as input lat')
+    else:
+        alt = NP.zeros_like(lat)
+
+    lat = lat.ravel()
+    lon = lon.ravel()
+    alt = alt.ravel()
+    if units != 'radians':
+        lat = NP.radians(lat)
+        lon = NP.radians(lon)
+
+    gps_a = 6378137.0
+    gps_f = 1.0 / 298.257223563 # flattening parameter
+    gps_b = gps_a * (1 - gps_f)
+    e_sqr = 1.0 - (gps_b/gps_a)**2 # first eccentricity
+    eprime_sqr = (gps_a/gps_b)**2 - 1.0 # second eccentricity
+    gps_N = gps_a / NP.sqrt(1.0 - e_sqr * NP.sin(lat)**2) # Radius of curvature
+    x = (gps_N + alt) * NP.cos(lat) * NP.cos(lon)
+    y = (gps_N + alt) * NP.cos(lat) * NP.sin(lon)
+    z = (gps_b**2 / gps_a**2 * gps_N + alt) * NP.sin(lat)
+
+    return (x, y, z)
+
+#################################################################################
+
+def ecef2lla(x, y, z, units='radians'):
+
+    """
+    -----------------------------------------------------------------------------
+    Convert XYZ in ECEF to geodetic latitude, longitude and altitude coordinates
+    based on WGS84 parameters
+
+    Inputs:
+
+    x       [numpy array] x-coordinate (in m) in ECEF system 
+
+    y       [numpy array] y-coordinate (in m) in ECEF system 
+
+    z       [numpy array] z-coordinate (in m) in ECEF system 
+
+    units   [string] Specifies units of outputs lat and lon. Accepted values are
+            'radians' (default) or 'degrees'
+
+    Outputs:
+
+    Tuple (lat, lon, alt) where lat (angle units), lon (angle units) and alt (m) 
+    are the geodetic latitude, longitudes and altitudes in WGS 84 system
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        x, y, z
+    except NameError:
+        raise NameError('Inputs x, y, z must be specified')
+
+    if units not in ['degrees', 'radians']:
+        raise ValueError('Invalid input specified for "units"')
+
+    if not isinstance(x, NP.ndarray):
+        raise TypeError('Input x must be a numpy array')
+    if not isinstance(y, NP.ndarray):
+        raise TypeError('Input y must be a numpy array')
+    if not isinstance(z, NP.ndarray):
+        raise TypeError('Input z must be a numpy array')
+    if (x.size != y.size) or (x.size != z.size):
+        raise ValueError('Inputs x, y and z must be of same size')
+
+    x = x.ravel()
+    y = y.ravel()
+    z = z.ravel()
+
+    gps_a = 6378137.0
+    gps_f = 1.0 / 298.257223563 # flattening parameter
+    gps_b = gps_a * (1 - gps_f)
+    e_sqr = 1.0 - (gps_b/gps_a)**2 # first eccentricity
+    eprime_sqr = (gps_a/gps_b)**2 - 1.0 # second eccentricity
+    gps_N = gps_a / NP.sqrt(1.0 - e_sqr * NP.sin(x)**2) # Radius of curvature
+    gps_p = NP.sqrt(x**2 + y**2)
+    gps_theta = NP.arctan2(z * gps_a, gps_p * gps_b)
+
+    lon = NP.arctan2(y, x)
+    lat = NP.arctan2(z + eprime_sqr * gps_b * NP.sin(gps_theta)**3, gps_p - e_sqr * gps_a * NP.cos(gps_theta)**3)
+    alt = gps_p / NP.cos(lat) - gps_N
+
+    if units != 'radians':
+        lat = NP.degrees(lat)
+        lon = NP.degrees(lon)
+
+    return (lat, lon, alt)
+
+#################################################################################
+
 # def angular_ring(skypos, angles, npoints=100, skyunits='radec', angleunits='degrees'):
 
 #     skypos = NP.radians(skypos).reshape(-1,2)

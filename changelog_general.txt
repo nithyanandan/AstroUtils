@@ -1,3 +1,12 @@
+From 65668ef (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Add functions lla2ecef() and ecef2lla() along with docstrings
+to convert back and forth between geodetic latitude, longitude,
+altitude and XYZ in ECEF coordinates
+
 From 534df49 (master):
 =====================
 
