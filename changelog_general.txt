@@ -1,3 +1,11 @@
+From 5ad929b (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Add function ecef2enu() along with docstring to convert from
+ECEF XYZ coordinates to local ENU coordinates
+
 From 65668ef (master):
 =====================
 
