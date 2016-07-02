@@ -1077,13 +1077,13 @@ def ecef2enu(xyz, ref_info):
             raise KeyError('Key "xyz" not found in input ref_info')
 
         if 'lat' in ref_info:
-            if not isinstance(ref_info['lat'], (int,scalar)):
+            if not isinstance(ref_info['lat'], (int,float)):
                 raise TypeError('Value under key "lat" in input ref_info must be a scalar number')
             ref_info['lat'] = float(ref_info['lat'])
         else:
             raise KeyError('Key "lat" not found in input ref_info')
         if 'lon' in ref_info:
-            if not isinstance(ref_info['lon'], (int,scalar)):
+            if not isinstance(ref_info['lon'], (int,float)):
                 raise TypeError('Value under key "lon" in input ref_info must be a scalar number')
             ref_info['lon'] = float(ref_info['lon'])
         else:
@@ -1172,13 +1172,13 @@ def enu2ecef(enu, ref_info):
             raise KeyError('Key "enu" not found in input ref_info')
 
         if 'lat' in ref_info:
-            if not isinstance(ref_info['lat'], (int,scalar)):
+            if not isinstance(ref_info['lat'], (int,float)):
                 raise TypeError('Value under key "lat" in input ref_info must be a scalar number')
             ref_info['lat'] = float(ref_info['lat'])
         else:
             raise KeyError('Key "lat" not found in input ref_info')
         if 'lon' in ref_info:
-            if not isinstance(ref_info['lon'], (int,scalar)):
+            if not isinstance(ref_info['lon'], (int,float)):
                 raise TypeError('Value under key "lon" in input ref_info must be a scalar number')
             ref_info['lon'] = float(ref_info['lon'])
         else:

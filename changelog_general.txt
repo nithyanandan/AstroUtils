@@ -1,3 +1,10 @@
+From 44aa517 (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Fix typechecking bugs in ECEF <--> ENU conversions
+
 From 8464c90 (master):
 =====================
 
