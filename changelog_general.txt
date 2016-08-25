@@ -1,3 +1,10 @@
+From 546f922 (master):
+=====================
+
+In astroutils/DSP_modules.py,
+
+(*) Fix typechecking for padding in windowing()
+
 From 44aa517 (master):
 =====================
 

@@ -386,14 +386,13 @@ def windowing(N_window, shape='rect', pad_width=0, pad_value=0.0,
         if N_window < 1:
             raise ValueError('N_window should be a positive integer. Aborting windowing().')
 
-    if not isinstance(pad_width, (int, float)):
-        raise TypeError('pad_width must be an integer.')
-    else:
+    if isinstance(pad_width, (int, float)):
+        if pad_width < 0.0:
+            raise ValueError('pad_width must be non-negative')
         pad_width = int(pad_width)
+    else:
+        raise TypeError('pad_width must be an integer.')
 
-    if pad_width < 0:
-        raise ValueError('pad_width should be non-negative. Aborting windowing().')
-    
     if (shape == 'rect') or (shape == 'RECT'):
         if not centering:
             window = NP.pad(NP.ones(N_window), (0, pad_width), mode='constant', constant_values=(pad_value, pad_value))
@@ -426,13 +425,13 @@ def windowing(N_window, shape='rect', pad_width=0, pad_value=0.0,
                 else:
                     window = win
             else:
-                window = NP.pad(win, (NP.ceil(0.5*pad_width), NP.floor(0.5*pad_width)), mode='constant', constant_values=(pad_value, pad_value))
+                window = NP.pad(win, (NP.ceil(0.5*pad_width).astype(int), NP.floor(0.5*pad_width).astype(int)), mode='constant', constant_values=(pad_value, pad_value))
         else:
             win = a[0]*NP.ones(N_window-1) + a[1]*NP.cos(2*NP.pi*NP.arange(N_window-1)/(N_window-2)) + a[2]*NP.cos(4*NP.pi*NP.arange(N_window-1)/(N_window-2)) + a[3]*NP.cos(6*NP.pi*NP.arange(N_window-1)/(N_window-2))
             if not centering:
                 window = NP.pad(win, (1, pad_width), mode='constant', constant_values=(pad_value, pad_value))
             else:
-                window = NP.pad(win, (NP.ceil(0.5*(pad_width+1)), NP.floor(0.5*(pad_width+1))), mode='constant', constant_values=(pad_value, pad_value))
+                window = NP.pad(win, (NP.ceil(0.5*(pad_width+1)).astype(int), NP.floor(0.5*(pad_width+1)).astype(int)), mode='constant', constant_values=(pad_value, pad_value))
 
     if peak is not None:
         window *= peak/NP.amax(NP.abs(window))
