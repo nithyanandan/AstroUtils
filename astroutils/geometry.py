@@ -999,12 +999,13 @@ def ecef2lla(x, y, z, units='radians'):
     gps_b = gps_a * (1 - gps_f)
     e_sqr = 1.0 - (gps_b/gps_a)**2 # first eccentricity
     eprime_sqr = (gps_a/gps_b)**2 - 1.0 # second eccentricity
-    gps_N = gps_a / NP.sqrt(1.0 - e_sqr * NP.sin(x)**2) # Radius of curvature
+    # gps_N = gps_a / NP.sqrt(1.0 - e_sqr * NP.sin(x)**2) # Radius of curvature (Wrong)
     gps_p = NP.sqrt(x**2 + y**2)
     gps_theta = NP.arctan2(z * gps_a, gps_p * gps_b)
 
     lon = NP.arctan2(y, x)
     lat = NP.arctan2(z + eprime_sqr * gps_b * NP.sin(gps_theta)**3, gps_p - e_sqr * gps_a * NP.cos(gps_theta)**3)
+    gps_N = gps_a / NP.sqrt(1.0 - e_sqr * NP.sin(lat)**2) # Radius of curvature
     alt = gps_p / NP.cos(lat) - gps_N
 
     if units != 'radians':

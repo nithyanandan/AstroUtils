@@ -1,3 +1,10 @@
+From 8f47f75 (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Fix bug by correcting value of gps_N in ecef2lla() 
+
 From 546f922 (master):
 =====================
 
