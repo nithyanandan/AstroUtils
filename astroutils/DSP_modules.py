@@ -397,7 +397,7 @@ def windowing(N_window, shape='rect', pad_width=0, pad_value=0.0,
         if not centering:
             window = NP.pad(NP.ones(N_window), (0, pad_width), mode='constant', constant_values=(pad_value, pad_value))
         else:
-            window = NP.pad(NP.ones(N_window), (NP.ceil(0.5*pad_width), NP.floor(0.5*pad_width)), mode='constant', constant_values=(pad_value, pad_value))
+            window = NP.pad(NP.ones(N_window), (int(NP.ceil(0.5*pad_width)), int(NP.floor(0.5*pad_width))), mode='constant', constant_values=(pad_value, pad_value))
     elif (shape == 'bnw') or (shape == 'BNW'):
         a = [0.3635819, -0.4891775, 0.1365995, -0.0106411]
         if (N_window % 2 == 1):
@@ -408,13 +408,13 @@ def windowing(N_window, shape='rect', pad_width=0, pad_value=0.0,
                 else:
                     window = win
             else:
-                window = NP.pad(win, (NP.ceil(0.5*pad_width), NP.floor(0.5*pad_width)), mode='constant', constant_values=(pad_value, pad_value))
+                window = NP.pad(win, (int(NP.ceil(0.5*pad_width)), int(NP.floor(0.5*pad_width))), mode='constant', constant_values=(pad_value, pad_value))
         else:
             win = a[0]*NP.ones(N_window-1) + a[1]*NP.cos(2*NP.pi*NP.arange(N_window-1)/(N_window-2)) + a[2]*NP.cos(4*NP.pi*NP.arange(N_window-1)/(N_window-2)) + a[3]*NP.cos(6*NP.pi*NP.arange(N_window-1)/(N_window-2))
             if not centering:
                 window = NP.pad(win, (1, pad_width), mode='constant', constant_values=(pad_value, pad_value))
             else:
-                window = NP.pad(win, (NP.ceil(0.5*(pad_width+1)), NP.floor(0.5*(pad_width+1))), mode='constant', constant_values=(pad_value, pad_value))
+                window = NP.pad(win, (int(NP.ceil(0.5*(pad_width+1))), int(NP.floor(0.5*(pad_width+1)))), mode='constant', constant_values=(pad_value, pad_value))
     elif (shape == 'bhw') or (shape == 'BHW'):
         a = [0.35875, -0.48829, 0.14128, -0.01168]
         if (N_window % 2 == 1):
@@ -425,13 +425,13 @@ def windowing(N_window, shape='rect', pad_width=0, pad_value=0.0,
                 else:
                     window = win
             else:
-                window = NP.pad(win, (NP.ceil(0.5*pad_width).astype(int), NP.floor(0.5*pad_width).astype(int)), mode='constant', constant_values=(pad_value, pad_value))
+                window = NP.pad(win, (int(NP.ceil(0.5*pad_width)), int(NP.floor(0.5*pad_width))), mode='constant', constant_values=(pad_value, pad_value))
         else:
             win = a[0]*NP.ones(N_window-1) + a[1]*NP.cos(2*NP.pi*NP.arange(N_window-1)/(N_window-2)) + a[2]*NP.cos(4*NP.pi*NP.arange(N_window-1)/(N_window-2)) + a[3]*NP.cos(6*NP.pi*NP.arange(N_window-1)/(N_window-2))
             if not centering:
                 window = NP.pad(win, (1, pad_width), mode='constant', constant_values=(pad_value, pad_value))
             else:
-                window = NP.pad(win, (NP.ceil(0.5*(pad_width+1)).astype(int), NP.floor(0.5*(pad_width+1)).astype(int)), mode='constant', constant_values=(pad_value, pad_value))
+                window = NP.pad(win, (int(NP.ceil(0.5*(pad_width+1))), int(NP.floor(0.5*(pad_width+1)))), mode='constant', constant_values=(pad_value, pad_value))
 
     if peak is not None:
         window *= peak/NP.amax(NP.abs(window))
@@ -581,7 +581,7 @@ def window_fftpow(N_window, shape='rect', pad_width=0, pad_value=0.0,
         if not centering:
             window = NP.pad(win, (0, pad_width), mode='constant', constant_values=(pad_value, pad_value))
         else:
-            window = NP.pad(win, (NP.ceil(0.5*pad_width), NP.floor(0.5*pad_width)), mode='constant', constant_values=(pad_value, pad_value))
+            window = NP.pad(win, (int(NP.ceil(0.5*pad_width)), int(NP.floor(0.5*pad_width))), mode='constant', constant_values=(pad_value, pad_value))
     elif (shape == 'bnw') or (shape == 'BNW'):
         a = [0.3635819, -0.4891775, 0.1365995, -0.0106411]
         if fftpow != 1.0:
@@ -614,7 +614,7 @@ def window_fftpow(N_window, shape='rect', pad_width=0, pad_value=0.0,
                 else:
                     window = win
             else:
-                window = NP.pad(win, (NP.ceil(0.5*pad_width), NP.floor(0.5*pad_width)), mode='constant', constant_values=(pad_value, pad_value))
+                window = NP.pad(win, (int(NP.ceil(0.5*pad_width)), int(NP.floor(0.5*pad_width))), mode='constant', constant_values=(pad_value, pad_value))
         else:
             if nwin == N_window:
                 win[1:] = a[0]*NP.ones(nwin-1) + a[1]*NP.cos(2*NP.pi*NP.arange(nwin-1)/(nwin-2)) + a[2]*NP.cos(4*NP.pi*NP.arange(nwin-1)/(nwin-2)) + a[3]*NP.cos(6*NP.pi*NP.arange(nwin-1)/(nwin-2))
@@ -639,7 +639,7 @@ def window_fftpow(N_window, shape='rect', pad_width=0, pad_value=0.0,
             if not centering:
                 window = NP.pad(win, (0, pad_width), mode='constant', constant_values=(pad_value, pad_value))
             else:
-                window = NP.pad(win, (NP.ceil(0.5*pad_width), NP.floor(0.5*pad_width)), mode='constant', constant_values=(pad_value, pad_value))
+                window = NP.pad(win, (int(NP.ceil(0.5*pad_width)), int(NP.floor(0.5*pad_width))), mode='constant', constant_values=(pad_value, pad_value))
     elif (shape == 'bhw') or (shape == 'BHW'):
         a = [0.35875, -0.48829, 0.14128, -0.01168]
         if fftpow != 1.0:
@@ -672,7 +672,7 @@ def window_fftpow(N_window, shape='rect', pad_width=0, pad_value=0.0,
                 else:
                     window = win
             else:
-                window = NP.pad(win, (NP.ceil(0.5*pad_width), NP.floor(0.5*pad_width)), mode='constant', constant_values=(pad_value, pad_value))
+                window = NP.pad(win, (int(NP.ceil(0.5*pad_width)), int(NP.floor(0.5*pad_width))), mode='constant', constant_values=(pad_value, pad_value))
         else:
             if nwin == N_window:
                 win[1:] = a[0]*NP.ones(nwin-1) + a[1]*NP.cos(2*NP.pi*NP.arange(nwin-1)/(nwin-2)) + a[2]*NP.cos(4*NP.pi*NP.arange(nwin-1)/(nwin-2)) + a[3]*NP.cos(6*NP.pi*NP.arange(nwin-1)/(nwin-2))
@@ -697,7 +697,7 @@ def window_fftpow(N_window, shape='rect', pad_width=0, pad_value=0.0,
             if not centering:
                 window = NP.pad(win, (0, pad_width), mode='constant', constant_values=(pad_value, pad_value))
             else:
-                window = NP.pad(win, (NP.ceil(0.5*pad_width), NP.floor(0.5*pad_width)), mode='constant', constant_values=(pad_value, pad_value))
+                window = NP.pad(win, (int(NP.ceil(0.5*pad_width)), int(NP.floor(0.5*pad_width))), mode='constant', constant_values=(pad_value, pad_value))
 
     if peak is not None:
         window *= peak/NP.amax(NP.abs(window))
