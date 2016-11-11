@@ -1,3 +1,5 @@
+import numpy as NP
+
 def recursive_find_notNone_in_dict(inpdict):
 
     """
@@ -84,3 +86,56 @@ def is_dict1_subset_of_dict2(dict1, dict2, ignoreNone=True):
 
 ################################################################################
 
+def find_list_in_list(reference_array, inp):
+
+    """
+    ---------------------------------------------------------------------------
+    Find occurrences of input list in a reference list and return indices 
+    into the reference list
+
+    Inputs:
+
+    reference_array [list or numpy array] One-dimensional reference list or
+                    numpy array in which occurrences of elements in the input 
+                    list or array will be found
+
+    inp             [list or numpy array] One-dimensional input list whose 
+                    elements will be searched in the reference array and 
+                    the indices into the reference array will be returned
+
+    Output:
+
+    ind             [numpy masked array] Indices of occurrences of elements 
+                    of input array in the reference array. It will be of same 
+                    size as input array. For example, 
+                    inp = reference_array[ind]. Indices for elements which are 
+                    not found in the reference array will be masked.
+    ---------------------------------------------------------------------------
+    """
+
+    try:
+        reference_array, inp
+    except NameError:
+        raise NameError('Inputs reference_array, inp must be specified')
+
+    if not isinstance(reference_array, (list, NP.ndarray)):
+        raise TypeError('Input reference_array must be a list or numpy array')
+    reference_array = NP.asarray(reference_array).ravel()
+
+    if not isinstance(inp, (list, NP.ndarray)):
+        raise TypeError('Input inp must be a list or numpy array')
+    inp = NP.asarray(inp).ravel()
+
+    if (inp.size == 0) or (reference_array.size == 0):
+        raise ValueError('One or both inputs contain no elements')
+
+    sortind_ref = NP.argsort(reference_array)
+    sorted_ref = reference_array[sortind_ref]
+    ind_in_sorted_ref = NP.searchsorted(sorted_ref, inp)
+    ii = NP.take(sortind_ref, ind_in_sorted_ref, mode='clip')
+    mask = reference_array[ii] != inp
+    ind = NP.ma.array(ii, mask=mask)
+
+    return ind
+    
+################################################################################

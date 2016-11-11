@@ -1,3 +1,11 @@
+From ee98209 (master):
+=====================
+
+In astroutils/nonmathops.py,
+
+(*) Add function find_list_in_list() to find index of elements in
+input list in a reference list. Added docstring accordingly
+
 From b14d469 (master):
 =====================
 
