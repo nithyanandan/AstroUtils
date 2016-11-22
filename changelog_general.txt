@@ -1,3 +1,10 @@
+From 017a21e (small-angles):
+===========================
+
+In astroutils/geometry.py,
+
+(*) Take care of small angles and precision issues in altaz2hadec()
+
 From ee98209 (master):
 =====================
 

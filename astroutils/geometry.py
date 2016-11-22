@@ -703,8 +703,23 @@ def altaz2hadec(altaz, latitude, units=None):
     if NP.absolute(latitude) > NP.pi/2:
         raise ValueError('Latitude should lie between -90 and 90 degrees. Check inputs and units.')
 
-    dec = NP.arcsin( NP.sin(altaz[:,0])*NP.sin(latitude) + NP.cos(altaz[:,1])*NP.cos(latitude)*NP.cos(altaz[:,0]) )
-    ha = NP.arccos( (NP.sin(altaz[:,0])-NP.sin(dec)*NP.sin(latitude))/(NP.cos(dec)*NP.cos(latitude)) )
+    eps = 1e-10
+
+    arg = NP.sin(altaz[:,0])*NP.sin(latitude) + NP.cos(altaz[:,1])*NP.cos(latitude)*NP.cos(altaz[:,0])
+    if NP.abs(arg).max() > 1.0:
+        if NP.abs(arg).max() - 1.0 > eps:
+            raise valueError('Non-physical angles found')
+        else:
+            arg = NP.clip(arg, -1.0, 1.0)
+    dec = NP.arcsin(arg)
+
+    arg = (NP.sin(altaz[:,0])-NP.sin(dec)*NP.sin(latitude))/(NP.cos(dec)*NP.cos(latitude))
+    if NP.abs(arg).max() > 1.0:
+        if NP.abs(arg).max() - 1.0 > eps:
+            raise valueError('Non-physical angles found')
+        else:
+            arg = NP.clip(arg, -1.0, 1.0)
+    ha = NP.arccos(arg)
  
     # Make sure the conventions are taken into account
     ha = NP.where(NP.sin(altaz[:,1])<0.0, ha, 2.0*NP.pi-ha)
