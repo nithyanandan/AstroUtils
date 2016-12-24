@@ -139,3 +139,39 @@ def find_list_in_list(reference_array, inp):
     return ind
     
 ################################################################################
+
+def find_all_occurrences_list1_in_list2(list1, list2):
+
+    """
+    ---------------------------------------------------------------------------
+    Find all occurrences of input list1 (a reference list) in input list2
+
+    Inputs:
+
+    list1   [list or numpy array] List of elements which need to be searched 
+            for in list2. Must be a flattened list or numpy array
+
+    list2   [list or numpy array] List of elements in which elements in list1 
+            are searched for. Must be a flattened list or numpy array
+
+    Output:
+
+    ind     [list of lists] Indices of occurrences of elements 
+            of input list1 indexed into list2. For each element in list1, 
+            there is an output list which contains all the indices of this 
+            element occurring in list2. Hence, the output is a list of lists
+            where the top level list contains equal number of items as list1.
+            Each i-th item in this list is another list containing indices of 
+            the element list1[i] in list2
+    ---------------------------------------------------------------------------
+    """
+
+    if not isinstance(list1, (list, NP.ndarray)):
+        raise TypeError('Input list1 must be a list or numpy array')
+    if not isinstance(list2, (list, NP.ndarray)):
+        raise TypeError('Input list2 must be a list or numpy array')
+
+    list_of_list_of_inds = [[i for i, x in enumerate(list2) if x == e] for e in list1]
+    return list_of_list_of_inds
+
+################################################################################
