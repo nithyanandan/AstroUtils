@@ -540,3 +540,74 @@ def healpix_interp_along_axis(indata, theta_phi=None, inloc_axis=None,
     return outdata
 
 #################################################################################
+
+def interpolate_array(inparray, inploc, outloc, axis=-1, kind='linear'):
+
+    """
+    -----------------------------------------------------------------------------
+    Inputs:
+
+    inparray    [numpy array] Multi-dimensional input array which will be used 
+                in determining the interpolation function
+
+    inploc      [numpy array] Locations using which the interpolation function
+                is determined. It must be of size equal to the dimension of 
+                input array along which interpolation is to be determined 
+                specified by axis keyword input. It must be a list or numpy 
+                array
+
+    outloc      [list or numpy array] Locations at which interpolated array is
+                to be determined along the specified axis. It must be a scalar, 
+                list or numpy array. If any of outloc is outside the range of
+                inploc, the first and the last cubes from the inparray will
+                be used as boundary values
+
+    axis        [scalar] Axis along which interpolation is to be performed. 
+                Default=-1 (last axis)
+
+    kind        [string or integer] Specifies the kind of interpolation as a 
+                string ('linear', 'nearest', 'zero', 'slinear', 'quadratic', 
+                'cubic' where 'slinear', 'quadratic' and 'cubic' refer to a 
+                spline interpolation of first, second or third order) or as an 
+                integer specifying the order of the spline interpolator to use. 
+                Default is 'linear'.
+
+    Output:
+
+    outarray    [numpy array] Output array after interpolation 
+    -----------------------------------------------------------------------------
+    """
+
+    assert isinstance(inparray, NP.ndarray), 'Input array inparray must be a numpy array'
+    assert isinstance(inploc, (list, NP.ndarray)), 'Input locations must be a list or numpy array'
+    assert isinstance(outloc, (int, float, list, NP.ndarray)), 'Output locations must be a scalar, list or numpy array'
+    assert isinstance(axis, int), 'Interpolation axis must be an integer'
+    assert isinstance(kind, str), 'Kind of interpolation must be a string'
+
+    inploc = inploc.reshape(-1)
+    outloc = NP.asarray(outloc).reshape(-1)
+    assert inparray.ndim > axis+1, 'Insufficient dimensions in inparray for interpolation'
+    assert inparray.shape[axis]==inploc.size, 'Dimension of interpolation axis of inparray is mismatched with number of locations at which interpolation is requested'
+
+    inbound_ind = NP.where(NP.logical_and(outloc >= inploc.min(), outloc <= inploc.max()))[0]
+    outbound_low_ind = NP.where(outloc < inploc.min())[0]
+    outbound_high_ind = NP.where(outloc > inploc.max())[0]
+
+    outarray = None
+    if inbound_ind.size > 0:
+        interpfunc = interpolate.interp1d(inploc, inparray, kind=kind, axis=axis, copy=False, assume_sorted=True)
+        outarray = interpfunc(outloc[inbound_ind])
+    if outbound_low_ind.size > 0:
+        if outarray is None:
+            outarray = NP.repeat(NP.take(inparray, [0], axis=axis), outbound_low_ind.size, axis=axis)
+        else:
+            outarray = NP.concatenate((NP.repeat(NP.take(inparray, [0], axis=axis), outbound_low_ind.size, axis=axis), outarray), axis=axis)
+    if outbound_high_ind.size > 0:
+        if outarray is None:
+            outarray = NP.repeat(NP.take(inparray, [-1], axis=axis), outbound_high_ind.size, axis=axis)
+        else:
+            outarray = NP.concatenate((outarray, NP.repeat(NP.take(inparray, [0], axis=axis), outbound_high_ind.size, axis=axis)), axis=axis)
+
+    return outarray
+
+#################################################################################

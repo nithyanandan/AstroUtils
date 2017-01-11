@@ -1,3 +1,13 @@
+From 6e1825b (master):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Add function interpolate_array() along with docstring to 
+interpolate a multi-dimensional array along a given axis (this is 
+essentially a wrapper to scipy.interpolate.interp1d with some 
+modifications for out of bound conditions)
+
 From 0a0a26c (master):
 =====================
 
