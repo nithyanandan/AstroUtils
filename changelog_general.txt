@@ -1,3 +1,9 @@
+From 0a0a26c (master):
+=====================
+
+(*) Add kernel density estimator kernel_density_estimator.py under
+astroutils/ and to the repository
+
 From a53e00e (master):
 =====================
 
