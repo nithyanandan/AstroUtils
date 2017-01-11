@@ -1,3 +1,12 @@
+From 6cba82f (master):
+=====================
+
+In astroutils/tilesky.py,
+
+(*) Add function convert_cube_to_healpix_arg_splitter() to parse
+arguments and pass to convert_cube_to_healpix() in preparing to set
+up for parallel processing using multiprocessing
+
 From 69228da (master):
 =====================
 

@@ -5,6 +5,9 @@ import constants as CNST
 
 #################################################################################
 
+def convert_cube_to_healpix_arg_splitter(args, **kwargs):
+    return convert_cube_to_healpix(*args, **kwargs)
+
 def convert_cube_to_healpix(inpcube, inpres, nside, freq=None, z=None,
                             method='linear', rest_freq=CNST.rest_freq_HI,
                             cosmo=cosmology.WMAP9):
