@@ -545,6 +545,10 @@ def interpolate_array(inparray, inploc, outloc, axis=-1, kind='linear'):
 
     """
     -----------------------------------------------------------------------------
+    Interpolate a multi-dimensional array along one of its dimensions. It acts 
+    as a wrapper to scipy.interpolate.interp1d but applies boundary conditions 
+    differently
+
     Inputs:
 
     inparray    [numpy array] Multi-dimensional input array which will be used 

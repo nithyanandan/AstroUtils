@@ -1,3 +1,19 @@
+From 69228da (master):
+=====================
+
+(*) Add tilesky.py under astroutils/ to repository
+
+In astroutils/tilesky.py,
+
+(*) Add function convert_cube_to_healpix() along with docstring to
+convert a cosmology cube at a given redshift to HEALPIX map at an
+observing frequency
+
+In astroutils/mathops.py,
+
+(*) Update docstring of function interpolate_array() with a
+description of its functionality
+
 From 6e1825b (master):
 =====================
 
