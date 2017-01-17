@@ -1,3 +1,12 @@
+From 6e1825b (master):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Add function percentiles_to_2D_contour_levels() along with
+docstring to convert from percentiles to 2D contour levels given a
+probability density function
+
 From 0a0a26c (master):
 =====================
 
