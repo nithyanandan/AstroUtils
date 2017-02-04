@@ -1,3 +1,14 @@
+From eee7159 (master):
+=====================
+
+In astroutils/nonmathops.py,
+
+(*) Import h5py and ast modules
+(*) Add functions recursively_save_dict_contents_to_group(),
+save_dict_to_hdf5(), recursively_load_dict_contents_from_group() and
+load_dict_from_hdf5() along with docstrings to convert to and from
+HDF5 format and python dictionaries
+
 From 6e1825b (master):
 =====================
 
