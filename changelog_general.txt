@@ -1,3 +1,12 @@
+From 4b3a811 (skymod):
+=====================
+
+In astroutils/catalog.py,
+
+(*) Use member function retrieve_external_spectrum() in member
+function save() of class SkyModel to write information about attribute
+spec_extfile which externally stores the spectrum
+
 From 06801ac (skymod):
 =====================
 

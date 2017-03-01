@@ -1094,7 +1094,12 @@ class SkyModel(object):
                 else:
                     freq_dset = spec_group.create_dataset('freq', data=self.frequency.ravel(), compression='gzip', compression_opts=9)
                     freq_dset.attrs['units'] = 'Hz'
-                    spectrum_dset = spec_group.create_dataset('spectrum', data=self.spectrum, compression='gzip', compression_opts=9)
+                    if self.spectrum is not None:
+                        spectrum_dset = spec_group.create_dataset('spectrum', data=self.spectrum, chunks=(1,self.spectrum.shape[1]), compression='gzip', compression_opts=9)
+                    elif self.spec_extfile is not None:
+                        spec_group['spec_extfile'] = self.spec_extfile
+                    else:
+                        raise AttributeError('Neither attribute "spectrum" nor "spec_extfile" found in the instance')
         else:
             outfile = outfile + '.txt'
             frmts = {}
