@@ -1047,7 +1047,7 @@ class SkyModel(object):
 
     ############################################################################
 
-    def save(self, outfile, fileformat='hdf5'):
+    def save(self, outfile, fileformat='hdf5', extspec_action=None):
 
         """
         -------------------------------------------------------------------------
@@ -1060,6 +1060,15 @@ class SkyModel(object):
 
         fileformat  [string] format for the output. Accepted values are 'ascii'
                     and 'hdf5' (default). 
+
+        extspec_action
+                    [string] Specifies if full spectrum in attribute spectrum
+                    is unloaded on to the external file and set the spectrum 
+                    attribute to None while simultaneously setting spec_extfile 
+                    attribute to outfile. If this input is set to None 
+                    (default), then the attribute spectrum is not unloaded and 
+                    data is carried in the instance in the attribute. This only 
+                    applies if attribute 'spectrum' is present and not None.
         -------------------------------------------------------------------------
         """
 
@@ -1109,7 +1118,15 @@ class SkyModel(object):
                     freq_dset = spec_group.create_dataset('freq', data=self.frequency.ravel(), compression='gzip', compression_opts=9)
                     freq_dset.attrs['units'] = 'Hz'
                     if self.spectrum is not None:
-                        spectrum_dset = spec_group.create_dataset('spectrum', data=self.spectrum, chunks=(1,self.spectrum.shape[1]), compression='gzip', compression_opts=9)
+                        spectrum_dset = spec_group.create_dataset('spectrum', data=self.spectrum, chunks=(1,self.frequency.size), compression='gzip', compression_opts=9)
+                        if extspec_action is not None:
+                            if not isinstance(extspec_action, str):
+                                raise TypeError('Input extspec_action must be a string')
+                            if extspec_action.lower() not in ['unload']:
+                                raise ValueError('Value specified for input extspec_action invalid')
+                            if extspec_action.lower() == 'unload':
+                                self.spectrum = None
+                                self.spec_extfile = outfile
                     elif self.spec_extfile is not None:
                         spec_group['spec_extfile'] = self.spec_extfile
                     else:

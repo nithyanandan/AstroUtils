@@ -1,3 +1,14 @@
+From e5bed00 (skymod):
+=====================
+
+In astroutils/catalog.py,
+
+(*) Add input extspec_action in member function save() of class
+SkyModel to unload full spectrum on to the external file and unload
+it from carrying it in the attribute spectrum. Update member function
+docstring accordingly
+(*) Make minor change in defining a chunk size
+
 From 08165c8 (skymod):
 =====================
 
