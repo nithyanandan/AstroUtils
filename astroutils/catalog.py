@@ -15,6 +15,67 @@ import constants as CNST
 
 #################################################################################
 
+def retrieve_external_spectrum(spec_extfile, ind=None):
+
+    """
+    -------------------------------------------------------------------------
+    Retrieve an externally stored spectrum (may include recursive calls)
+
+    Inputs:
+
+    spec_extfile
+               [string] full path to filename which contains externally
+               stored spectrum. Must be specified (no default)
+
+    ind        [scalar, list or numpy array] Indices to select objects in
+               the externally stored spectrum of the catalog or sky model. 
+               If set to None (default), all objects will be selected.
+
+    Outputs:
+
+    spectrum   [numpy array] Spectrum of the sky model at the specified
+               sky locations. Has shape nobj x nfreq.
+    -------------------------------------------------------------------------
+    """
+
+    try:
+        spec_extfile
+    except NameError:
+        raise NameError('The externally stored spectrum file must be specified')
+
+    if spec_extfile is None:
+        raise TypeError('Input spec_extfile must be a string')
+    if not isinstance(spec_extfile, str):
+        raise TypeError('External filename spec_extfile must be a string')
+
+    if ind is not None:
+        if not isinstance(ind, (int,list,NP.ndarray)):
+            raise TypeError('Input ind must be an integer, list or numpy array')
+        else:
+            ind = NP.asarray(ind).astype(NP.int)
+            if NP.any(ind < 0):
+                raise IndexError('Out of bound indices found in input ind')
+
+    with h5py.File(spec_extfile, 'r') as fileobj:
+        nobj = fileobj['object/name'].value.size
+        if ind is None:
+            ind = NP.arange(nobj, dtype=NP.int)
+        else:
+            if NP.any(ind >= nobj):
+                raise ValueError('Specified indices exceed maximum number of objects in the external file')
+        spec_type = fileobj['header/spec_type'].value
+        if spec_type != 'spectrum':
+            raise ValueError('Attribute spec_type not set to "spectrum" in external file {0}'.format(spec_extfile))
+        if 'spectral_info/spectrum' in fileobj:
+            return fileobj['spectral_info/spectrum'].value[ind,:]
+        elif 'spectral_info/spec_extfile' in fileobj:
+            next_spec_extfile = fileobj['spectral_info/spec_extfile'].value
+            return retrieve_external_spectrum(next_spec_extfile, ind=ind) # Recursive call
+        else:
+            raise KeyError('Externally stored spectrum not found in {0}'.format(spec_extfile))
+
+#################################################################################
+
 class SkyModel(object):
 
     """
@@ -422,7 +483,7 @@ class SkyModel(object):
                         warnings.warn('No value specified under key "spec_extfile". Will check for value under skey "spectrum"')
                     elif isinstance(init_parms['spec_extfile'], str):
                         self.spec_extfile = init_parms['spec_extfile']
-                        spectrum = self.retrieve_external_spectrum(spec_extfile=init_parms['spec_extfile'], ind=None)
+                        spectrum = retrieve_external_spectrum(init_parms['spec_extfile'], ind=None)
                         if not isinstance(spectrum, NP.ndarray):
                             raise TypeError('Spectrum in external file is not a numpy array')
                         if spectrum.shape != (self.location.shape[0], self.frequency.size):
@@ -657,7 +718,7 @@ class SkyModel(object):
                     if self.spectrum is not None:
                         init_parms['spectrum'] = NP.take(self.spectrum, indices, axis=0)
                     elif self.spec_extfile is not None:
-                        init_parms['spectrum'] = self.retrieve_external_spectrum(spec_extfile=self.spec_extfile, ind=indices)
+                        init_parms['spectrum'] = retrieve_external_spectrum(self.spec_extfile, ind=indices)
                     else:
                         raise AttributeError('Neither attribute "spectrum" nor "spec_extfile" found in the instance')
 
@@ -685,7 +746,7 @@ class SkyModel(object):
                     if self.spectrum is not None:
                         init_parms['spectrum'] = NP.take(self.spectrum, indices, axis=1)
                     elif self.spec_extfile is not None:
-                        spectrum = self.retrieve_external_spectrum(spec_extfile=self.spec_extfile, ind=None)
+                        spectrum = retrieve_external_spectrum(self.spec_extfile, ind=None)
                         init_parms['spectrum'] = NP.take(spectrum, indices, axis=1)
                     else:
                         raise AttributeError('Neither attribute "spectrum" nor "spec_extfile" found in the instance')
@@ -694,54 +755,54 @@ class SkyModel(object):
 
     #############################################################################
 
-    def retrieve_external_spectrum(self, spec_extfile=None, ind=None):
+    # def retrieve_external_spectrum(self, spec_extfile=None, ind=None):
 
-        """
-        -------------------------------------------------------------------------
-        Retrieve an externally stored spectrum (may include recursive calls)
+    #     """
+    #     -------------------------------------------------------------------------
+    #     Retrieve an externally stored spectrum (may include recursive calls)
 
-        Inputs:
+    #     Inputs:
 
-        spec_extfile
-                   [string] full path to filename which contains externally
-                   stored spectrum
+    #     spec_extfile
+    #                [string] full path to filename which contains externally
+    #                stored spectrum
 
-        ind        [scalar, list or numpy array] Indices to select objects in
-                   the externally stored spectrum of the catalog or sky model. 
-                   If set to None (default), all objects will be selected.
+    #     ind        [scalar, list or numpy array] Indices to select objects in
+    #                the externally stored spectrum of the catalog or sky model. 
+    #                If set to None (default), all objects will be selected.
 
-        Outputs:
+    #     Outputs:
 
-        spectrum   [numpy array] Spectrum of the sky model at the specified
-                   sky locations. Has shape nobj x nfreq.
-        -------------------------------------------------------------------------
-        """
+    #     spectrum   [numpy array] Spectrum of the sky model at the specified
+    #                sky locations. Has shape nobj x nfreq.
+    #     -------------------------------------------------------------------------
+    #     """
 
-        if ind is None:
-            ind = NP.arange(self.location.shape[0], dtype=NP.int)
-        elif not isinstance(ind, (int,list,NP.ndarray)):
-            raise TypeError('Input ind must be an integer, list or numpy array')
-        else:
-            ind = NP.asarray(ind).astype(NP.int)
-            if NP.any(NP.logical_or(ind < 0, ind >= self.location.shape[0])):
-                raise IndexError('Out of bound indices found in input ind')
+    #     if ind is None:
+    #         ind = NP.arange(self.location.shape[0], dtype=NP.int)
+    #     elif not isinstance(ind, (int,list,NP.ndarray)):
+    #         raise TypeError('Input ind must be an integer, list or numpy array')
+    #     else:
+    #         ind = NP.asarray(ind).astype(NP.int)
+    #         if NP.any(NP.logical_or(ind < 0, ind >= self.location.shape[0])):
+    #             raise IndexError('Out of bound indices found in input ind')
 
-        if spec_extfile is None:
-            spec_extfile = self.spec_extfile
-        if not isinstance(spec_extfile, str):
-            raise TypeError('External filename spec_extfile must be a string')
+    #     if spec_extfile is None:
+    #         spec_extfile = self.spec_extfile
+    #     if not isinstance(spec_extfile, str):
+    #         raise TypeError('External filename spec_extfile must be a string')
 
-        with h5py.File(spec_extfile, 'r') as fileobj:
-            spec_type = fileobj['header/spec_type'].value
-            if spec_type != 'spectrum':
-                raise ValueError('Attribute spec_type not set to "spectrum" in external file {0}'.format(spec_extfile))
-            if 'spectral_info/spectrum' in fileobj:
-                return fileobj['spectral_info/spectrum'].value[ind,:]
-            elif 'spectral_info/spec_extfile' in fileobj:
-                next_spec_extfile = fileobj['spectral_info/spec_extfile'].value
-                return self.retrieve_external_spectrum(spec_extfile=next_spec_extfile, ind=ind) # Recursive call
-            else:
-                raise KeyError('Externally stored spectrum not found in {0}'.format(spec_extfile))
+    #     with h5py.File(spec_extfile, 'r') as fileobj:
+    #         spec_type = fileobj['header/spec_type'].value
+    #         if spec_type != 'spectrum':
+    #             raise ValueError('Attribute spec_type not set to "spectrum" in external file {0}'.format(spec_extfile))
+    #         if 'spectral_info/spectrum' in fileobj:
+    #             return fileobj['spectral_info/spectrum'].value[ind,:]
+    #         elif 'spectral_info/spec_extfile' in fileobj:
+    #             next_spec_extfile = fileobj['spectral_info/spec_extfile'].value
+    #             return self.retrieve_external_spectrum(spec_extfile=next_spec_extfile, ind=ind) # Recursive call
+    #         else:
+    #             raise KeyError('Externally stored spectrum not found in {0}'.format(spec_extfile))
 
     #############################################################################
 
@@ -863,7 +924,7 @@ class SkyModel(object):
             if self.spectrum is not None:
                 spectrum = NP.take(self.spectrum, ind, axis=0)
             elif self.spec_extfile is not None:
-                spectrum = self.retrieve_external_spectrum(spec_extfile=None, ind=ind)
+                spectrum = retrieve_external_spectrum(self.spec_extfile, ind=ind)
             else:
                 raise AttributeError('Neither attribute "spectrum" nor "spec_extfile" found in the instance')
             
