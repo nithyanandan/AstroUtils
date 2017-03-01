@@ -1,3 +1,12 @@
+From b39d8fd (skymod):
+=====================
+
+In astroutils/catalog.py,
+
+(*) Add and initialize attribute spec_extfile in __init__() member
+function of class SkyModel. Update docstring of member function and
+class accordingly
+
 From 1c31fa1 (skmod):
 ====================
 

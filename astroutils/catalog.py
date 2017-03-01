@@ -3,6 +3,7 @@ import healpy as HP
 from astropy.table import Table
 from astropy.io import fits, ascii
 import h5py
+import warnings
 from astropy.coordinates import Angle, SkyCoord
 from astropy import units
 import scipy.constants as FCNST
@@ -101,7 +102,15 @@ class SkyModel(object):
     spectrum       [numpy array] Spectrum of the catalog. Will be applicable 
                    if attribute spec_type is set to 'spectrum' or if spectrum
                    was computed using the member function. It will be of shape
-                   nsrc x nchan
+                   nsrc x nchan. If not specified or set to None, an external 
+                   file must be specified under attribute 'spec_extfile'
+
+    spec_extfile   [string] full path filename of external file containing saved 
+                   version of instance of class SkyModel which contains an 
+                   offline version of full spectrum data. This will be 
+                   applicable only if spec_type is set to 'spectrum'. If set to
+                   None, full spectrum will be provided under attribute 
+                   'spectrum'
 
     src_shape      [3-column numpy array or list of 3-element lists] source 
                    shape specified by major axis FWHM (first column), minor axis 
@@ -260,7 +269,20 @@ class SkyModel(object):
                                          signal. 
                     'spectrum'  [numpy array] Spectrum of the catalog. Will be 
                                 applicable if attribute spec_type is set to 
-                                'spectrum'. It must be of shape nsrc x nchan
+                                'spectrum'. It must be of shape nsrc x nchan.
+                                If not specified or set to None, an external 
+                                file must be specified under 'spec_extfile'
+                                and the spectrum can be determined from offline
+                                data
+
+                    'spec_extfile'
+                                [string] full path filename of external file 
+                                containing saved version of instance of class
+                                SkyModel which contains an offline version of 
+                                full spectrum data. This will be applicable 
+                                only if spec_type is set to 'spectrum'. If set
+                                to None, full spectrum will be provided under
+                                key 'spectrum'
 
                     'src_shape' [3-column numpy array or list of 3-element 
                                 lists] source shape specified by major axis 
@@ -305,6 +327,8 @@ class SkyModel(object):
                             self.location = NP.hstack((grp['Alt'].value.reshape(-1,1), grp['Az'].value.reshape(-1,1)))
                         self.src_shape = grp['shape'].value
                     if key == 'spectral_info':
+                        self.spec_extfile = None
+                        self.spectrum = None
                         self.spec_parms = {}
                         if self.spec_type == 'func':
                             self.spec_parms['name'] = grp['func-name'].value
@@ -314,7 +338,10 @@ class SkyModel(object):
                                 self.spec_parms['power-law-index'] = grp['spindex'].value
                         else:
                             self.frequency = grp['freq'].value.reshape(1,-1)
-                            self.spectrum = grp['spectrum'].value
+                            if 'spec_extfile' in grp:
+                                self.spec_extfile = grp['spec_extfile'].value
+                            else:
+                                self.spectrum = grp['spectrum'].value
         elif (init_parms is None):
             raise ValueError('In the absence of init_file, init_parms must be provided for initialization')
         else:
@@ -380,15 +407,35 @@ class SkyModel(object):
                 raise TypeError('Sky model frequency must be a integer, float, or numpy array')
     
             self.location = location
+            self.spectrum = None
+            self.spec_extfile= None
             if self.spec_type == 'spectrum':
-                if 'spectrum' not in init_parms:
-                    raise KeyError('Sky model spectrum not provided.')
-                spectrum = init_parms['spectrum']
-                if not isinstance(spectrum, NP.ndarray):
-                    raise TypeError('Sky model spectrum must be a numpy array')
-                if spectrum.shape != (self.location.shape[0], self.frequency.size):
-                    raise ValueError('Sky model spectrum must have same number of rows as number of object locations and same number of columns as number of frequency channels')
-                self.spectrum = spectrum
+                check_spectrum = False
+                check_extfile = False
+                if 'spec_extfile' in init_parms:
+                    if init_parms['spec_extfile'] is None:
+                        check_spectrum = True
+                        warnings.warn('No value specified under key "spec_extfile". Will check for value under skey "spectrum"')
+                    elif isinstance(init_parms['spec_extfile'], str):
+                        self.spec_extfile = init_parms['spec_extfile']
+                        # with h5py.File(self.spec_extfile, 'r') as fileobj:
+                        #     try:
+                        #         assert fileobj['spectral_info/spectrum'].value is not None, 'Data in external file must not be None'
+                        #         assert fileobj['spectral_info/spectrum'].value.shape == (self.location.shape[0], self.frequency.size), 'Data in external file must not be None'
+                        #     except KeyError:
+                        #         raise KeyError('Key "spectral_info/spectrum" not found in external file')
+                        #     check_extfile = True
+                    else:
+                        raise TypeError('Value under spec_extfile must be a string')
+                if check_spectrum:
+                    if 'spectrum' not in init_parms:
+                        raise KeyError('Sky model spectrum not provided.')
+                    spectrum = init_parms['spectrum']
+                    if not isinstance(spectrum, NP.ndarray):
+                        raise TypeError('Sky model spectrum must be a numpy array')
+                    if spectrum.shape != (self.location.shape[0], self.frequency.size):
+                        raise ValueError('Sky model spectrum must have same number of rows as number of object locations and same number of columns as number of frequency channels')
+                    self.spectrum = spectrum
             else:
                 if spec_parms is None:
                     spec_parms = {}
