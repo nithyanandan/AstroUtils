@@ -6,6 +6,7 @@ import h5py
 from astropy.coordinates import Angle, SkyCoord
 from astropy import units
 import scipy.constants as FCNST
+from scipy.interpolate import interp1d
 import geometry as GEOM
 import mathops as OPS
 import lookup_operations as LKP
@@ -626,7 +627,7 @@ class SkyModel(object):
 
     #############################################################################
 
-    def generate_spectrum(self, ind=None, frequency=None):
+    def generate_spectrum(self, ind=None, frequency=None, interp_method='linear'):
 
         """
         -------------------------------------------------------------------------
@@ -645,6 +646,12 @@ class SkyModel(object):
                    spectrum is generated for all the frequencies specified in 
                    the attribute frequency and values under keys 'freq-ref' and
                    'z-width' of attribute spec_parms. 
+
+        interp_method 
+                   [string] Specified kind of interpolation to be used if 
+                   self.spec_type is set to 'spectrum'. Default='linear'. 
+                   Accepted values are described in docstring of 
+                   scipy.interpolate.interp1d()
 
         Outputs:
 
@@ -668,7 +675,8 @@ class SkyModel(object):
         when x_i = 0.5, and dz = redshift width (dz ~ 1)
 
         If the attribute spec_type is 'spectrum' the attribute spectrum is 
-        returned without any modifications.
+        returned on the selected indices and requested spectral interpolation
+        method
         -------------------------------------------------------------------------
         """
 
@@ -730,7 +738,13 @@ class SkyModel(object):
                     
             return spectrum
         else:
-            return self.spectrum
+            if not isinstance(interp_method, str):
+                raise TypeError('Input interp_method must be a string')
+            if NP.any(NP.logical_or(frequency < self.frequency, frequency > self.frequency)):
+                raise ValueError('Frequencies requested in output lie out of range of sky model frequencies and hence cannot be interpolated')
+            interp_func = interp1d(self.frequency, self.spectrum[ind,:], axis=1, kind=interp_method)
+            spectrum = interp_func(frequency)
+            return spectrum
 
     #############################################################################
 

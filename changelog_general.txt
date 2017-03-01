@@ -1,3 +1,14 @@
+From 1c31fa1 (skmod):
+====================
+
+In astroutils/catalog.py,
+
+(*) Add input interp_method in member function generate_spectrum() 
+of class SkyModel to be able to interpolate along spectral axis if
+attribute spec_type is set to 'spectrum'. For this case, it now
+returns spectra generated for a subset of all object locations.
+Update docstring of member function accordingly
+
 From a401254 (master):
 =====================
 
