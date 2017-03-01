@@ -200,10 +200,6 @@ class SkyModel(object):
                    the existing sky model. Subset can be either in position or 
                    frequency channels
 
-    retrieve_external_spectrum()
-                   Retrieve an externally stored spectrum (may include 
-                   recursive calls)
-
     generate_spectrum()
                    Generate and return a spectrum from functional spectral 
                    parameters
@@ -752,57 +748,6 @@ class SkyModel(object):
                         raise AttributeError('Neither attribute "spectrum" nor "spec_extfile" found in the instance')
 
             return SkyModel(init_parms=init_parms, init_file=None)
-
-    #############################################################################
-
-    # def retrieve_external_spectrum(self, spec_extfile=None, ind=None):
-
-    #     """
-    #     -------------------------------------------------------------------------
-    #     Retrieve an externally stored spectrum (may include recursive calls)
-
-    #     Inputs:
-
-    #     spec_extfile
-    #                [string] full path to filename which contains externally
-    #                stored spectrum
-
-    #     ind        [scalar, list or numpy array] Indices to select objects in
-    #                the externally stored spectrum of the catalog or sky model. 
-    #                If set to None (default), all objects will be selected.
-
-    #     Outputs:
-
-    #     spectrum   [numpy array] Spectrum of the sky model at the specified
-    #                sky locations. Has shape nobj x nfreq.
-    #     -------------------------------------------------------------------------
-    #     """
-
-    #     if ind is None:
-    #         ind = NP.arange(self.location.shape[0], dtype=NP.int)
-    #     elif not isinstance(ind, (int,list,NP.ndarray)):
-    #         raise TypeError('Input ind must be an integer, list or numpy array')
-    #     else:
-    #         ind = NP.asarray(ind).astype(NP.int)
-    #         if NP.any(NP.logical_or(ind < 0, ind >= self.location.shape[0])):
-    #             raise IndexError('Out of bound indices found in input ind')
-
-    #     if spec_extfile is None:
-    #         spec_extfile = self.spec_extfile
-    #     if not isinstance(spec_extfile, str):
-    #         raise TypeError('External filename spec_extfile must be a string')
-
-    #     with h5py.File(spec_extfile, 'r') as fileobj:
-    #         spec_type = fileobj['header/spec_type'].value
-    #         if spec_type != 'spectrum':
-    #             raise ValueError('Attribute spec_type not set to "spectrum" in external file {0}'.format(spec_extfile))
-    #         if 'spectral_info/spectrum' in fileobj:
-    #             return fileobj['spectral_info/spectrum'].value[ind,:]
-    #         elif 'spectral_info/spec_extfile' in fileobj:
-    #             next_spec_extfile = fileobj['spectral_info/spec_extfile'].value
-    #             return self.retrieve_external_spectrum(spec_extfile=next_spec_extfile, ind=ind) # Recursive call
-    #         else:
-    #             raise KeyError('Externally stored spectrum not found in {0}'.format(spec_extfile))
 
     #############################################################################
 
