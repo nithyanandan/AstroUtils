@@ -861,9 +861,15 @@ class SkyModel(object):
                 raise TypeError('Input interp_method must be a string')
             if NP.any(NP.logical_or(frequency < self.frequency, frequency > self.frequency)):
                 raise ValueError('Frequencies requested in output lie out of range of sky model frequencies and hence cannot be interpolated')
-            interp_func = interp1d(self.frequency, self.spectrum[ind,:], axis=1, kind=interp_method)
-            spectrum = interp_func(frequency)
-            return spectrum
+            if self.spectrum is not None:
+                spectrum = NP.take(self.spectrum, ind, axis=0)
+            elif self.spec_extfile is not None:
+                spectrum = self.retrieve_external_spectrum(spec_extfile=None, ind=ind)
+            else:
+                raise AttributeError('Neither attribute "spectrum" nor "spec_extfile" found in the instance')
+            
+            interp_func = interp1d(self.frequency, spectrum, axis=1, kind=interp_method)
+            return interp_func(frequency)
 
     #############################################################################
 

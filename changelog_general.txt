@@ -1,3 +1,12 @@
+From 06801ac (skymod):
+=====================
+
+In astroutils/catalog.py,
+
+(*) Use member function retrieve_external_spectrum() in member
+function generate_spectrum() of class SkyModel to include
+retrieving spectrum from external file
+
 From 52951be (skymod):
 =====================
 
