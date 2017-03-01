@@ -626,13 +626,17 @@ class SkyModel(object):
 
     #############################################################################
 
-    def generate_spectrum(self, frequency=None):
+    def generate_spectrum(self, ind=None, frequency=None):
 
         """
         -------------------------------------------------------------------------
         Generate and return a spectrum from functional spectral parameters
 
         Inputs:
+
+        ind        [scalar, list or numpy array] Indices to select objects in
+                   the catalog or sky model. If set to None (default), all 
+                   objects will be selected.
 
         frequency  [scalar or numpy array] Frequencies at which the spectrum at
                    all object locations is to be created. Must be in same units
@@ -644,7 +648,7 @@ class SkyModel(object):
 
         Outputs:
 
-        spectrum   [numpy array] Spectrum of the sky model at the respective
+        spectrum   [numpy array] Spectrum of the sky model at the specified
                    sky locations. Has shape nobj x nfreq.
 
         Power law calculation uses the convention, 
@@ -668,6 +672,15 @@ class SkyModel(object):
         -------------------------------------------------------------------------
         """
 
+        if ind is None:
+            ind = NP.arange(self.location.shape[0], dtype=NP.int)
+        elif not isinstance(ind, (int,list,NP.ndarray)):
+            raise TypeError('Input ind must be an integer, list or numpy array')
+        else:
+            ind = NP.asarray(ind).astype(NP.int)
+            if NP.any(NP.logical_or(ind < 0, ind >= self.location.shape[0])):
+                raise IndexError('Out of bound indices found in input ind')
+
         if self.spec_type == 'func':
             if frequency is not None:
                 if isinstance(frequency, (int,float,NP.ndarray)):
@@ -680,10 +693,10 @@ class SkyModel(object):
             else:
                 frequency = NP.copy(self.frequency)
 
-            spectrum = NP.empty((self.location.shape[0], frequency.size))
+            spectrum = NP.empty((ind.size, frequency.size))
             spectrum.fill(NP.nan)
 
-            uniq_names, invind = NP.unique(self.spec_parms['name'], return_inverse=True)
+            uniq_names, invind = NP.unique(self.spec_parms['name'][ind], return_inverse=True)
             if len(uniq_names) > 1:
                 counts, edges, bnum, ri = OPS.binned_statistic(invind, statistic='count', bins=range(len(uniq_names)))
             else:
@@ -692,9 +705,9 @@ class SkyModel(object):
 
             for i, name in enumerate(uniq_names):
                 if len(uniq_names) > 1:
-                    indices = ri[ri[i]:ri[i+1]]
+                    indices = ind[ri[ri[i]:ri[i+1]]]
                 else:
-                    indices = ri
+                    indices = ind[ri]
 
                 if name == 'random':
                     spectrum[indices,:] = self.spec_parms['flux-offset'][indices].reshape(-1,1) + self.spec_parms['flux-scale'][indices].reshape(-1,1) * NP.random.randn(counts[i], frequency.size)

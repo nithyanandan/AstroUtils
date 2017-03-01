@@ -1,3 +1,12 @@
+From a401254 (master):
+=====================
+
+In astroutils/catalog.py,
+
+(*) Add input ind in member function generate_spectrum() of class
+SkyModel. It now returns spectra generated for a subset of all
+object locations. Update docstring of member function accordingly
+
 From eee7159 (master):
 =====================
 
