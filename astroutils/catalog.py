@@ -655,7 +655,13 @@ class SkyModel(object):
                 indices = NP.asarray(indices).ravel()
                 init_parms = {'name': NP.take(self.name, indices), 'frequency': self.frequency, 'location': NP.take(self.location, indices, axis=0), 'spec_type': self.spec_type, 'epoch': self.epoch, 'coords': self.coords}
                 if self.spec_type == 'spectrum':
-                    init_parms['spectrum'] = NP.take(self.spectrum, indices, axis=0)
+                    if self.spectrum is not None:
+                        init_parms['spectrum'] = NP.take(self.spectrum, indices, axis=0)
+                    elif self.spec_extfile is not None:
+                        init_parms['spectrum'] = self.retrieve_external_spectrum(spec_extfile=self.spec_extfile, ind=indices)
+                    else:
+                        raise AttributeError('Neither attribute "spectrum" nor "spec_extfile" found in the instance')
+
                     if self.src_shape is not None:
                         init_parms['src_shape'] = NP.take(self.src_shape, indices, axis=0)
                 else:
@@ -672,14 +678,18 @@ class SkyModel(object):
             else:
                 indices = NP.asarray(indices).ravel()
                 init_parms = {'name': self.name, 'frequency': NP.take(self.frequency, indices, axis=1), 'location': self.location, 'spec_type': self.spec_type, 'epoch': self.epoch, 'coords': self.coords}
+                if self.src_shape is not None:
+                    init_parms['src_shape'] = self.src_shape
                 if self.spec_type == 'func':
-                    init_parms['spec_parms'] = self.spec_parms                        
-                    if self.src_shape is not None:
-                        init_parms['src_shape'] = self.src_shape
+                    init_parms['spec_parms'] = self.spec_parms
                 else:
-                    init_parms['spectrum'] = NP.take(self.spectrum, indices, axis=1)
-                    if self.src_shape is not None:
-                        init_parms['src_shape'] = self.src_shape
+                    if self.spectrum is not None:
+                        init_parms['spectrum'] = NP.take(self.spectrum, indices, axis=1)
+                    elif self.spec_extfile is not None:
+                        spectrum = self.retrieve_external_spectrum(spec_extfile=self.spec_extfile, ind=None)
+                        init_parms['spectrum'] = NP.take(spectrum, indices, axis=1)
+                    else:
+                        raise AttributeError('Neither attribute "spectrum" nor "spec_extfile" found in the instance')
 
             return SkyModel(init_parms=init_parms, init_file=None)
 
