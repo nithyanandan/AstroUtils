@@ -204,6 +204,9 @@ class SkyModel(object):
                    Generate and return a spectrum from functional spectral 
                    parameters
 
+    load_external_spectrum()
+                   Load full spectrum from external file
+
     to_healpix()   Convert catalog to a healpix format of given nside at 
                    specified frequencies.
 
@@ -884,6 +887,32 @@ class SkyModel(object):
             if do_interp:
                 interp_func = interp1d(self.frequency.ravel(), spectrum, axis=1, kind=interp_method)
                 return interp_func(frequency)
+
+    #############################################################################
+
+    def load_external_spectrum(self):
+
+        """
+        -------------------------------------------------------------------------
+        Load full spectrum from external file
+        -------------------------------------------------------------------------
+        """
+
+        if self.spec_type == 'spectrum':
+            if self.spectrum is not None:
+                if self.spec_extfile is not None:
+                    raise ValueError('Both attributes spectrum and spec_extfile are set. This will overwrite the existing values in attribute spectrum')
+                else:
+                    warnings.warn('Attribute spec_extfile is not set. Continuing without any action.')
+            elif self.spec_extfile is not None:
+                self.spectrum = retrieve_external_spectrum(self.spec_extfile, ind=None)
+                if self.spectrum.shape != (self.location.shape[0], self.frequency.size):
+                    raise ValueError('Dimensions of external spectrum incompatible with expected number of sources and spectral channels')
+                self.spec_extfile = None
+            else:
+                raise AttributeError('Neither attribute spectrum not spec_extfile is set')
+        else:
+            warnings.warn('Attribute spec_type is not spectrum. Continuing without any action.')
 
     #############################################################################
 

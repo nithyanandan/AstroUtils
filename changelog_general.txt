@@ -1,3 +1,12 @@
+From 7af6086 (skymod):
+=====================
+
+In astroutils/catalog.py,
+
+(*) Add member function load_external_spectrum() along with docstring
+under class SkyModel to load and externally stored spectrum into the
+attribute spectrum
+
 From e5bed00 (skymod):
 =====================
 
