@@ -1,3 +1,12 @@
+From d252f4a (skymod):
+=====================
+
+In astroutils/catalog.py,
+
+(*) Use member function retrieve_external_spectrum() in member
+function __init__() of class SkyModel to check if externally stored
+spectrum is compatible with other specified dimensions
+
 From cf0f0f1 (skymod):
 =====================
 

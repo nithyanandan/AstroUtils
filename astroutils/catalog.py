@@ -422,6 +422,13 @@ class SkyModel(object):
                         warnings.warn('No value specified under key "spec_extfile". Will check for value under skey "spectrum"')
                     elif isinstance(init_parms['spec_extfile'], str):
                         self.spec_extfile = init_parms['spec_extfile']
+                        spectrum = self.retrieve_external_spectrum(spec_extfile=init_parms['spec_extfile'], ind=None)
+                        if not isinstance(spectrum, NP.ndarray):
+                            raise TypeError('Spectrum in external file is not a numpy array')
+                        if spectrum.shape != (self.location.shape[0], self.frequency.size):
+                            raise ValueError('Spectrum data in external file does not have compatible dimensions with number of objects and number of frequency channels')
+                        del spectrum
+
                         # with h5py.File(self.spec_extfile, 'r') as fileobj:
                         #     try:
                         #         assert fileobj['spectral_info/spectrum'].value is not None, 'Data in external file must not be None'
