@@ -807,18 +807,18 @@ class SkyModel(object):
             if NP.any(NP.logical_or(ind < 0, ind >= self.location.shape[0])):
                 raise IndexError('Out of bound indices found in input ind')
 
-        if self.spec_type == 'func':
-            if frequency is not None:
-                if isinstance(frequency, (int,float,NP.ndarray)):
-                    frequency = NP.asarray(frequency)
-                else:
-                    raise ValueError('Input parameter frequency must be a scalar or a numpy array')
-
-                if NP.any(frequency <= 0.0):
-                    raise ValueError('Input parameter frequency must contain positive values')
+        if frequency is not None:
+            if isinstance(frequency, (int,float,NP.ndarray)):
+                frequency = NP.asarray(frequency).ravel()
             else:
-                frequency = NP.copy(self.frequency)
+                raise ValueError('Input parameter frequency must be a scalar or a numpy array')
 
+            if NP.any(frequency <= 0.0):
+                raise ValueError('Input parameter frequency must contain positive values')
+        else:
+            frequency = NP.copy(self.frequency)
+
+        if self.spec_type == 'func':
             spectrum = NP.empty((ind.size, frequency.size))
             spectrum.fill(NP.nan)
 
@@ -858,7 +858,7 @@ class SkyModel(object):
         else:
             if not isinstance(interp_method, str):
                 raise TypeError('Input interp_method must be a string')
-            if NP.any(NP.logical_or(frequency < self.frequency, frequency > self.frequency)):
+            if NP.any(NP.logical_or(frequency < self.frequency.min(), frequency > self.frequency.max())):
                 raise ValueError('Frequencies requested in output lie out of range of sky model frequencies and hence cannot be interpolated')
             if self.spectrum is not None:
                 spectrum = NP.take(self.spectrum, ind, axis=0)
@@ -867,8 +867,17 @@ class SkyModel(object):
             else:
                 raise AttributeError('Neither attribute "spectrum" nor "spec_extfile" found in the instance')
             
-            interp_func = interp1d(self.frequency, spectrum, axis=1, kind=interp_method)
-            return interp_func(frequency)
+            do_interp = False
+            if self.frequency.size == frequency.size:
+                if NP.all(NP.abs(self.frequency - frequency) < 1e-10):
+                    return spectrum
+                else:
+                    do_interp = True
+            else:
+                do_interp = True
+            if do_interp:
+                interp_func = interp1d(self.frequency.ravel(), spectrum, axis=1, kind=interp_method)
+                return interp_func(frequency)
 
     #############################################################################
 

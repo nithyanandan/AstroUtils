@@ -1,3 +1,14 @@
+From 6fd3343 (skymod):
+=====================
+
+In astroutils/catalog.py,
+
+(*) Update member function generate_spectrum() in class SkyModel to
+not interpolate if output frequencies are identical to that in
+attribute frequency
+(*) Fix bugs in member function generate_spectrum() in class SkyModel
+to correctly interpolate along the spectral axis
+
 From 25ca29c (skymod):
 =====================
 
