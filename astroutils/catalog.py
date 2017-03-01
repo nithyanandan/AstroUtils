@@ -438,6 +438,8 @@ class SkyModel(object):
                         #     check_extfile = True
                     else:
                         raise TypeError('Value under spec_extfile must be a string')
+                else:
+                    check_spectrum = True
                 if check_spectrum:
                     if 'spectrum' not in init_parms:
                         raise KeyError('Sky model spectrum not provided.')

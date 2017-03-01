@@ -1,3 +1,10 @@
+From 68282ac (skymod):
+=====================
+
+In astroutils/catalog.py,
+
+(*) Minor bug fix in __init__() member function of class SkyModel
+
 From 4b3a811 (skymod):
 =====================
 
