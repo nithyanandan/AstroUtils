@@ -507,44 +507,41 @@ class SkyModel(object):
                     spec_parms['z-width'] = NP.zeros(self.location.shape[0])
                 elif NP.any(spec_parms['z-width'] < 0.0):
                     raise ValueError('Characteristic redshift widths must not be negative')
-    
                 self.spec_parms = spec_parms
+            if src_shape is not None:
+                self.src_shape = NP.asarray(src_shape)
+                if self.src_shape.shape[1] != 3:
+                    raise ValueError('Source shape must consist of three columns (major axis FWHM, minor axis FWHM, position angle) per source.')
+                if src_shape_units is not None:
+                    if not isinstance(src_shape_units, (list, tuple)):
+                        raise TypeError('Source shape units must be provided as a list or tuple')
+                    if len(src_shape_units) != 3:
+                        raise ValueError('Source shape units must contain three elements.')
     
-                if src_shape is not None:
-                    self.src_shape = NP.asarray(src_shape)
-                    if self.src_shape.shape[1] != 3:
-                        raise ValueError('Source shape must consist of three columns (major axis FWHM, minor axis FWHM, position angle) per source.')
-                    if src_shape_units is not None:
-                        if not isinstance(src_shape_units, (list, tuple)):
-                            raise TypeError('Source shape units must be provided as a list or tuple')
-                        if len(src_shape_units) != 3:
-                            raise ValueError('Source shape units must contain three elements.')
-        
-                        if src_shape_units[0] == 'arcsec':
-                            self.src_shape[:,0] = self.src_shape[:,0]/3.6e3
-                        elif src_shape_units[0] == 'arcmin':
-                            self.src_shape[:,0] = self.src_shape[:,0]/60.0
-                        elif src_shape_units[0] == 'radian':
-                            self.src_shape[:,0] = NP.degrees(self.src_shape[:,0])
-                        elif src_shape_units[0] != 'degree':
-                            raise ValueError('major axis FWHM must be specified as "arcsec", "arcmin", "degree" or "radian"')
-        
-                        if src_shape_units[1] == 'arcsec':
-                            self.src_shape[:,1] = self.src_shape[:,1]/3.6e3
-                        elif src_shape_units[1] == 'arcmin':
-                            self.src_shape[:,1] = self.src_shape[:,1]/60.0
-                        elif src_shape_units[1] == 'radian':
-                            self.src_shape[:,1] = NP.degrees(self.src_shape[:,1])
-                        elif src_shape_units[0] != 'degree':
-                            raise ValueError('minor axis FWHM must be specified as "arcsec", "arcmin", "degree" or "radian"')
-        
-                        if src_shape_units[2] == 'radian':
-                            self.src_shape[:,2] = NP.degrees(self.src_shape[:,2])
-                        elif src_shape_units[2] != 'degree':
-                            raise ValueError('position angle must be specified as "degree" or "radian" measured from north towards east.')
+                    if src_shape_units[0] == 'arcsec':
+                        self.src_shape[:,0] = self.src_shape[:,0]/3.6e3
+                    elif src_shape_units[0] == 'arcmin':
+                        self.src_shape[:,0] = self.src_shape[:,0]/60.0
+                    elif src_shape_units[0] == 'radian':
+                        self.src_shape[:,0] = NP.degrees(self.src_shape[:,0])
+                    elif src_shape_units[0] != 'degree':
+                        raise ValueError('major axis FWHM must be specified as "arcsec", "arcmin", "degree" or "radian"')
     
-                    if src_shape.shape[0] != self.location.shape[0]:
-                        raise ValueError('Number of source shapes in src_shape must match the number of object lcoations')
+                    if src_shape_units[1] == 'arcsec':
+                        self.src_shape[:,1] = self.src_shape[:,1]/3.6e3
+                    elif src_shape_units[1] == 'arcmin':
+                        self.src_shape[:,1] = self.src_shape[:,1]/60.0
+                    elif src_shape_units[1] == 'radian':
+                        self.src_shape[:,1] = NP.degrees(self.src_shape[:,1])
+                    elif src_shape_units[0] != 'degree':
+                        raise ValueError('minor axis FWHM must be specified as "arcsec", "arcmin", "degree" or "radian"')
+    
+                    if src_shape_units[2] == 'radian':
+                        self.src_shape[:,2] = NP.degrees(self.src_shape[:,2])
+                    elif src_shape_units[2] != 'degree':
+                        raise ValueError('position angle must be specified as "degree" or "radian" measured from north towards east.')
+                if src_shape.shape[0] != self.location.shape[0]:
+                    raise ValueError('Number of source shapes in src_shape must match the number of object lcoations')
 
     #############################################################################
 
@@ -735,7 +732,7 @@ class SkyModel(object):
             raise TypeError('External filename spec_extfile must be a string')
 
         with h5py.File(spec_extfile, 'r') as fileobj:
-            spec_type = fileobj['spectral_info/spec_type'].value
+            spec_type = fileobj['header/spec_type'].value
             if spec_type != 'spectrum':
                 raise ValueError('Attribute spec_type not set to "spectrum" in external file {0}'.format(spec_extfile))
             if 'spectral_info/spectrum' in fileobj:
