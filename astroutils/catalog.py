@@ -97,6 +97,16 @@ class SkyModel(object):
                    or a 2-element list which is input as a list of lists for all
                    the sources in the sky model
 
+    is_healpix     [boolean] If True, it is a healpix map with ordering as 
+                   specified in attribute healpix_ordering. By default it is 
+                   set to False
+
+    healpix_ordering
+                   [string] specifies the ordering of healpix pixels if 
+                   is_healpix is set to True in which case it is set to 'nest'
+                   or 'ring'. If is_healpix is set to False, it is set to 'na'
+                   (default) indicating 'not applicable'
+
     spec_type      [string] specifies the flux variation along the spectral 
                    axis. Allowed values are 'func' and 'spectrum'. If set to 
                    'func', values under spec_parms are applicable. If set to 
@@ -252,6 +262,18 @@ class SkyModel(object):
                                 as a row (numpy array) or a 2-element list which 
                                 is input as a list of lists for all the sources 
                                 in the sky model
+                    'is_healpix'
+                                [boolean] If True, it is a healpix map with 
+                                ordering as specified in attribute 
+                                healpix_ordering. If not specified, it will be 
+                                assumed to be False
+                    'healpix_ordering'
+                                [string] specifies the ordering of healpix 
+                                pixels if is_healpix is set to True in which 
+                                case it is set to 'nest' or 'ring'. If 
+                                is_healpix is set to False, it will be assumed 
+                                to be set to 'na' (default) indicating 'not 
+                                applicable'
                     'spec_type' [string] specifies the flux variation along the 
                                 spectral axis. Allowed values are 'func' and 
                                 'spectrum'. If set to 'func', values under 
@@ -381,6 +403,14 @@ class SkyModel(object):
                     grp = fileobj[key]
                     if key == 'header':
                         self.spec_type = grp['spec_type'].value
+                        self.is_healpix = False
+                        self.healpix_ordering = 'na'
+                        if 'is_healpix' in grp:
+                            self.is_healpix = bool(grp['is_healpix'].value)
+                            if self.is_healpix:
+                                if 'healpix_ordering' in grp:
+                                    if grp['healpix_ordering'].value.lower() in ['nest', 'ring']:
+                                        self.healpix_ordering = grp['healpix_ordering'].value.lower()
                     if key == 'object':
                         self.epoch = grp.attrs['epoch']
                         self.coords = grp.attrs['coords']
@@ -419,6 +449,18 @@ class SkyModel(object):
                 spec_type = init_parms['spec_type']
             except KeyError:
                 raise KeyError('Catalog name, frequency, location, and spectral type must be provided.')
+
+            self.is_healpix = False
+            self.healpix_ordering = 'na'
+            if 'is_healpix' in init_parms:
+                if isinstance(init_parms['is_healpix'], bool):
+                    self.is_healpix = init_parms['is_healpix']
+                    if 'healpix_ordering'in init_parms:
+                        if not isinstance(init_parms['healpix_ordering'], str):
+                            raise TypeError('alue under key "healpix_ordering" must be a string')
+                        if init_parms['healpix_ordering'].lower() not in ['nest', 'ring']:
+                            raise ValueError('Invalid specification for value under key "healpix_ordering"')
+                        self.healpix_ordering = init_parms['healpix_ordering']
 
             if 'spec_parms' in init_parms:
                 spec_parms = init_parms['spec_parms']
@@ -1114,6 +1156,8 @@ class SkyModel(object):
             with h5py.File(outfile, 'w') as fileobj:
                 hdr_group = fileobj.create_group('header')
                 hdr_group['spec_type'] = self.spec_type
+                hdr_group['is_healpix'] = int(self.is_healpix)
+                hdr_group['healpix_ordering'] = self.healpix_ordering
 
                 object_group = fileobj.create_group('object')
                 object_group.attrs['epoch'] = self.epoch

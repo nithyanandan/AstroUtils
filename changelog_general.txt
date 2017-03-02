@@ -1,3 +1,13 @@
+From 8ee6c86 (skymod):
+=====================
+
+In astroutils/catalog.py,
+
+(*) Add and initialize attributes is_healpix and healpix_ordering in
+__init__() member function of class SkyModel.
+(*) Save attributes is_healpix and healpix_ordering in save() member
+function of class SkyModel
+
 From 7af6086 (skymod):
 =====================
 
