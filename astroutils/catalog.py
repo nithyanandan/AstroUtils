@@ -12,6 +12,7 @@ import geometry as GEOM
 import mathops as OPS
 import lookup_operations as LKP
 import constants as CNST
+import foregrounds as FG
 
 #################################################################################
 
@@ -820,7 +821,8 @@ class SkyModel(object):
                    [string] Specified kind of interpolation to be used if 
                    self.spec_type is set to 'spectrum'. Default='linear'. 
                    Accepted values are described in docstring of 
-                   scipy.interpolate.interp1d()
+                   scipy.interpolate.interp1d() or as a power law index 
+                   specified by 'power-law'
 
         Outputs:
 
@@ -918,15 +920,14 @@ class SkyModel(object):
             else:
                 raise AttributeError('Neither attribute "spectrum" nor "spec_extfile" found in the instance')
             
-            do_interp = False
             if self.frequency.size == frequency.size:
                 if NP.all(NP.abs(self.frequency - frequency) < 1e-10):
                     return spectrum
-                else:
-                    do_interp = True
+
+            if interp_method.lower() == 'power-law':
+                spindex = FG.power_law_spectral_index(self.frequency.ravel(), spectrum)
+                return spectrum[:,int(self.frequency.size/2)].reshape(-1,1) * (frequency.ravel()/self.frequency.ravel()[int(self.frequency.size/2)]).reshape(1,-1)**spindex.reshape(-1,1)
             else:
-                do_interp = True
-            if do_interp:
                 interp_func = interp1d(self.frequency.ravel(), spectrum, axis=1, kind=interp_method)
                 return interp_func(frequency)
 

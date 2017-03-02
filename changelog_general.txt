@@ -1,3 +1,12 @@
+From a36abf9 (skymod):
+=====================
+
+In astroutils/catalog.py,
+
+(*) Add option for power law interpolation in member function
+generate_spectrum() of class SkyModel. Update member function
+docstring accordingly
+
 From 8ee6c86 (skymod):
 =====================
 
