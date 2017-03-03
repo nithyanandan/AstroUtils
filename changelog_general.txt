@@ -1,3 +1,13 @@
+From 4f8a401 (skymod):
+=====================
+
+In astroutils/catalog.py,
+
+(*) Add input load_spectrum in __init__() member function of class
+SkyModel to indicate if a full spectrum is to be loaded or not if
+found available in the init_file. Update __init__() member function
+and its docstring accordingly
+
 From a36abf9 (skymod):
 =====================
 

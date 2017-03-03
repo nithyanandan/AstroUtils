@@ -227,7 +227,7 @@ class SkyModel(object):
 
     ##############################################################################
 
-    def __init__(self, init_file=None, init_parms=None):
+    def __init__(self, init_file=None, init_parms=None, load_spectrum=False):
 
         """
         --------------------------------------------------------------------------
@@ -394,6 +394,16 @@ class SkyModel(object):
                                 and minor axes units are 'arcsec', 'arcmin', 
                                 'degree', or 'radian'. Accepted values for 
                                 position angle units are 'degree' or 'radian'
+
+        load_spectrum
+                    [boolean] It is applicable only if initialization happens from
+                    init_file and if full spectrum is available in the group
+                    'spectral_info/spectrum'. If set to True, it will load the
+                    the full spectrum into the instance attribute spectrum. If
+                    set to False (default), it will only store the path to the 
+                    file containing the full spectrum under the attribute 
+                    spec_extfile and not load the full spectrum into the instance
+                    attribute.
         --------------------------------------------------------------------------
         """
 
@@ -436,7 +446,12 @@ class SkyModel(object):
                             if 'spec_extfile' in grp:
                                 self.spec_extfile = grp['spec_extfile'].value
                             else:
-                                self.spectrum = grp['spectrum'].value
+                                if not isinstance(load_spectrum, bool):
+                                    load_spectrum = False
+                                if load_spectrum:
+                                    self.spectrum = grp['spectrum'].value
+                                else:
+                                    self.spec_extfile = init_file
         elif (init_parms is None):
             raise ValueError('In the absence of init_file, init_parms must be provided for initialization')
         else:
