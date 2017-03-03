@@ -1,9 +1,13 @@
+import multiprocessing as MP
+import itertools as IT
+import progressbar as PGB
 import numpy as NP
 import healpy as HP
 from astropy.table import Table
 from astropy.io import fits, ascii
 import h5py
 import warnings
+from pygsm import GlobalSkyModel, GlobalSkyModel2016
 from astropy.coordinates import Angle, SkyCoord
 from astropy import units
 import scipy.constants as FCNST
@@ -13,6 +17,15 @@ import mathops as OPS
 import lookup_operations as LKP
 import constants as CNST
 import foregrounds as FG
+
+#################################################################################
+
+def healpix_smooth_and_udgrade_arg_splitter(args, **kwargs):
+    return healpix_smooth_and_udgrade(*args, **kwargs)
+
+def healpix_smooth_and_udgrade(input_map, fwhm, nside, order_in='RING'):
+    smooth_map = HP.smoothing(input_map.ravel(), fwhm)
+    return HP.ud_grade(smooth_map, nside, order_in=order_in)
 
 #################################################################################
 
@@ -1253,6 +1266,158 @@ class SkyModel(object):
             tbdata = Table(data_dict, names=field_names)
             ascii.write(tbdata, output=outfile, format='fixed_width_two_line', formats=frmts, delimiter=' ', delimiter_pad=' ', bookend=False)
 
-    ############################################################################
+################################################################################
 
+def diffuse_radio_sky_model(outfreqs, gsmversion='gsm2008', nside=512, ind=None, outfile=None, parallel=False):
+
+    """
+    ---------------------------------------------------------------------------
+    Generate a Global Sky Model (GSM) using PyGSM package, GSM2008, 
+    (Oliveira-Costa et. al.,2008) for frequencies between 10 MHz to 5 THz
+
+    Inputs:
+
+    outfreqs    [list or numpy array] array containing the list of output 
+                frequencies in MHz for which GSMs are generated. 
+                Must be specified, no default.
+
+    gsmversion  [string] string specifying the verion of PyGSM to use which
+                can be either GSM2008 or GSM2016. Default = 'gsm2008'
+
+    nside       [scalar] positive integer specifying the required number of 
+                pixels per side (according to HEALPIX format) for the GSM. 
+                If not specified, the output GSM will have NSIDE = 512. 
+
+    ind		[numpy array] array containing the list of sky pixel indices. 
+                If set to None (default), all indices are returned otherwise
+                indices denoting specific locations are returned
+
+    outfile     [string] Full path to filename (without '.hdf5' extension 
+                which will be appended automatically) to which the sky model
+                will be written to. It will be in a format compatible for
+                initializing an instance of class SkyModel. If set to None,
+                no output file is written
+
+    parallel    [boolean] If set to False (default), the healpix smoothing
+                and up/down grading will be performed in series, and if set
+                to True these steps will be parallelized across frequency
+                axis
+
+    Outputs:
+
+    skymod      [instance of class SkyModel] Instance of class SkyModel. If 
+                outfile was provided in the inputs, it will contain the 
+                spectrum in attribute spectrum. If outfile was provided, the
+                spectrum would have been written to external file and unloaded
+                from the spectrum attribute 
+    ---------------------------------------------------------------------------
+    """
+    
+    try:
+        outfreqs
+    except NameError:
+        raise NameError('outfreqs must be specified')
+
+    if outfreqs is None:
+        raise ValueError('outfreqs cannot be NoneType')
+
+    if not isinstance(outfreqs, (list, NP.ndarray)):
+        raise TypeError('outfreqs must be a list or a numpy array')
+    outfreqs = NP.asarray(outfreqs).reshape(-1)
+    if NP.any(NP.logical_or(outfreqs < 10e6, outfreqs > 5e12)):
+        raise ValueError('outfreqs must lie in the range [10MHz, 5THz]')
+
+    if not isinstance(nside, int):
+        raise TypeError('nside must be an integer')
+    if not HP.isnsideok(nside):
+        raise ValueError('nside must be valid')
+
+    if ind is not None:
+    	if not isinstance(ind, NP.ndarray):
+            raise TypeError('ind must be a numpy array')
+
+    if outfile is not None:
+        if not isinstance(outfile, str):
+            raise TypeError('outfile must be a string')
+
+    if gsmversion == 'gsm2008':
+    	gsm = GlobalSkyModel()
+    elif gsmversion == 'gsm2016':
+	gsm = GlobalSkyModel2016()
+
+    map_cube = gsm.generate(outfreqs/1e6)
+    if HP.npix2nside(map_cube.shape[1]) > nside:
+        fwhm = HP.nside2resol(nside)
+        if not isinstance(parallel, bool):
+            parallel = False
+        if parallel:
+            nproc = outfreqs.size
+            list_split_maps = NP.array_split(map_cube, nproc, axis=0)
+            list_fwhm = [fwhm] * nproc
+            list_nside = [nside] * nproc
+            list_ordering = ['RING'] * nproc
+            pool = MP.Pool(processes=nproc)
+            list_outmaps = pool.map(healpix_smooth_and_udgrade_arg_splitter, IT.izip(list_split_maps, list_fwhm, list_nside, list_ordering))
+            outmaps = NP.asarray(list_outmaps)
+        else:
+            outmaps = None
+            progress = PGB.ProgressBar(widgets=[PGB.Percentage(), PGB.Bar(marker='-', left=' |', right='| '), PGB.Counter(), '/{0:0d} channels'.format(outfreqs.size), PGB.ETA()], maxval=outfreqs.size).start()
+            for freqi, freq in enumerate(outfreqs):
+                smooth_map = HP.smoothing(map_cube[freqi,:], fwhm=fwhm)
+                outmap = HP.ud_grade(smooth_map, nside, order_in='RING')
+                if outmaps is None:
+                    outmaps = outmap.reshape(1,-1)
+                else:
+                    outmaps = NP.concatenate((outmaps, outmap.reshape(1,-1)))
+                progress.update(freqi+1)
+            progress.finish()
+    elif HP.npix2nside(map_cube.shape[1]) < nside:
+        outmaps = None
+        progress = PGB.ProgressBar(widgets=[PGB.Percentage(), PGB.Bar(marker='-', left=' |', right='| '), PGB.Counter(), '/{0:0d} channels'.format(outfreqs.size), PGB.ETA()], maxval=outfreqs.size).start()
+        for freqi, freq in enumerate(outfreqs):
+            outmap = HP.ud_grade(map_cube[freqi,:], nside, order_in='RING')
+            if outmaps is None:
+                outmaps = outmap.reshape(1,-1)
+            else:
+                outmaps = NP.concatenate((outmaps, outmap.reshape(1,-1)), axis=0)
+            progress.update(freqi+1)
+        progress.finish()
+    else:
+        outmaps = map_cube
         
+    outmaps = outmaps.T
+    pixarea = HP.nside2pixarea(nside) # Steradians
+    if gsmversion == 'gsm2016':
+        outmaps *= 1e6 * pixarea # 1e6 * (MJy/Sr) * Sr = Jy
+    else:
+        outmaps = outmaps * (2.0 * FCNST.k * outfreqs.reshape(1,-1)**2 / FCNST.c**2) * pixarea / CNST.Jy
+
+    theta, phi = HP.pix2ang(nside, NP.arange(outmaps.shape[0]), nest=False)
+    gc = SkyCoord(l=NP.degrees(phi)*units.degree, b=(90.0-NP.degrees(theta))*units.degree, frame='galactic')
+    radec = gc.fk5
+    ra = radec.ra.degree
+    dec = radec.dec.degree
+
+    if ind is not None:
+        if NP.any(NP.logical_or(ind < 0, ind >= HP.nside2npix(nside))):
+            raise IndexError('Specified indices outside allowed range')
+        outmaps = outmaps[ind,:]
+    npix = outmaps.shape[0]
+    is_healpix = HP.isnpixok(npix)
+    if is_healpix:
+        healpix_ordering = 'ring'
+    else:
+        healpix_ordering = 'na'
+    flux_unit = 'Jy'
+    catlabel = NP.asarray([gsmversion]*npix)
+    majax = NP.degrees(HP.nside2resol(nside)) * NP.ones(npix)
+    minax = NP.degrees(HP.nside2resol(nside)) * NP.ones(npix)
+    spec_type = 'spectrum'
+    spec_parms = {}
+    skymod_init_parms = {'name': catlabel, 'frequency': outfreqs, 'location': NP.hstack((ra.reshape(-1,1), dec.reshape(-1,1))), 'is_healpix': is_healpix, 'healpix_ordering': healpix_ordering, 'spec_type': spec_type, 'spec_parms': spec_parms, 'spectrum': outmaps, 'src_shape': NP.hstack((majax.reshape(-1,1),minax.reshape(-1,1),NP.zeros(npix).reshape(-1,1))), 'src_shape_units': ['degree','degree','degree']}
+    skymod = SkyModel(init_parms=skymod_init_parms, init_file=None)
+    if outfile is not None:
+        skymod.save(outfile, fileformat='hdf5', extspec_action='unload')
+    return skymod
+        
+################################################################################

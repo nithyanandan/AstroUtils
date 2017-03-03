@@ -1,3 +1,15 @@
+From d787f81 (skymod):
+=====================
+
+In astroutils/catalog.py,
+
+(*) Import multiprocessing, itertools, progressbar and pygsm modules
+(*) Add functions healpix_smooth_and_udgrade_arg_splitter() and
+healpix_smooth_and_udgrade() to handle healpix smoothing and up/down
+grading in multiprocessing
+(*) Add function diffuse_radio_sky_model() along with docstring to
+generate global sky model from the PyGSM module
+
 From 4f8a401 (skymod):
 =====================
 
