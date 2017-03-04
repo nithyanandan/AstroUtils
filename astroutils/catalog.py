@@ -912,28 +912,29 @@ class SkyModel(object):
 
             for i, name in enumerate(uniq_names):
                 if len(uniq_names) > 1:
-                    indices = ind[ri[ri[i]:ri[i+1]]]
+                    ind_to_be_filled = NP.asarray(ri[ri[i]:ri[i+1]])
                 else:
-                    indices = ind[ri]
+                    ind_to_be_filled = NP.asarray(ri)
+                ind_to_be_used = ind[ind_to_be_filled]
 
                 if name == 'random':
-                    spectrum[indices,:] = self.spec_parms['flux-offset'][indices].reshape(-1,1) + self.spec_parms['flux-scale'][indices].reshape(-1,1) * NP.random.randn(counts[i], frequency.size)
+                    spectrum[ind_to_be_filled,:] = self.spec_parms['flux-offset'][ind_to_be_used].reshape(-1,1) + self.spec_parms['flux-scale'][ind_to_be_used].reshape(-1,1) * NP.random.randn(counts[i], frequency.size)
                 if name == 'monotone':  # Needs serious testing
-                    spectrum[indices,:] = 0.0
-                    inpind, refind, dNN = LKP.find_1NN(frequency, self.spec_parms['freq-ref'][indices], distance=frequency[1]-frequency[0], remove_oob=True) 
-                    ind = indices[inpind]
-                    ind2d = zip(ind, refind)
-                    spectrum[zip(*ind2d)] = self.spec_parms['flux-scale'][ind]
+                    spectrum[ind_to_be_filled,:] = 0.0
+                    inpind, refind, dNN = LKP.find_1NN(frequency, self.spec_parms['freq-ref'][ind_to_be_used], distance=frequency[1]-frequency[0], remove_oob=True) 
+                    ind_match = ind_to_be_used[inpind]
+                    ind2d = zip(ind_match, refind)
+                    spectrum[zip(*ind2d)] = self.spec_parms['flux-scale'][ind_match]
                 if name == 'power-law':
-                    spectrum[indices,:] = self.spec_parms['flux-offset'][indices].reshape(-1,1) + self.spec_parms['flux-scale'][indices].reshape(-1,1) * (frequency.reshape(1,-1)/self.spec_parms['freq-ref'][indices].reshape(-1,1))**self.spec_parms['power-law-index'][indices].reshape(-1,1)
+                    spectrum[ind_to_be_filled,:] = self.spec_parms['flux-offset'][ind_to_be_used].reshape(-1,1) + self.spec_parms['flux-scale'][ind_to_be_used].reshape(-1,1) * (frequency.reshape(1,-1)/self.spec_parms['freq-ref'][ind_to_be_used].reshape(-1,1))**self.spec_parms['power-law-index'][ind_to_be_used].reshape(-1,1)
                 if name == 'tanh':
                     z = CNST.rest_freq_HI/frequency.reshape(1,-1) - 1
-                    zr = CNST.rest_freq_HI/self.spec_parms['freq-ref'][indices].reshape(-1,1) - 1
-                    dz = self.spec_parms['z-width'][indices].reshape(-1,1)
+                    zr = CNST.rest_freq_HI/self.spec_parms['freq-ref'][ind_to_be_used].reshape(-1,1) - 1
+                    dz = self.spec_parms['z-width'][ind_to_be_used].reshape(-1,1)
 
-                    amp = self.spec_parms['flux-scale'][indices].reshape(-1,1) * NP.sqrt((1+z)/10)
+                    amp = self.spec_parms['flux-scale'][ind_to_be_used].reshape(-1,1) * NP.sqrt((1+z)/10)
                     xh = 0.5 * (NP.tanh((z-zr)/dz) + 1)
-                    spectrum[indices,:] = amp * xh
+                    spectrum[ind_to_be_filled,:] = amp * xh
                     
             return spectrum
         else:

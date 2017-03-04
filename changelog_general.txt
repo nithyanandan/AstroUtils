@@ -1,3 +1,11 @@
+From fdb3930 (skymod):
+=====================
+
+In astroutils/catalog.py,
+
+(*) Fix indexing bugs in member function generate_spectrum() of class
+SkyModel
+
 From d787f81 (skymod):
 =====================
 
