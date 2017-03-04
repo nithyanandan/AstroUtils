@@ -23,8 +23,8 @@ import foregrounds as FG
 def healpix_smooth_and_udgrade_arg_splitter(args, **kwargs):
     return healpix_smooth_and_udgrade(*args, **kwargs)
 
-def healpix_smooth_and_udgrade(input_map, fwhm, nside, order_in='RING'):
-    smooth_map = HP.smoothing(input_map.ravel(), fwhm)
+def healpix_smooth_and_udgrade(input_map, fwhm, nside, order_in='RING', verbose=True):
+    smooth_map = HP.smoothing(input_map.ravel(), fwhm, verbose=verbose)
     return HP.ud_grade(smooth_map, nside, order_in=order_in)
 
 #################################################################################
@@ -1351,20 +1351,22 @@ def diffuse_radio_sky_model(outfreqs, gsmversion='gsm2008', nside=512, ind=None,
         fwhm = HP.nside2resol(nside)
         if not isinstance(parallel, bool):
             parallel = False
+        print '\tComputing diffuse radio sky model...'
         if parallel:
             nproc = outfreqs.size
             list_split_maps = NP.array_split(map_cube, nproc, axis=0)
             list_fwhm = [fwhm] * nproc
             list_nside = [nside] * nproc
             list_ordering = ['RING'] * nproc
+            list_verbose = [False] * nproc
             pool = MP.Pool(processes=nproc)
-            list_outmaps = pool.map(healpix_smooth_and_udgrade_arg_splitter, IT.izip(list_split_maps, list_fwhm, list_nside, list_ordering))
+            list_outmaps = pool.map(healpix_smooth_and_udgrade_arg_splitter, IT.izip(list_split_maps, list_fwhm, list_nside, list_ordering, list_verbose))
             outmaps = NP.asarray(list_outmaps)
         else:
             outmaps = None
-            progress = PGB.ProgressBar(widgets=[PGB.Percentage(), PGB.Bar(marker='-', left=' |', right='| '), PGB.Counter(), '/{0:0d} channels'.format(outfreqs.size), PGB.ETA()], maxval=outfreqs.size).start()
+            progress = PGB.ProgressBar(widgets=[PGB.Percentage(), PGB.Bar(marker='-', left=' |', right='| '), PGB.Counter(), '/{0:0d} channels '.format(outfreqs.size), PGB.ETA()], maxval=outfreqs.size).start()
             for freqi, freq in enumerate(outfreqs):
-                smooth_map = HP.smoothing(map_cube[freqi,:], fwhm=fwhm)
+                smooth_map = HP.smoothing(map_cube[freqi,:], fwhm=fwhm, verbose=False)
                 outmap = HP.ud_grade(smooth_map, nside, order_in='RING')
                 if outmaps is None:
                     outmaps = outmap.reshape(1,-1)
@@ -1372,8 +1374,10 @@ def diffuse_radio_sky_model(outfreqs, gsmversion='gsm2008', nside=512, ind=None,
                     outmaps = NP.concatenate((outmaps, outmap.reshape(1,-1)))
                 progress.update(freqi+1)
             progress.finish()
+        print '\tCompleted estimating diffuse radio sky model.'
     elif HP.npix2nside(map_cube.shape[1]) < nside:
         outmaps = None
+        print '\tComputing diffuse radio sky model...'
         progress = PGB.ProgressBar(widgets=[PGB.Percentage(), PGB.Bar(marker='-', left=' |', right='| '), PGB.Counter(), '/{0:0d} channels'.format(outfreqs.size), PGB.ETA()], maxval=outfreqs.size).start()
         for freqi, freq in enumerate(outfreqs):
             outmap = HP.ud_grade(map_cube[freqi,:], nside, order_in='RING')
@@ -1383,6 +1387,7 @@ def diffuse_radio_sky_model(outfreqs, gsmversion='gsm2008', nside=512, ind=None,
                 outmaps = NP.concatenate((outmaps, outmap.reshape(1,-1)), axis=0)
             progress.update(freqi+1)
         progress.finish()
+        print '\tCompleted estimating diffuse radio sky model.'
     else:
         outmaps = map_cube
         

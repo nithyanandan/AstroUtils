@@ -1,3 +1,12 @@
+From 2984b41 (skymod):
+=====================
+
+In astroutils/catalog.py,
+
+(*) Add input keyword verbose in healpix_smooth_and_udgrade() and in
+calls to healpy.smoothing() which is set to False when calling from
+diffuse_radio_sky_model()
+
 From fdb3930 (skymod):
 =====================
 
