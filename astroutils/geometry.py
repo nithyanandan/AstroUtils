@@ -1009,6 +1009,11 @@ def ecef2lla(x, y, z, units='radians'):
     y = y.ravel()
     z = z.ravel()
 
+    # checking for acceptable values for Earth's surface
+    xyz_radius = NP.sqrt(x**2 + y**2 + z**2)
+    if NP.any(NP.logical_or(xyz_radius < 6.35e6, xyz_radius > 6.39e6)):
+        raise ValueError('xyz values should be topocentric ECEF coordinates in meters')
+
     gps_a = 6378137.0
     gps_f = 1.0 / 298.257223563 # flattening parameter
     gps_b = gps_a * (1 - gps_f)

@@ -1,3 +1,10 @@
+From a401254 (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Add value checks in ecef2lla()
+
 From eee7159 (master):
 =====================
 
