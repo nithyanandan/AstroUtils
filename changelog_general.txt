@@ -1,3 +1,10 @@
+From a9c49d1 (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Handle scalar or vector inputs in ecef2lla() and lla2ecef()
+
 From a401254 (master):
 =====================
 

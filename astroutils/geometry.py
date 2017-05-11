@@ -902,14 +902,14 @@ def lla2ecef(lat, lon, alt=None, units='radians'):
 
     Inputs:
 
-    lat     [numpy array] Geodetic latitude in units specified by input units.
-            Same size as lon and alt
+    lat     [scalar or numpy array] Geodetic latitude in units specified by 
+            input units. Same size as lon and alt
 
-    lon     [numpy array] Geodetic longitude in units specified by input units.
-            Same size as lat and alt.
+    lon     [scalar or numpy array] Geodetic longitude in units specified by 
+            input units. Same size as lat and alt.
 
-    alt     [numpy array] Geodetic altitude in meters. Same size as lat and lon.
-            If set to None, it is assumed to be zeros.
+    alt     [scalar or numpy array] Geodetic altitude in meters. Same size as 
+            lat and lon. If set to None, it is assumed to be zeros.
 
     units   [string] Specifies units of inputs lat and lon. Accepted values are
             'radians' (default) or 'degrees'
@@ -917,7 +917,7 @@ def lla2ecef(lat, lon, alt=None, units='radians'):
     Outputs:
 
     Tuple (x,y,z) where x, y and z in meters are the components in the ECEF 
-    system. 
+    system. Each will be of same size as lat
     -----------------------------------------------------------------------------
     """
 
@@ -928,15 +928,18 @@ def lla2ecef(lat, lon, alt=None, units='radians'):
 
     if units not in ['degrees', 'radians']:
         raise ValueError('Invalid input specified for "units"')
-    if not isinstance(lat, NP.ndarray):
-        raise TypeError('Input lat must be a numpy array')
-    if not isinstance(lon, NP.ndarray):
-        raise TypeError('Input lon must be a numpy array')
+    if not isinstance(lat, (int,float,NP.ndarray)):
+        raise TypeError('Input lat must be a scalar or numpy array')
+    lat = NP.asarray(lat).reshape(-1)
+    if not isinstance(lon, (int,float,NP.ndarray)):
+        raise TypeError('Input lon must be a scalar or numpy array')
+    lon = NP.asarray(lon).reshape(-1)
     if lat.size != lon.size:
         raise ValueError('Inputs lat and lon must be of same size')
     if alt is not None:
-        if not isinstance(alt, NP.ndarray):
-            raise TypeError('Input alt must be a numpy array')
+        if not isinstance(alt, (int,float,NP.ndarray)):
+            raise TypeError('Input alt must be a scalar or numpy array')
+        alt = NP.asarray(alt).reshape(-1)
         if alt.size != lat.size:
             raise ValueError('Input alt must have same size as input lat')
     else:
@@ -972,11 +975,11 @@ def ecef2lla(x, y, z, units='radians'):
 
     Inputs:
 
-    x       [numpy array] x-coordinate (in m) in ECEF system 
+    x       [scalar or numpy array] x-coordinate (in m) in ECEF system 
 
-    y       [numpy array] y-coordinate (in m) in ECEF system 
+    y       [scalar or numpy array] y-coordinate (in m) in ECEF system 
 
-    z       [numpy array] z-coordinate (in m) in ECEF system 
+    z       [scalar or numpy array] z-coordinate (in m) in ECEF system 
 
     units   [string] Specifies units of outputs lat and lon. Accepted values are
             'radians' (default) or 'degrees'
@@ -996,12 +999,15 @@ def ecef2lla(x, y, z, units='radians'):
     if units not in ['degrees', 'radians']:
         raise ValueError('Invalid input specified for "units"')
 
-    if not isinstance(x, NP.ndarray):
-        raise TypeError('Input x must be a numpy array')
-    if not isinstance(y, NP.ndarray):
-        raise TypeError('Input y must be a numpy array')
-    if not isinstance(z, NP.ndarray):
-        raise TypeError('Input z must be a numpy array')
+    if not isinstance(x, (int,float,NP.ndarray)):
+        raise TypeError('Input x must be a scalar or numpy array')
+    x = NP.asarray(x).reshape(-1)
+    if not isinstance(y, (int,float,NP.ndarray)):
+        raise TypeError('Input y must be a scalar or numpy array')
+    y = NP.asarray(y).reshape(-1)
+    if not isinstance(z, (int,float,NP.ndarray)):
+        raise TypeError('Input z must be a scalar or numpy array')
+    z = NP.asarray(z).reshape(-1)
     if (x.size != y.size) or (x.size != z.size):
         raise ValueError('Inputs x, y and z must be of same size')
 
