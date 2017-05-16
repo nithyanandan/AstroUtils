@@ -1,3 +1,11 @@
+From 7337df6 (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Add function parabola_parameters() along with docstring to
+compute parameters of a parabola
+
 From a9c49d1 (master):
 =====================
 
