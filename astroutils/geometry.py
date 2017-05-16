@@ -1270,6 +1270,9 @@ def sph2xyz(lon, lat, rad=None):
 
     """
     -----------------------------------------------------------------------------
+    Convert from spherical coordinates (radius, latitude, longigtude) to 
+    Cartesian coordinates
+
     Inputs:
 
     lon [scalar or vector] longitude in degrees.  
@@ -1313,6 +1316,50 @@ def sph2xyz(lon, lat, rad=None):
     z = rad * NP.sin(latr)
 
     return x, y, z
+
+#################################################################################
+
+def xyz2sph(x, y, z, units='radians'):
+
+    """
+    -----------------------------------------------------------------------------
+    Convert from Cartesian coordinates to spherical coordinates (radius, latitude
+    and longitude)
+
+    Inputs:
+
+    x       [scalar or vector] x-coordinates. Same size as y and z
+            
+    y       [scalar or vector] y-coordinates. Same size as x and z
+            
+    z       [scalar or vector] z-coordinates. Same size as x and y
+
+    units   [string] Specifies units of output latitude and longitude. If set
+            to 'degrees' it will be in degrees, otherwise in radians
+
+    Outputs:
+
+    r   [scalar or vector] radius. Same size and units as x, y and z 
+
+    lon [scalar or vector] longitude in units specified by keyword input 'units'
+
+    lat [scalar or vector] latitude in units specified by keyword input 'units'
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        x, y, z
+    except NameError:
+        raise NameError('x, y, and z must be defined in xyz2sph().')
+
+    r = NP.sqrt(x**2 + y**2 + z**2)
+    lat = NP.pi/2 - NP.arccos(z/r)
+    lon = NP.pi/2 - NP.arctan2(y,x)
+    if units == 'degrees':
+        lat = NP.degrees(lat)
+        lon = NP.degrees(lon)
+
+    return r, lat, lon
 
 #################################################################################
 

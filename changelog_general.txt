@@ -1,3 +1,12 @@
+From 218efbc (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Add function xyz2sph() along with docstring to convert from
+XYZ coordinates to spherical coordinates in radius, latitude and
+longitude
+
 From 7337df6 (master):
 =====================
 
