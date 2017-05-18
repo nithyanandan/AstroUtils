@@ -1,5 +1,6 @@
 from __future__ import division
 import numpy as NP
+import healpy as HP
 
 try:
     from scipy.spatial import cKDTree as KDT
@@ -1731,8 +1732,8 @@ def sample_parabola(f, open_angle, wavelength=1.0, axis=90.0, angunits='degrees'
             vertex of the parabola
 
     axis    [scalar] Angle the principal axis makes with the horizon (x-axis)
-            measured counter-clockwise. Default=90 degrees implies it is along 
-            the z-axis
+            measured counter-clockwise towards the z-axis (zenith). Default=90 
+            degrees implies it is along the zenith
 
     wavelength
             [scalar] Wavelength to calculate the sampling interval. At the 
@@ -1792,6 +1793,109 @@ def sample_parabola(f, open_angle, wavelength=1.0, axis=90.0, angunits='degrees'
     z = r * NP.cos(theta)
 
     xyz = NP.hstack((x.reshape(-1,1), NP.zeros((x.size,1), dtype=NP.float), z.reshape(-1,1)))
+    return xyz
+    
+################################################################################
+
+def sample_paraboloid(f, open_angle, wavelength=1.0, axis=[90.0,270.0], angunits='degrees'):
+
+    """
+    -----------------------------------------------------------------------------
+    Sample points on a parabola defined by focal length and opening angle
+
+    Inputs:
+
+    f       [scalar] focal length, must be positive
+
+    open_angle
+            [scalar] opening angle (in units specified by input angunits) which
+            is defined as the angle the edge of the parabola measured from the
+            vertex of the parabola
+
+    axis    [list or numpy array] Angles (alta, az) the principal axis makes 
+            relative to zenith. Default=[90, 270] degrees implies it is along 
+            the z-axis (zenith)
+
+    wavelength
+            [scalar] Wavelength to calculate the sampling interval. At the 
+            moment the sampling interval is fixed at one-tenth of whichever 
+            is minimum between the wavelength and diameter of the parabola
+            
+    angunits
+            [string] Units of the angles specified in open_angle and axis. By
+            default, it is set to 'degrees'
+
+    Output:
+
+    Mx3 array of x, y, z positions in same units as input focal length. The 
+    y-values are zeros.
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        f, open_angle
+    except NameError:
+        raise NameError('Inputs focal length and opening angle must be specified')
+
+    if not isinstance(f, (int,float)):
+        raise TypeError('Input f must be a scalar')
+    if f <= 0.0:
+        raise ValueError('Input focal length must be positive')
+
+    if not isinstance(wavelength, (int,float)):
+        raise TypeError('Input wavelength must be a scalar')
+    if wavelength <= 0.0:
+        raise ValueError('Input wavelength must be positive')
+
+    if not isinstance(open_angle, (int,float)):
+        raise TypeError('Input open_angle must be a scalar')
+    if open_angle <= 0.0:
+        raise ValueError('Input opening angle must be positive')
+
+    if not isinstance(axis, (list,NP.ndarray)):
+        raise TypeError('Input axis must be a list or numpy array')
+    axis = NP.asarray(axis).reshape(-1)
+    if axis.size != 2:
+        raise ValueError('Input axis must be a 2-element array')
+
+    if angunits == 'degrees':
+        open_angle = NP.radians(open_angle)
+        axis = NP.radians(axis)
+    if NP.abs(axis[0]) > NP.pi/2:
+        raise ValueError('Absolute value of altitude must be less than 90 degrees')
+    axis[1] = NP.fmod(axis[1], 2*NP.pi)
+    if axis[1] < 0.0:
+        axis[1] += 2*NP.pi
+
+    if axis[1] <= NP.pi:
+        tilt = 0.5 * NP.pi - axis[0]
+    else:
+        tilt = 0.5 * NP.pi + axis[0]
+
+    theta_min = NP.pi - open_angle
+    theta_max = NP.pi + open_angle
+
+    rmax = 2.0 * f / (1.0 - NP.cos(theta_min))
+    dia = 2.0 * rmax * NP.sin(theta_min)
+    dx = 0.1 * min([dia, wavelength])
+    dtheta = dx / rmax
+    nside = 2
+    hpx_angres = HP.nside2resol(nside)
+    while hpx_angres > dtheta:
+        nside *= 2
+        hpx_angres = HP.nside2resol(nside)
+    theta, phi = HP.pix2ang(nside, NP.arange(HP.nside2npix(nside)))
+    select_ind = (theta >= theta_min) & (theta <= theta_max)
+    theta = theta[select_ind]
+    phi = phi[select_ind]
+    numsamples = theta.size
+    r = 2.0 * f / (1.0 - NP.cos(theta-tilt))
+    z = r * NP.cos(theta)
+    rho = r * NP.sin(theta)
+    x = rho * NP.cos(phi)
+    y = rho * NP.sin(phi)
+    xyz = NP.hstack((x.reshape(-1,1), y.reshape(-1,1), z.reshape(-1,1)))
+
     return xyz
     
 ################################################################################

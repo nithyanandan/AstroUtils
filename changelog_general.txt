@@ -1,3 +1,15 @@
+From 8077339 (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Add function sample_paraboloid() along with docstring to sample
+a paraboloid surface specified by focal length and opening angle.
+
+In MANIFEST.in,
+
+(*) Add syntax changes in recursive-include statements
+
 From af06c0f (master):
 =====================
 
