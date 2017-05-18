@@ -1,3 +1,11 @@
+From af06c0f (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Add function sample_parabola() along with docstring to sample
+a parabolic curve specified by focal length and opening angle. 
+
 From 218efbc (master):
 =====================
 

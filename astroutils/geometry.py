@@ -1714,3 +1714,84 @@ def parabola_parameters(dia=None, f_to_dia_ratio=None, f=None, depth=None):
     return parms
 
 ################################################################################
+
+def sample_parabola(f, open_angle, wavelength=1.0, axis=90.0, angunits='degrees'):
+
+    """
+    -----------------------------------------------------------------------------
+    Sample points on a parabola defined by focal length and opening angle
+
+    Inputs:
+
+    f       [scalar] focal length, must be positive
+
+    open_angle
+            [scalar] opening angle (in units specified by input angunits) which
+            is defined as the angle the edge of the parabola measured from the
+            vertex of the parabola
+
+    axis    [scalar] Angle the principal axis makes with the horizon (x-axis)
+            measured counter-clockwise. Default=90 degrees implies it is along 
+            the z-axis
+
+    wavelength
+            [scalar] Wavelength to calculate the sampling interval. At the 
+            moment the sampling interval is fixed at one-tenth of whichever 
+            is minimum between the wavelength and diameter of the parabola
+            
+    angunits
+            [string] Units of the angles specified in open_angle and axis. By
+            default, it is set to 'degrees'
+
+    Output:
+
+    Mx3 array of x, y, z positions in same units as input focal length. The 
+    y-values are zeros.
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        f, open_angle
+    except NameError:
+        raise NameError('Inputs focal length and opening angle must be specified')
+
+    if not isinstance(f, (int,float)):
+        raise TypeError('Input f must be a scalar')
+    if f <= 0.0:
+        raise ValueError('Input focal length must be positive')
+
+    if not isinstance(wavelength, (int,float)):
+        raise TypeError('Input wavelength must be a scalar')
+    if wavelength <= 0.0:
+        raise ValueError('Input wavelength must be positive')
+
+    if not isinstance(open_angle, (int,float)):
+        raise TypeError('Input open_angle must be a scalar')
+    if open_angle <= 0.0:
+        raise ValueError('Input opening angle must be positive')
+
+    if not isinstance(axis, (int,float)):
+        raise TypeError('Input axis must be a scalar')
+
+    if angunits == 'degrees':
+        open_angle = NP.radians(open_angle)
+        axis = NP.radians(axis)
+    tilt = 0.5 * NP.pi - axis
+
+    theta_min = NP.pi - open_angle
+    theta_max = NP.pi + open_angle
+
+    rmax = 2.0 * f / (1.0 - NP.cos(theta_min))
+    dia = 2.0 * rmax * NP.sin(theta_min)
+    dx = 0.1 * min([dia, wavelength])
+    dtheta = dx / rmax
+    numsamples = NP.ceil(2*open_angle/dtheta).astype(int)
+    theta = NP.linspace(theta_min, theta_max, num=numsamples)
+    r = 2.0 * f / (1.0 - NP.cos(theta-tilt))
+    x = r * NP.sin(theta)
+    z = r * NP.cos(theta)
+
+    xyz = NP.hstack((x.reshape(-1,1), NP.zeros((x.size,1), dtype=NP.float), z.reshape(-1,1)))
+    return xyz
+    
+################################################################################
