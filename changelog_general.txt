@@ -1,3 +1,8 @@
+From e87c485 (skymod), 06e5b12 (master):
+=======================================
+
+(*) Bring updates in master branch onto skymod branch
+
 From 2984b41 (skymod):
 =====================
 
@@ -196,6 +201,57 @@ In astroutils/catalog.py,
 (*) Add input ind in member function generate_spectrum() of class
 SkyModel. It now returns spectra generated for a subset of all
 object locations. Update docstring of member function accordingly
+
+From 8077339 (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Add function sample_paraboloid() along with docstring to sample
+a paraboloid surface specified by focal length and opening angle.
+
+In MANIFEST.in,
+
+(*) Add syntax changes in recursive-include statements
+
+From af06c0f (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Add function sample_parabola() along with docstring to sample
+a parabolic curve specified by focal length and opening angle. 
+
+From 218efbc (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Add function xyz2sph() along with docstring to convert from
+XYZ coordinates to spherical coordinates in radius, latitude and
+longitude
+
+From 7337df6 (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Add function parabola_parameters() along with docstring to
+compute parameters of a parabola
+
+From a9c49d1 (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Handle scalar or vector inputs in ecef2lla() and lla2ecef()
+
+From a401254 (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Add value checks in ecef2lla()
 
 From eee7159 (master):
 =====================
