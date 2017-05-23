@@ -1,3 +1,10 @@
+From 06e5b12 (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Fix bugs in parabola angles in case of non-zero tilt
+
 From 8077339 (master):
 =====================
 

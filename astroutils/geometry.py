@@ -1787,10 +1787,10 @@ def sample_parabola(f, open_angle, wavelength=1.0, axis=90.0, angunits='degrees'
     dx = 0.1 * min([dia, wavelength])
     dtheta = dx / rmax
     numsamples = NP.ceil(2*open_angle/dtheta).astype(int)
-    theta = NP.linspace(theta_min, theta_max, num=numsamples)
-    r = 2.0 * f / (1.0 - NP.cos(theta-tilt))
-    x = r * NP.sin(theta)
-    z = r * NP.cos(theta)
+    theta = NP.linspace(theta_min-tilt, theta_max-tilt, num=numsamples)
+    r = 2.0 * f / (1.0 - NP.cos(theta+tilt))
+    x = r * NP.cos(NP.pi/2+theta)
+    z = r * NP.sin(NP.pi/2+theta)
 
     xyz = NP.hstack((x.reshape(-1,1), NP.zeros((x.size,1), dtype=NP.float), z.reshape(-1,1)))
     return xyz
@@ -1889,7 +1889,7 @@ def sample_paraboloid(f, open_angle, wavelength=1.0, axis=[90.0,270.0], angunits
     theta = theta[select_ind]
     phi = phi[select_ind]
     numsamples = theta.size
-    r = 2.0 * f / (1.0 - NP.cos(theta-tilt))
+    r = 2.0 * f / (1.0 - NP.cos(theta+tilt))
     z = r * NP.cos(theta)
     rho = r * NP.sin(theta)
     x = rho * NP.cos(phi)
