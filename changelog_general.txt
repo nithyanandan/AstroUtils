@@ -1,3 +1,18 @@
+From 6d69062 (cosmotiling):
+==========================
+
+In astroutils/tilesky.py,
+
+(*) Change input from z to redshift in convert_cosmocube_to_healpix()
+(*) Update docstring of convert_cosmocube_to_healpix() to be
+consistent with the change from usage of z to redshift
+(*) Update body of function convert_cosmocube_to_healpix() to be
+consistent with the change from usage of z to redshift
+(*) Update docstring of convert_cosmocubes_to_healpix_surfaces() on
+the different inputs to be consistent with the body of the function
+(*) Update docstring of convert_cosmocubes_to_healpix_surfaces() on
+input los_axis
+
 From a79b456 (cosmotiling):
 ==========================
 
