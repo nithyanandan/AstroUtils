@@ -1,3 +1,10 @@
+From 314855a (cosmotiling):
+==========================
+
+In astroutils,
+
+(*) Rename tilesky.py to cosmotile.py
+
 From 6f97d5a (cosmotiling):
 ==========================
 
