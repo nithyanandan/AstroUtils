@@ -1,3 +1,8 @@
+From 0111f5b (cosmotiling), 82c61a3 (master):
+============================================
+
+(*) Merge updates from master branch onto cosmotiling branch
+
 From c3b498b (cosmotiling):
 ==========================
 
@@ -40,6 +45,84 @@ In astroutils/mathops.py,
 interpolate a multi-dimensional array along a given axis (this is 
 essentially a wrapper to scipy.interpolate.interp1d with some 
 modifications for out of bound conditions)
+
+From 06e5b12 (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Fix bugs in parabola angles in case of non-zero tilt
+
+From 8077339 (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Add function sample_paraboloid() along with docstring to sample
+a paraboloid surface specified by focal length and opening angle.
+
+In MANIFEST.in,
+
+(*) Add syntax changes in recursive-include statements
+
+From af06c0f (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Add function sample_parabola() along with docstring to sample
+a parabolic curve specified by focal length and opening angle. 
+
+From 218efbc (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Add function xyz2sph() along with docstring to convert from
+XYZ coordinates to spherical coordinates in radius, latitude and
+longitude
+
+From 7337df6 (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Add function parabola_parameters() along with docstring to
+compute parameters of a parabola
+
+From a9c49d1 (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Handle scalar or vector inputs in ecef2lla() and lla2ecef()
+
+From a401254 (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Add value checks in ecef2lla()
+
+From eee7159 (master):
+=====================
+
+In astroutils/nonmathops.py,
+
+(*) Import h5py and ast modules
+(*) Add functions recursively_save_dict_contents_to_group(),
+save_dict_to_hdf5(), recursively_load_dict_contents_from_group() and
+load_dict_from_hdf5() along with docstrings to convert to and from
+HDF5 format and python dictionaries
+
+From 6e1825b (master):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Add function percentiles_to_2D_contour_levels() along with
+docstring to convert from percentiles to 2D contour levels given a
+probability density function
 
 From 0a0a26c (master):
 =====================

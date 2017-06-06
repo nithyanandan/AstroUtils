@@ -615,3 +615,52 @@ def interpolate_array(inparray, inploc, outloc, axis=-1, kind='linear'):
     return outarray
 
 #################################################################################
+
+def percentiles_to_2D_contour_levels(pdf, percentiles):
+
+    """
+    -----------------------------------------------------------------------------
+    Determine 2D contour levels given percentiles
+
+    Inputs:
+
+    pdf         [numpy array] 2D array denoting the probability density function
+                from which contour levels for the given percentiles are to be
+                determined
+
+    percentiles [list or numpy array] The percentiles (in percent) for which 
+                contour levels are to be determined. All elements in this
+                array must lie between 0 and 100
+
+    Output:     [numpy array] Contour levels corresponding to the input 
+                percentiles. Size of returned array will be equal to that of 
+                the input percentiles.
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        pdf, percentiles
+    except NameError:
+        raise NameError('Inputs pdf and percentiles must be specified')
+
+    assert isinstance(pdf, NP.ndarray), 'Input pdf must be a numpy array'
+    assert pdf.ndim==2, 'Input pdf must be a 2D numpy array'
+    assert isinstance(percentiles, (list,NP.ndarray)), 'Input percentiles must be a list or numpy array'
+    if NP.any(pdf < 0.0):
+        raise ValueError('Input pdf must be non-negative')
+    percentiles = NP.asarray(percentiles).ravel()
+    eps = 1e-12
+    percentiles = NP.clip(percentiles, eps, 100.0-eps)
+    if NP.any(percentiles < 0.0) or NP.any(percentiles > 100.0):
+        raise ValueError('Percentiles must lie between 0 and 100')
+    n = 10000
+    adjustment_factor = NP.sum(pdf)
+    pdf = pdf / adjustment_factor
+    t = NP.linspace(0.0, pdf.max(), n)
+    mask = (pdf >= t[:, NP.newaxis, NP.newaxis]+eps)
+    integral = (mask * pdf).sum(axis=(1,2))
+    interpfunc = interpolate.interp1d(integral, t, kind='linear')
+    cntr_levels = interpfunc(percentiles/100.0) * adjustment_factor
+    return cntr_levels
+
+#################################################################################

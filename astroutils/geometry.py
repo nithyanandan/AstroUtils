@@ -1,5 +1,6 @@
 from __future__ import division
 import numpy as NP
+import healpy as HP
 
 try:
     from scipy.spatial import cKDTree as KDT
@@ -902,14 +903,14 @@ def lla2ecef(lat, lon, alt=None, units='radians'):
 
     Inputs:
 
-    lat     [numpy array] Geodetic latitude in units specified by input units.
-            Same size as lon and alt
+    lat     [scalar or numpy array] Geodetic latitude in units specified by 
+            input units. Same size as lon and alt
 
-    lon     [numpy array] Geodetic longitude in units specified by input units.
-            Same size as lat and alt.
+    lon     [scalar or numpy array] Geodetic longitude in units specified by 
+            input units. Same size as lat and alt.
 
-    alt     [numpy array] Geodetic altitude in meters. Same size as lat and lon.
-            If set to None, it is assumed to be zeros.
+    alt     [scalar or numpy array] Geodetic altitude in meters. Same size as 
+            lat and lon. If set to None, it is assumed to be zeros.
 
     units   [string] Specifies units of inputs lat and lon. Accepted values are
             'radians' (default) or 'degrees'
@@ -917,7 +918,7 @@ def lla2ecef(lat, lon, alt=None, units='radians'):
     Outputs:
 
     Tuple (x,y,z) where x, y and z in meters are the components in the ECEF 
-    system. 
+    system. Each will be of same size as lat
     -----------------------------------------------------------------------------
     """
 
@@ -928,15 +929,18 @@ def lla2ecef(lat, lon, alt=None, units='radians'):
 
     if units not in ['degrees', 'radians']:
         raise ValueError('Invalid input specified for "units"')
-    if not isinstance(lat, NP.ndarray):
-        raise TypeError('Input lat must be a numpy array')
-    if not isinstance(lon, NP.ndarray):
-        raise TypeError('Input lon must be a numpy array')
+    if not isinstance(lat, (int,float,NP.ndarray)):
+        raise TypeError('Input lat must be a scalar or numpy array')
+    lat = NP.asarray(lat).reshape(-1)
+    if not isinstance(lon, (int,float,NP.ndarray)):
+        raise TypeError('Input lon must be a scalar or numpy array')
+    lon = NP.asarray(lon).reshape(-1)
     if lat.size != lon.size:
         raise ValueError('Inputs lat and lon must be of same size')
     if alt is not None:
-        if not isinstance(alt, NP.ndarray):
-            raise TypeError('Input alt must be a numpy array')
+        if not isinstance(alt, (int,float,NP.ndarray)):
+            raise TypeError('Input alt must be a scalar or numpy array')
+        alt = NP.asarray(alt).reshape(-1)
         if alt.size != lat.size:
             raise ValueError('Input alt must have same size as input lat')
     else:
@@ -972,11 +976,11 @@ def ecef2lla(x, y, z, units='radians'):
 
     Inputs:
 
-    x       [numpy array] x-coordinate (in m) in ECEF system 
+    x       [scalar or numpy array] x-coordinate (in m) in ECEF system 
 
-    y       [numpy array] y-coordinate (in m) in ECEF system 
+    y       [scalar or numpy array] y-coordinate (in m) in ECEF system 
 
-    z       [numpy array] z-coordinate (in m) in ECEF system 
+    z       [scalar or numpy array] z-coordinate (in m) in ECEF system 
 
     units   [string] Specifies units of outputs lat and lon. Accepted values are
             'radians' (default) or 'degrees'
@@ -996,18 +1000,26 @@ def ecef2lla(x, y, z, units='radians'):
     if units not in ['degrees', 'radians']:
         raise ValueError('Invalid input specified for "units"')
 
-    if not isinstance(x, NP.ndarray):
-        raise TypeError('Input x must be a numpy array')
-    if not isinstance(y, NP.ndarray):
-        raise TypeError('Input y must be a numpy array')
-    if not isinstance(z, NP.ndarray):
-        raise TypeError('Input z must be a numpy array')
+    if not isinstance(x, (int,float,NP.ndarray)):
+        raise TypeError('Input x must be a scalar or numpy array')
+    x = NP.asarray(x).reshape(-1)
+    if not isinstance(y, (int,float,NP.ndarray)):
+        raise TypeError('Input y must be a scalar or numpy array')
+    y = NP.asarray(y).reshape(-1)
+    if not isinstance(z, (int,float,NP.ndarray)):
+        raise TypeError('Input z must be a scalar or numpy array')
+    z = NP.asarray(z).reshape(-1)
     if (x.size != y.size) or (x.size != z.size):
         raise ValueError('Inputs x, y and z must be of same size')
 
     x = x.ravel()
     y = y.ravel()
     z = z.ravel()
+
+    # checking for acceptable values for Earth's surface
+    xyz_radius = NP.sqrt(x**2 + y**2 + z**2)
+    if NP.any(NP.logical_or(xyz_radius < 6.35e6, xyz_radius > 6.39e6)):
+        raise ValueError('xyz values should be topocentric ECEF coordinates in meters')
 
     gps_a = 6378137.0
     gps_f = 1.0 / 298.257223563 # flattening parameter
@@ -1259,6 +1271,9 @@ def sph2xyz(lon, lat, rad=None):
 
     """
     -----------------------------------------------------------------------------
+    Convert from spherical coordinates (radius, latitude, longigtude) to 
+    Cartesian coordinates
+
     Inputs:
 
     lon [scalar or vector] longitude in degrees.  
@@ -1302,6 +1317,50 @@ def sph2xyz(lon, lat, rad=None):
     z = rad * NP.sin(latr)
 
     return x, y, z
+
+#################################################################################
+
+def xyz2sph(x, y, z, units='radians'):
+
+    """
+    -----------------------------------------------------------------------------
+    Convert from Cartesian coordinates to spherical coordinates (radius, latitude
+    and longitude)
+
+    Inputs:
+
+    x       [scalar or vector] x-coordinates. Same size as y and z
+            
+    y       [scalar or vector] y-coordinates. Same size as x and z
+            
+    z       [scalar or vector] z-coordinates. Same size as x and y
+
+    units   [string] Specifies units of output latitude and longitude. If set
+            to 'degrees' it will be in degrees, otherwise in radians
+
+    Outputs:
+
+    r   [scalar or vector] radius. Same size and units as x, y and z 
+
+    lon [scalar or vector] longitude in units specified by keyword input 'units'
+
+    lat [scalar or vector] latitude in units specified by keyword input 'units'
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        x, y, z
+    except NameError:
+        raise NameError('x, y, and z must be defined in xyz2sph().')
+
+    r = NP.sqrt(x**2 + y**2 + z**2)
+    lat = NP.pi/2 - NP.arccos(z/r)
+    lon = NP.pi/2 - NP.arctan2(y,x)
+    if units == 'degrees':
+        lat = NP.degrees(lat)
+        lon = NP.degrees(lon)
+
+    return r, lat, lon
 
 #################################################################################
 
@@ -1563,3 +1622,280 @@ def spherematch(lon1, lat1, lon2=None, lat2=None, matchrad=None, nnearest=0,
 
 #################################################################################
 
+def parabola_parameters(dia=None, f_to_dia_ratio=None, f=None, depth=None):
+
+    """
+    -----------------------------------------------------------------------------
+    Compute parabola parameters given specific input parameters
+
+    Inputs:
+
+    Two and only two of the following inputs must be given
+
+    dia         [scalar or numpy array] Width of the parabola 
+
+    f_to_dia_ratio
+                [scalar or numpy array] ratio of focal distance to width
+
+    f           [scalar or numpy array] focal distance
+
+    depth       [scalar or numpy array] depth of the parabola
+
+    Output:
+
+    Dictionary containing the following keys and values:
+    'f'         [numpy array] focal distance
+    'D'         [numpy array] width of the parabola
+    'h'         [numpy array] depth of the parabola
+    'f/D'       [numpy array] ratio of focal distance to diameter
+    'angle'     [scalar or numpy array] Opening angle between the edge and the 
+                axis of the parabola
+    -----------------------------------------------------------------------------
+    """
+
+    dia_specified = dia is not None
+    f_to_dia_ratio_specified = f_to_dia_ratio is not None
+    f_specified = f is not None
+    depth_specified = depth is not None
+    dia_specified = NP.asarray(dia_specified, dtype=int)
+    f_to_dia_ratio_specified = NP.asarray(f_to_dia_ratio_specified, dtype=int)
+    f_specified = NP.asarray(f_specified, dtype=int)
+    depth_specified = NP.asarray(depth_specified, dtype=int)
+    num_keywords = f_to_dia_ratio_specified + f_specified + depth_specified
+    if dia_specified:
+        dia = NP.asarray(dia).reshape(-1)
+        if NP.any(dia <= 0.0):
+            raise ValueError('Parabola diameter must be positive')
+    if f_to_dia_ratio_specified:
+        f_to_dia_ratio = NP.asarray(f_to_dia_ratio).reshape(-1)
+        if NP.any(f_to_dia_ratio <= 0.0):
+            raise ValueError('Parabola f/D ratio must be positive')
+    if f_specified:
+        f = NP.asarray(f).reshape(-1)
+        if NP.any(f <= 0.0):
+            raise ValueError('Parabola focal length must be positive')
+    if depth_specified:
+        depth = NP.asarray(depth).reshape(-1)
+        if NP.any(depth <= 0.0):
+            raise ValueError('Parabola depth must be positive')
+    
+    parms = {'f': None, 'D': None, 'f/D': None, 'h': None, 'angle': None}
+    if num_keywords == 2:
+        if f_specified:
+            if dia_specified:
+                f_to_dia_ratio = f / dia
+                depth = dia**2 / (16.0 * f)
+            if f_to_dia_ratio_specified:
+                dia = f / f_to_dia_ratio
+                depth = dia**2 / (16.0 * f)
+            if depth_specified:
+                dia = NP.sqrt(16.0 * f * depth)
+                f_to_dia_ratio = f / dia
+        elif dia_specified:
+            if f_to_dia_ratio_specified:
+                f = dia * f_to_dia_ratio
+                depth = dia**2 / (16.0 * f)
+            if depth_specified:
+                f = dia**2 / (16.0 * depth)
+                f_to_dia_ratio = f / dia
+        elif depth_specified:
+            if f_to_dia_ratio_specified:
+                f = 16.0 * depth * f_to_dia_ratio**2
+                dia = NP.sqrt(16.0 * f * depth)
+        else:
+            raise NameError('Insufficient parameters specified')
+        parms['f'] = f
+        parms['D'] = dia
+        parms['f/D'] = f_to_dia_ratio
+        parms['h'] = depth
+        parms['angle'] = NP.arctan2(0.5*dia, f-depth)
+    else:
+        raise ValueError('Either too little or too many parameters specified for unique determination of parabola parameters')
+    
+    return parms
+
+################################################################################
+
+def sample_parabola(f, open_angle, wavelength=1.0, axis=90.0, angunits='degrees'):
+
+    """
+    -----------------------------------------------------------------------------
+    Sample points on a parabola defined by focal length and opening angle
+
+    Inputs:
+
+    f       [scalar] focal length, must be positive
+
+    open_angle
+            [scalar] opening angle (in units specified by input angunits) which
+            is defined as the angle the edge of the parabola measured from the
+            vertex of the parabola
+
+    axis    [scalar] Angle the principal axis makes with the horizon (x-axis)
+            measured counter-clockwise towards the z-axis (zenith). Default=90 
+            degrees implies it is along the zenith
+
+    wavelength
+            [scalar] Wavelength to calculate the sampling interval. At the 
+            moment the sampling interval is fixed at one-tenth of whichever 
+            is minimum between the wavelength and diameter of the parabola
+            
+    angunits
+            [string] Units of the angles specified in open_angle and axis. By
+            default, it is set to 'degrees'
+
+    Output:
+
+    Mx3 array of x, y, z positions in same units as input focal length. The 
+    y-values are zeros.
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        f, open_angle
+    except NameError:
+        raise NameError('Inputs focal length and opening angle must be specified')
+
+    if not isinstance(f, (int,float)):
+        raise TypeError('Input f must be a scalar')
+    if f <= 0.0:
+        raise ValueError('Input focal length must be positive')
+
+    if not isinstance(wavelength, (int,float)):
+        raise TypeError('Input wavelength must be a scalar')
+    if wavelength <= 0.0:
+        raise ValueError('Input wavelength must be positive')
+
+    if not isinstance(open_angle, (int,float)):
+        raise TypeError('Input open_angle must be a scalar')
+    if open_angle <= 0.0:
+        raise ValueError('Input opening angle must be positive')
+
+    if not isinstance(axis, (int,float)):
+        raise TypeError('Input axis must be a scalar')
+
+    if angunits == 'degrees':
+        open_angle = NP.radians(open_angle)
+        axis = NP.radians(axis)
+    tilt = 0.5 * NP.pi - axis
+
+    theta_min = NP.pi - open_angle
+    theta_max = NP.pi + open_angle
+
+    rmax = 2.0 * f / (1.0 - NP.cos(theta_min))
+    dia = 2.0 * rmax * NP.sin(theta_min)
+    dx = 0.1 * min([dia, wavelength])
+    dtheta = dx / rmax
+    numsamples = NP.ceil(2*open_angle/dtheta).astype(int)
+    theta = NP.linspace(theta_min-tilt, theta_max-tilt, num=numsamples)
+    r = 2.0 * f / (1.0 - NP.cos(theta+tilt))
+    x = r * NP.cos(NP.pi/2+theta)
+    z = r * NP.sin(NP.pi/2+theta)
+
+    xyz = NP.hstack((x.reshape(-1,1), NP.zeros((x.size,1), dtype=NP.float), z.reshape(-1,1)))
+    return xyz
+    
+################################################################################
+
+def sample_paraboloid(f, open_angle, wavelength=1.0, axis=[90.0,270.0], angunits='degrees'):
+
+    """
+    -----------------------------------------------------------------------------
+    Sample points on a parabola defined by focal length and opening angle
+
+    Inputs:
+
+    f       [scalar] focal length, must be positive
+
+    open_angle
+            [scalar] opening angle (in units specified by input angunits) which
+            is defined as the angle the edge of the parabola measured from the
+            vertex of the parabola
+
+    axis    [list or numpy array] Angles (alta, az) the principal axis makes 
+            relative to zenith. Default=[90, 270] degrees implies it is along 
+            the z-axis (zenith)
+
+    wavelength
+            [scalar] Wavelength to calculate the sampling interval. At the 
+            moment the sampling interval is fixed at one-tenth of whichever 
+            is minimum between the wavelength and diameter of the parabola
+            
+    angunits
+            [string] Units of the angles specified in open_angle and axis. By
+            default, it is set to 'degrees'
+
+    Output:
+
+    Mx3 array of x, y, z positions in same units as input focal length. The 
+    y-values are zeros.
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        f, open_angle
+    except NameError:
+        raise NameError('Inputs focal length and opening angle must be specified')
+
+    if not isinstance(f, (int,float)):
+        raise TypeError('Input f must be a scalar')
+    if f <= 0.0:
+        raise ValueError('Input focal length must be positive')
+
+    if not isinstance(wavelength, (int,float)):
+        raise TypeError('Input wavelength must be a scalar')
+    if wavelength <= 0.0:
+        raise ValueError('Input wavelength must be positive')
+
+    if not isinstance(open_angle, (int,float)):
+        raise TypeError('Input open_angle must be a scalar')
+    if open_angle <= 0.0:
+        raise ValueError('Input opening angle must be positive')
+
+    if not isinstance(axis, (list,NP.ndarray)):
+        raise TypeError('Input axis must be a list or numpy array')
+    axis = NP.asarray(axis).reshape(-1)
+    if axis.size != 2:
+        raise ValueError('Input axis must be a 2-element array')
+
+    if angunits == 'degrees':
+        open_angle = NP.radians(open_angle)
+        axis = NP.radians(axis)
+    if NP.abs(axis[0]) > NP.pi/2:
+        raise ValueError('Absolute value of altitude must be less than 90 degrees')
+    axis[1] = NP.fmod(axis[1], 2*NP.pi)
+    if axis[1] < 0.0:
+        axis[1] += 2*NP.pi
+
+    if axis[1] <= NP.pi:
+        tilt = 0.5 * NP.pi - axis[0]
+    else:
+        tilt = 0.5 * NP.pi + axis[0]
+
+    theta_min = NP.pi - open_angle
+    theta_max = NP.pi + open_angle
+
+    rmax = 2.0 * f / (1.0 - NP.cos(theta_min))
+    dia = 2.0 * rmax * NP.sin(theta_min)
+    dx = 0.1 * min([dia, wavelength])
+    dtheta = dx / rmax
+    nside = 2
+    hpx_angres = HP.nside2resol(nside)
+    while hpx_angres > dtheta:
+        nside *= 2
+        hpx_angres = HP.nside2resol(nside)
+    theta, phi = HP.pix2ang(nside, NP.arange(HP.nside2npix(nside)))
+    select_ind = (theta >= theta_min) & (theta <= theta_max)
+    theta = theta[select_ind]
+    phi = phi[select_ind]
+    numsamples = theta.size
+    r = 2.0 * f / (1.0 - NP.cos(theta+tilt))
+    z = r * NP.cos(theta)
+    rho = r * NP.sin(theta)
+    x = rho * NP.cos(phi)
+    y = rho * NP.sin(phi)
+    xyz = NP.hstack((x.reshape(-1,1), y.reshape(-1,1), z.reshape(-1,1)))
+
+    return xyz
+    
+################################################################################
