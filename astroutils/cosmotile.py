@@ -2,6 +2,7 @@ import numpy as NP
 import healpy as HP
 import astropy.cosmology as cosmology
 import multiprocessing as MP
+import warnings
 import constants as CNST
 
 #################################################################################
@@ -122,7 +123,7 @@ def convert_coevalcube_to_healpix(inpcube, inpres, nside, freq=None, redshift=No
 def convert_coevalcubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=None,
                                            freqs=None, los_axis=-1, method='linear',
                                            rest_freq=CNST.rest_freq_HI, cosmo=None,
-                                           nproc=None):
+                                            parallel=False, nproc=None):
 
     """
     -----------------------------------------------------------------------------
@@ -171,6 +172,10 @@ def convert_coevalcubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=N
                 astropy.cosmology to determine comoving distance for a given
                 redshift. When set to None (default) it is set to WMAP9. 
 
+    parallel    [boolean] If set to False (default), do serial processing. If
+                set to True, do parallel processing with number of threads as
+                specified in nproc
+
     nproc       [scalar] Number of parallel threads to use. Default=None means
                 it will be set to the number of cores in the system.
 
@@ -206,6 +211,13 @@ def convert_coevalcubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=N
             assert isinstance(freqs, (int,float,NP.ndarray)), 'Input freqs must be a scalar or a numpy array'
             freqs = NP.asarray(freqs).reshape(-1)
             redshifts = rest_freq / freqs - 1
+            list_redshifts = [None for i in xrange(redshifts.size)]
+            list_freqs = freqs.tolist()
+        else:
+            redshifts = NP.asarray(redshifts).reshape(-1)
+            list_redshifts = redshifts.tolist()
+            freqs = rest_freq / (1 + redshifts)
+            list_freqs = [None for i in xrange(freqs.size)]
         assert isinstance(redshifts, (int,float,NP.ndarray)), 'Redshifts must be a scalar or a numpy array'
         if NP.any(redshifts < 0.0):
             raise ValueError('Redshift must be positive')
@@ -219,32 +231,35 @@ def convert_coevalcubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=N
         assert len(inpres)==redshifts.size, 'Number of elements in inpres must match the number of redshifts'
     else:
         raise TypeError('Input resolution must be a scalar or a list')
+
+    assert isinstance(parallel, bool), 'Input parallel must be a boolean'
     
-    list_inpcubes = [NP.take(inpcubes, ind, axis=los_axis) for ind in xrange(redshifts.size)]
-    list_nsides = [nside i in xrange(redshifts.size)]
-
-    if freqs is None:
-        list_freqs = [None for i in xrange(redshifts.size)]
-    else:
-        list_freqs = freqs.tolist()
-
-    if redshifts is None:
-        list_redshifts = [None for i in xrange(redshifts.size)]
-    else:
-        list_redshifts = redshifts.tolist()
-
-    list_methods = [method for i in xrange(redshifts.size)]
-    list_rest_freqs = [rest_freq for i in xrange(redshifts.size)]
-    list_cosmo = [cosmo for i in xrange(redshifts.size)]
-
-    if nproc is None:
-        nproc = MP.cpu_count()
-    assert isinstance(nproc, int), 'Number of parallel processes must be an integer'
-    nproc = min([nproc, redshifts.size])
-    pool = MP.Pool(processes=nproc)
-    hpxsurfaces = pool.map(convert_coevalcube_to_healpix_arg_splitter, IT.izip(list_inpcubes, inpres, list_nsides, list_freqs, list_redshifts, list_methods, list_rest_freqs, list_cosmo))
-    pool.close()
-    pool.join()
+    hpxsurfaces = []
+    if parallel:
+        try:
+            list_inpcubes = [NP.take(inpcubes, ind, axis=los_axis) for ind in xrange(redshifts.size)]
+            list_nsides = [nside i in xrange(redshifts.size)]
+            list_methods = [method for i in xrange(redshifts.size)]
+            list_rest_freqs = [rest_freq for i in xrange(redshifts.size)]
+            list_cosmo = [cosmo for i in xrange(redshifts.size)]
+        
+            if nproc is None:
+                nproc = MP.cpu_count()
+            assert isinstance(nproc, int), 'Number of parallel processes must be an integer'
+            nproc = min([nproc, redshifts.size])
+            pool = MP.Pool(processes=nproc)
+            hpxsurfaces = pool.map(convert_coevalcube_to_healpix_arg_splitter, IT.izip(list_inpcubes, inpres, list_nsides, list_freqs, list_redshifts, list_methods, list_rest_freqs, list_cosmo))
+            pool.close()
+            pool.join()
+        except MemoryError:
+            parallel = False
+            del list_inpcubes
+            del pool
+            hpxsurfaces = []
+            warnings.warn('Memory requirements too high. Downgrading to serial processing.')
+    if not parallel:
+        for ind in range(redshifts.size):
+            hpxsurfaces += [convert_coevalcube_to_healpix(NP.take(inpcubes, ind, axis=los_axis), inpres[ind], nside, freq=list_freqs[ind], redshift=list_redshifts[ind], method=method, rest_freq=rest_freq, cosmo=cosmo)]
 
     hpxsurfaces = NP.asarray(hpxsurfaces)
     return hpxsurfaces

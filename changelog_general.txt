@@ -1,3 +1,13 @@
+From 60cca6f (cosmotiling):
+==========================
+
+In astroutils/tilesky.py,
+
+(*) Import warnings module
+(*) Introduce serial processing option in function
+convert_coevalcubes_to_healpix_surfaces(). Update docstring
+accordingly
+
 From 314855a (cosmotiling):
 ==========================
 
