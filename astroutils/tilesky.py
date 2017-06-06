@@ -6,12 +6,12 @@ import constants as CNST
 
 #################################################################################
 
-def convert_cube_to_healpix_arg_splitter(args, **kwargs):
-    return convert_cube_to_healpix(*args, **kwargs)
+def convert_cosmocube_to_healpix_arg_splitter(args, **kwargs):
+    return convert_cosmocube_to_healpix(*args, **kwargs)
 
-def convert_cube_to_healpix(inpcube, inpres, nside, freq=None, z=None,
-                            method='linear', rest_freq=CNST.rest_freq_HI,
-                            cosmo=None):
+def convert_cosmocube_to_healpix(inpcube, inpres, nside, freq=None, z=None,
+                                 method='linear', rest_freq=CNST.rest_freq_HI,
+                                 cosmo=None):
 
     """
     -----------------------------------------------------------------------------
@@ -119,10 +119,10 @@ def convert_cube_to_healpix(inpcube, inpres, nside, freq=None, z=None,
 
 #################################################################################
 
-def convert_cubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=None,
-                                      freqs=None, los_axis=-1, method='linear',
-                                      rest_freq=CNST.rest_freq_HI, cosmo=None,
-                                      nproc=None):
+def convert_cosmocubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=None,
+                                           freqs=None, los_axis=-1, method='linear',
+                                           rest_freq=CNST.rest_freq_HI, cosmo=None,
+                                           nproc=None):
 
     """
     -----------------------------------------------------------------------------
@@ -239,7 +239,7 @@ def convert_cubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=None,
     assert isinstance(nproc, int), 'Number of parallel processes must be an integer'
     nproc = min([nproc, redshifts.size])
     pool = MP.Pool(processes=nproc)
-    hpxsurfaces = pool.map(convert_cube_to_healpix_arg_splitter, IT.izip(list_inpcubes, inpres, list_nsides, list_freqs, list_redshifts, list_methods, list_rest_freqs, list_cosmo))
+    hpxsurfaces = pool.map(convert_cosmocube_to_healpix_arg_splitter, IT.izip(list_inpcubes, inpres, list_nsides, list_freqs, list_redshifts, list_methods, list_rest_freqs, list_cosmo))
     pool.close()
     pool.join()
 
