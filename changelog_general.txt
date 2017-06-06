@@ -1,3 +1,11 @@
+From 3e5bc9c (cosmotiling):
+==========================
+
+In astroutils/tilesky.py,
+
+(*) Fix bug in calculating pixel index and its passing to interpn()
+in function convert_cosmocube_to_healpix()
+
 From 6d69062 (cosmotiling):
 ==========================
 

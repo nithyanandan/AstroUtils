@@ -102,18 +102,18 @@ def convert_cosmocube_to_healpix(inpcube, inpres, nside, freq=None, redshift=Non
 
     comoving_distance = cosmo.comoving_distance(redshift).value
     x, y, z = HP.pix2vec(nside, np.arange(HP.nside2npix(nside)))
-    xmod = NP.mod(x, inpres[0]*inpcube.shape[0])
-    ymod = NP.mod(y, inpres[1]*inpcube.shape[1])
-    zmod = NP.mod(z, inpres[2]*inpcube.shape[2])
-    xyz_mod = NP.hstack((xmod.reshape(-1,1)), ymod.reshape(-1,1), zmod.reshape(-1,1))
-    xi = xmod / inpres[0]
-    yi = ymod / inpres[1]
-    zi = zmod / inpres[2]
+    xmod = NP.mod(x*comoving_distance, inpres[0]*inpcube.shape[0])
+    ymod = NP.mod(y*comoving_distance, inpres[1]*inpcube.shape[1])
+    zmod = NP.mod(z*comoving_distance, inpres[2]*inpcube.shape[2])
 
     if method == 'nearest_rounded':
+        xi = xmod / inpres[0]
+        yi = ymod / inpres[1]
+        zi = zmod / inpres[2]
         hpx = inpcube[xi.astype(int), yi.astype(int), zi.astype(int)]
     else:
-        hpx = interpolate.interpn((xmod, ymod, zmod), inpcube, xyz_mod, method=method, bounds_error=False, fill_value=None)
+        xyz_mod = NP.hstack((xmod.reshape(-1,1)), ymod.reshape(-1,1), zmod.reshape(-1,1))
+        hpx = interpolate.interpn((inpres[0]*NP.arange(inpcube.shape[0]), inpres[1]*NP.arange(inpcube.shape[1]), inpres[2]*NP.arange(inpcube.shape[2])), inpcube, xyz_mod, method=method, bounds_error=False, fill_value=None)
 
     return hpx
 
