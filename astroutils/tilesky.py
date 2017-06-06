@@ -6,17 +6,17 @@ import constants as CNST
 
 #################################################################################
 
-def convert_cosmocube_to_healpix_arg_splitter(args, **kwargs):
-    return convert_cosmocube_to_healpix(*args, **kwargs)
+def convert_coevalcube_to_healpix_arg_splitter(args, **kwargs):
+    return convert_coevalcube_to_healpix(*args, **kwargs)
 
-def convert_cosmocube_to_healpix(inpcube, inpres, nside, freq=None, redshift=None,
+def convert_coevalcube_to_healpix(inpcube, inpres, nside, freq=None, redshift=None,
                                  method='linear', rest_freq=CNST.rest_freq_HI,
                                  cosmo=None):
 
     """
     -----------------------------------------------------------------------------
-    Covert a cosmological cube at a given resolution (in physical comoving 
-    distance) to HEALPIX coordinates of a specified nside covering the whole sky. 
+    Covert a cosmological coeval cube at a given resolution (in physical comoving 
+    distance) to HEALPIX coordinates of a specified nside covering the whole sky
 
     Inputs:
 
@@ -58,7 +58,7 @@ def convert_cosmocube_to_healpix(inpcube, inpres, nside, freq=None, redshift=Non
 
     Output:
 
-    HEALPIX map of specified nside parameter
+    HEALPIX lightcone cube of specified nside parameter. It is of shape npix
     -----------------------------------------------------------------------------
     """
 
@@ -119,16 +119,16 @@ def convert_cosmocube_to_healpix(inpcube, inpres, nside, freq=None, redshift=Non
 
 #################################################################################
 
-def convert_cosmocubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=None,
+def convert_coevalcubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=None,
                                            freqs=None, los_axis=-1, method='linear',
                                            rest_freq=CNST.rest_freq_HI, cosmo=None,
                                            nproc=None):
 
     """
     -----------------------------------------------------------------------------
-    Covert array of comoving evolving cosmological cubes at a given resolution 
+    Covert array of comoving coeval cosmological cubes at a given resolution 
     (in physical comoving distance) to HEALPIX coordinates of a specified nside 
-    covering the whole sky. 
+    covering the whole sky as lightcone cube
 
     Inputs:
 
@@ -177,7 +177,7 @@ def convert_cosmocubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=No
     Output:
 
     HEALPIX maps of specified nside parameter for each of the redshifts or 
-    frequencies. It will be a numpy array of shape nchan x npix
+    frequencies as lightcone cube. It will be a numpy array of shape nchan x npix
     -----------------------------------------------------------------------------
     """
 
@@ -242,7 +242,7 @@ def convert_cosmocubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=No
     assert isinstance(nproc, int), 'Number of parallel processes must be an integer'
     nproc = min([nproc, redshifts.size])
     pool = MP.Pool(processes=nproc)
-    hpxsurfaces = pool.map(convert_cosmocube_to_healpix_arg_splitter, IT.izip(list_inpcubes, inpres, list_nsides, list_freqs, list_redshifts, list_methods, list_rest_freqs, list_cosmo))
+    hpxsurfaces = pool.map(convert_coevalcube_to_healpix_arg_splitter, IT.izip(list_inpcubes, inpres, list_nsides, list_freqs, list_redshifts, list_methods, list_rest_freqs, list_cosmo))
     pool.close()
     pool.join()
 

@@ -1,3 +1,15 @@
+From 6f97d5a (cosmotiling):
+==========================
+
+In astroutils/tilesky.py,
+
+(*) Rename function names convert_cosmocube_to_healpix_arg_splitter()
+to convert_coevalcube_to_healpix_arg_splitter(), 
+convert_cosmocube_to_healpix() to convert_coevalcube_to_healpix() and
+convert_cosmocubes_to_healpix_surfaces() to
+convert_coevalcubes_to_healpix_surfaces(). Update docstrings
+accordingly
+
 From 3e5bc9c (cosmotiling):
 ==========================
 
