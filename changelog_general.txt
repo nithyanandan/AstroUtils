@@ -1,3 +1,10 @@
+From 7137f6a (cosmotiling):
+==========================
+
+In astroutils/tilesky.py,
+
+(*) Minor changes to docstrings throughout
+
 From 0111f5b (cosmotiling), 82c61a3 (master):
 ============================================
 

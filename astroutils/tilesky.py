@@ -15,8 +15,8 @@ def convert_cube_to_healpix(inpcube, inpres, nside, freq=None, z=None,
 
     """
     -----------------------------------------------------------------------------
-    Covert a cosmological cube at a given resolution (in physical distance) to 
-    HEALPIX coordinates of a specified nside covering the whole sky. 
+    Covert a cosmological cube at a given resolution (in physical comoving 
+    distance) to HEALPIX coordinates of a specified nside covering the whole sky. 
 
     Inputs:
 
@@ -24,9 +24,9 @@ def convert_cube_to_healpix(inpcube, inpres, nside, freq=None, z=None,
                 distance 
 
     inpres      [scalar or tuple or list or numpy array] Input cube pixel 
-                resolution (in Mpc). If specified as scalar, it is applied to 
-                all three dimensions. Otherwise a three-element tuple, list or 
-                numpy array must be specified one for each dimension
+                resolution (in comoving Mpc). If specified as scalar, it is 
+                applied to all three dimensions. Otherwise a three-element tuple, 
+                list or numpy array must be specified one for each dimension
 
     nside       [scalar] HEALPIX nside parameter for output HEALPIX map
 
@@ -126,18 +126,19 @@ def convert_cubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=None,
 
     """
     -----------------------------------------------------------------------------
-    Covert a cosmological cube at a given resolution (in physical distance) to 
-    HEALPIX coordinates of a specified nside covering the whole sky. 
+    Covert array of comoving evolving cosmological cubes at a given resolution 
+    (in physical comoving distance) to HEALPIX coordinates of a specified nside 
+    covering the whole sky. 
 
     Inputs:
 
-    inpcube     [numpy array] Cosmological cube in three dimensions of comoving
-                distance 
+    inpcubes    [numpy array] Cosmological evolving cubes in three dimensions of 
+                comoving distance 
 
     inpres      [scalar or tuple or list or numpy array] Input cube pixel 
-                resolution (in Mpc). If specified as scalar, it is applied to 
-                all three dimensions. Otherwise a three-element tuple, list or 
-                numpy array must be specified one for each dimension
+                resolution (in comoving Mpc). If specified as scalar, it is 
+                applied to all three dimensions. Otherwise a three-element tuple, 
+                list or numpy array must be specified one for each dimension
 
     nside       [scalar] HEALPIX nside parameter for output HEALPIX map
 
@@ -183,7 +184,7 @@ def convert_cubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=None,
         raise NameError('Inputs inpcubes, nside and inpres must be specified')
 
     assert isinstance(inpcubes, NP.ndarray), 'Input cube must be a numpy array'
-    assert inpcubes.ndim==4, 'Input cube must be a 4D numpy array (3 spatial and 1 spectral/redshift)'
+    assert inpcubes.ndim==4, 'Input cubes must be specified as a 4D numpy array (3 spatial and 1 spectral/redshift)'
 
     assert isinstance(nside, int), 'Parameter nside must be a scalar'
     assert HP.isnsideok(nside), 'Invalid nside parameter specified'
