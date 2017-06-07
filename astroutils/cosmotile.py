@@ -56,7 +56,7 @@ def interp_coevalcubes_inpdict(inpdict):
     -----------------------------------------------------------------------------
     Interpolate between coeval cosmological cubes at specified parameter values
     (usually redshift or frequency) to get the coeval cubes at required parameter
-    values
+    values. Wrapper for interp_coevalcubes()
 
     Inputs:
 
@@ -327,6 +327,106 @@ def interp_coevalcubes(invals, outvals, inpcubes=None, cubefiles=None,
 
 def convert_coevalcube_to_healpix_arg_splitter(args, **kwargs):
     return convert_coevalcube_to_healpix(*args, **kwargs)
+
+def convert_coevalcube_to_healpix_inpdict(inpdict):
+
+    """
+    -----------------------------------------------------------------------------
+    Covert a cosmological coeval cube at a given resolution (in physical comoving 
+    distance) to HEALPIX coordinates of a specified nside covering the whole sky.
+    Wrapper for convert_coevalcube_to_healpix() 
+
+    Inputs:
+
+    inpdict     [dictionary] Dictionary of parameters for tiling cosmological 
+                coeval cubes to healpix lightcone cubes. It consists of the 
+                following keys and values:
+                inpcube     [numpy array] Cosmological cube in three dimensions 
+                            of comoving distance 
+                inpres      [scalar or tuple or list or numpy array] Input cube 
+                            pixel resolution (in comoving Mpc). If specified as 
+                            scalar, it is applied to all three dimensions. 
+                            Otherwise a three-element tuple, list or numpy array 
+                            must be specified one for each dimension
+                nside       [scalar] HEALPIX nside parameter for output HEALPIX 
+                            map
+                freq        [scalar] Frequency (in Hz) to be processed. One and 
+                            only one of inputs freq or z (see below) must be set 
+                            in order to determined the redshift at which this 
+                            processing is to take place. Redshift is necessary 
+                            to determine the cosmology. If set to None, redshift 
+                            must be specified (see below)
+                redshift    [scalar] Redshift to be processed. One and only one 
+                            of inputs freq (see above) or redshift must be 
+                            specified. If set to None, freq must be specified 
+                            (see above)
+                method      [string] Method of interpolation from cube to 
+                            healpix pixels. Accepted values are 
+                            'nearest_rounded' (fastest but not accurate), and 
+                            those accepted by the input keyword method in 
+                            scipy.interpolate.interpn(), namely, 'linear' and 
+                            'nearest', and 'splinef2d'. 'splinef2d' is only 
+                            supported for 2-dimensional data. Default='linear'
+                rest_freq   [scalar] Rest frame frequency (in Hz) to be used in 
+                            determination of redshift. Will be used only if 
+                            freq is set and redshift is set to None. 
+                            Default=1420405751.77 Hz (the rest frame frequency 
+                            of neutral Hydrogen spin flip transition)
+                cosmo       [instance of class astropy.cosmology] Instance of 
+                            class astropy.cosmology to determine comoving 
+                            distance for a given redshift. By default (None) it 
+                            is set to WMAP9
+
+    Output:
+
+    HEALPIX lightcone cube of specified nside parameter. It is of shape npix
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        inpdict
+    except NameError:
+        raise NameError('Input inpdict must be provided')
+
+    if not isinstance(inpdict, dict):
+        raise TypeError('Input inpdict must be a dictionary')
+
+    for key,val in inpdict.iteritems():
+        eval(key + '=val')
+
+    try:
+        inpcube, nside, inpres
+    except NameError:
+        raise NameError('Inputs inpcube, nside and inpres must be specified in inpdict')
+
+    try:
+        freq
+    except NameError:
+        freq = None
+
+    try:
+        redshift
+    except NameError:
+        redshift = None
+    
+    try:
+        cosmo
+    except NameError:
+        cosmo = None
+
+    try:
+        method
+    except NameError:
+        method = 'linear'
+
+    try:
+        rest_freq
+    except NameError:
+        rest_freq = CNST.rest_freq_HI
+
+    return convert_coevalcube_to_healpix(inpcube, inpres, nside, freq=freq, redshift=redshift, method=method, rest_freq=rest_freq, cosmo=cosmo)
+
+#################################################################################
 
 def convert_coevalcube_to_healpix(inpcube, inpres, nside, freq=None, redshift=None,
                                  method='linear', rest_freq=CNST.rest_freq_HI,

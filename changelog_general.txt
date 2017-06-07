@@ -1,3 +1,12 @@
+From 36862cd (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Add function convert_coevalcube_to_healpix_inpdict() along with 
+docstring that now takes a consolidated dictionary input and is a 
+wrapper for convert_coevalcube_to_healpix()
+
 From ef074dd (cosmotiling):
 ==========================
 
