@@ -1,3 +1,12 @@
+From 95a22e3 (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Change inputs from multiple items to consolidated dictionary
+inpdict in function interp_coevalcubes(). Update docstring
+accordingly
+
 From 77c0ff5 (cosmotiling):
 ==========================
 
