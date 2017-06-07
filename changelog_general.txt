@@ -1,3 +1,11 @@
+From dc267b2 (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Add function coevalcube_interp_tile2hpx_wrapper_arg_splitter() for
+parallelizing function coevalcube_interp_tile2hpx_wrapper()
+
 From 74a95d8 (cosmotiling):
 ==========================
 

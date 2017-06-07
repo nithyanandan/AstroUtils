@@ -42,7 +42,7 @@ def read_21cmfast_cube(cubefile, dtype=NP.float32):
     data = NP.fromstring(data, dtype)
     if sys.byteorder == 'big':
         data = data.byteswap()
-    data = NP.asarray(data.reshape((dim, dim, dim), order='F'), order='C') # convert to C-order from F-order
+    data = NP.asarray(data.reshape((dim, dim, dim), order='F'), order='C') # convert to C-order from F-order (it has to be read in F-order first)
     return data
 
 #################################################################################
@@ -684,6 +684,9 @@ def convert_coevalcubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=N
     return hpxsurfaces
 
 #################################################################################
+
+def coevalcube_interp_tile2hpx_wrapper_arg_splitter(args, **kwargs):
+    return interp_coevalcubes(*args, **kwargs)
 
 def coevalcube_interp_tile2hpx_wrapper(interpdict, tiledict):
 
