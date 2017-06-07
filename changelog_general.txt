@@ -1,3 +1,18 @@
+From 1827ead (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Add functions interp_coevalcubes_arg_splitter() and
+interp_coevalcubes() along with docstrings. These functions will
+interpolate coeval cosmological cubes at specified parameter values
+such as along redshift or frequency
+(*) Import mathops module from astroutils
+
+In scripts/run_cosmotile.py,
+
+(*) Import glob
+
 From 530f289 (cosmotiling):
 ==========================
 

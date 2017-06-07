@@ -4,6 +4,143 @@ import astropy.cosmology as cosmology
 import multiprocessing as MP
 import warnings
 import constants as CNST
+import mathops as OPS
+
+#################################################################################
+
+def interp_coevalcubes_arg_splitter(args, **kwargs):
+    return interp_coevalcubes(*args, **kwargs)
+
+def interp_coevalcubes(invals, outvals, inpcubes=None, cubefiles=None,
+                       cubedims=None, cube_source=None, interp_method='linear',
+                       outfiles=None, returncubes=True):
+
+    """
+    -----------------------------------------------------------------------------
+    Interpolate between coeval cosmological cubes at specified parameter values
+    (usually redshift or frequency) to get the coeval cubes at required parameter
+    values
+
+    Inputs:
+
+    invals      [list or numpy array] Locations using which the interpolation 
+                function is determined. It must be of size equal to the 
+                dimension of input array along which interpolation is to be 
+                determined specified by axis keyword input. It must be a list or 
+                numpy array
+
+    outvals     [list or numpy array] Locations at which interpolated array is
+                to be determined along the specified axis. It must be a scalar, 
+                list or numpy array. If any of outloc is outside the range of
+                inploc, the first and the last cubes from the inparray will
+                be used as boundary values
+
+    inpcubes    [list of numpy arrays] List of cosmological coeval cubes in 
+                which each element has is a 3D numpy array with three dimensions 
+                of comoving distance. If set to None (default), cubefiles which 
+                contain the input cubes must be specified. If set to not None, 
+                length of the list must match the number of elements in invals. 
+                Only one of inpcubes or cubefiles can be set
+
+    cubefiles   [list of strings] Filenames for reading in the input coeval 
+                cubes. If set to None (default), inpcubes must be specified. If
+                set to not None, it must contain a list of filenames and length 
+                of list must match the number of elements in invals. Only one of 
+                inpcubes or cubefiles can be set
+
+    cubedims    [integer, list, tuple or numpy array] Dimensions of the input
+                cubes, will be used when input cubes are read from cubefiles
+                especially when these are binary files such as from 21cmfast 
+                simulations. If specified as integer, it will be applied to all
+                input cubes read from cubefiles, otherwise if specified as a 
+                list, tuple or numpy array, it must contain three elements one
+                along each axis and this will be applied to all input cubes read
+                from cubefiles. It is not applicable when input cubes are given
+                directly in inpcubes
+
+    cube_source [string] Source of input cubes. At the moment, the accepted 
+                values are '21cmfast'
+
+    method      [string] Method of interpolation across coeval cubes along axis
+                for which invals are provided. Usually it is the spectral, 
+                redshift or line of sight distance. Accepted values are 
+                'linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic' 
+                where 'slinear', 'quadratic' and 'cubic' refer to a spline 
+                interpolation of first, second or third order or as an integer 
+                specifying the order of the spline interpolator to use. 
+                Default='linear'.
+
+    outfiles    [list of strings] Filenames for writing interpolated coeval 
+                cubes. If set to None (default), interpolated coeval cubes are 
+                not written out. If set to not None, it must be a list of 
+                strings where each element in the list corresponds to filename 
+                of an interpolated coeval cubes. The number of elements in this 
+                list must match the number of elements in outvals. 
+
+    returncubes [boolean] If set to True (default), the interpolated coeval
+                cubes are returned as a list of coeval cubes. Thus each element
+                in the list is a coeval cube and corresponds to the value in
+                outvals. If set to False, the interpolated coeval cubes are not
+                returned.
+
+    Output:
+
+    If input returncubes is set to True, the interpolated coeval cubes are 
+    returned as a list of coeval cubes. Thus each element in the list is a 
+    coeval cube and corresponds to the value in outvals. 
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        invals, outvals
+    except NameError:
+        raise NameError('Inputs invals and outvals must be specified')
+
+    assert isinstance(outvals, (int, float, list, NP.ndarray)), 'Output values of interpolated variable must be a scalar, list or numpy array'
+    outvals = NP.asarray(outvals).reshape(-1)
+
+    if outfiles is not None:
+        if isinstance(outfiles, str):
+            if outvals.size != 1:
+                raise TypeError('Number of outfiles must match the number of output interpolated values')
+            outfiles = [outfiles]
+        elif isinstance(outfiles, list):
+            if len(outfiles) != outvals.size:
+                raise TypeError('Number of outfiles must match the number of output interpolated values')
+        else:
+            raise TypeError('outfiles must be a string or list of strings')
+
+    if (cubefiles is None) and (inpcubes is None):
+        raise ValueError('One of the inputs cubefiles and inpcubes must be specified')
+    elif (cubefiles is not None) and (inpcubes is not None):
+        raise ValueError('One and only one of the inputs cubefiles and inpcubes must be specified')
+    elif cubefiles is not None:
+        if not isinstance(cube_source, str):
+            raise TypeError('Input cube_source must be a string')
+        if cube_source.lower() not in ['21cmfast']:
+            raise ValueError('Processing of {0} cubes not supported currently',format(cube_source))
+        if cube_source.lower() == '21cmfast':
+            if not isinstance(cubedims, (int,list,tuple,NP.ndarray)):
+                raise TypeError('Input cubedims must be specified as an integer, list, tuple or numpy array')
+            if isinstance(cubedims, int):
+                cubedims = NP.asarray([cubedims, cubedims, cubedims])
+            else:
+                cubedims = NP.asarray(cubedims).reshape(-1)
+            if cubedims.size != 3:
+                raise ValueError('Input cubedims must be a three element iterable')
+            
+            inpcubes = [read_21cmfast_cube(cubefile, cubedims) for cubefile in cubefiles]
+
+    inpcubes = NP.asarray(inpcubes)
+    outcubes = OPS.interpolate_array(inpcubes, invals, outvals, axis=0, kind=interp_method)
+    outcubes = [NP.take(outcubes, i, axis=0) for i in range(outvals.size)]
+
+    if outfiles is not None:
+        for fi,outfile in enumerate(outfiles):
+            write_coeval_cube(outfile, outcubes[fi]):
+
+    if returncubes:
+        return outcubes
 
 #################################################################################
 
@@ -133,8 +270,9 @@ def convert_coevalcubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=N
 
     Inputs:
 
-    inpcubes    [numpy array] Cosmological evolving cubes in three dimensions of 
-                comoving distance 
+    inpcubes    [numpy array] Array of cosmological coeval cubes in which each 
+                element has is a 3D numpy array with three dimensions of comoving 
+                distance 
 
     inpres      [scalar or tuple or list or numpy array] Input cube pixel 
                 resolution (in comoving Mpc). If specified as scalar, it is 

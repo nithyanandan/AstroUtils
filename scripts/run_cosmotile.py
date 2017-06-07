@@ -1,6 +1,6 @@
 #!python
 
-import os, glob
+import os, sys, glob
 import argparse
 import yaml
 from astroutils import cosmotile
