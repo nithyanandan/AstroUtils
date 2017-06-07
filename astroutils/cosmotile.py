@@ -1,3 +1,5 @@
+import os, sys
+from os.path import basename
 import numpy as NP
 import healpy as HP
 import astropy.cosmology as cosmology
@@ -5,6 +7,43 @@ import multiprocessing as MP
 import warnings
 import constants as CNST
 import mathops as OPS
+
+#################################################################################
+
+def read_21cmfast_cube(cubefile, dtype=NP.float32):
+    
+    """
+    -----------------------------------------------------------------------------
+    Read 21cmfast cosmological cubes -- coeval or lightcone versions
+
+    Inputs:
+
+    cubefile    [string] Filename including full path for reading in the input 
+                21cmfast cosmological cube. 21cmfast cubes are stored in binary 
+                files. 
+
+    Output:
+
+    Numpy array containing the cosmological coeval/lightcone 21cmfast cube. It 
+    is of shape nx x ny x nz where this is determined by cube dimensions parsed
+    from the cubefile string
+    -----------------------------------------------------------------------------
+    """
+
+    if basename(cubefile)[-11:]=='lighttravel':
+        dim = int('' + cubefile.split('_')[-3])
+        label = str('' + cubefile.split('_')[-2])
+    else:
+        dim = int('' + cubefile.split('_')[-2])
+        label = str('' + cubefile.split('_')[-1])
+
+    with open(filename, 'rb') as fileobj:
+        data = fileobj.read()
+    data = NP.fromstring(data, dtype)
+    if sys.byteorder == 'big':
+        data = data.byteswap()
+    data = NP.asarray(data.reshape((dim, dim, dim), order='F'), order='C') # convert to C-order from F-order
+    return data
 
 #################################################################################
 
@@ -129,11 +168,14 @@ def interp_coevalcubes(invals, outvals, inpcubes=None, cubefiles=None,
             if cubedims.size != 3:
                 raise ValueError('Input cubedims must be a three element iterable')
             
-            inpcubes = [read_21cmfast_cube(cubefile, cubedims) for cubefile in cubefiles]
+            inpcubes = [read_21cmfast_cube(cubefile) for cubefile in cubefiles]
 
-    inpcubes = NP.asarray(inpcubes)
-    outcubes = OPS.interpolate_array(inpcubes, invals, outvals, axis=0, kind=interp_method)
-    outcubes = [NP.take(outcubes, i, axis=0) for i in range(outvals.size)]
+    if NP.allclose(invals, outvals): # no interpolation required, just return outcube=inpcubes
+        outcubes = inpcubes
+    else:
+        inpcubes = NP.asarray(inpcubes)
+        outcubes = OPS.interpolate_array(inpcubes, invals, outvals, axis=0, kind=interp_method)
+        outcubes = [NP.take(outcubes, i, axis=0) for i in range(outvals.size)]
 
     if outfiles is not None:
         for fi,outfile in enumerate(outfiles):

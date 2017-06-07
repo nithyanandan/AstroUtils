@@ -1,3 +1,17 @@
+From 77c0ff5 (cosmotiling):
+==========================
+
+In astroutils/mathops.py,
+
+(*) Check for closeness of inplocs and outlocs in interpolate_array()
+and if they are close, return the inparray without interpolation
+
+In astroutils/cosmotile.py,
+
+(*) Check for closeness of invals and outvals in interp_coevalcubes()
+and if they are close, return the inpcubes without interpolation
+(*) Add function read_21cmfast_cube() along with docstring
+
 From 1827ead (cosmotiling):
 ==========================
 

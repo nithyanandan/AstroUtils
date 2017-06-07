@@ -593,26 +593,29 @@ def interpolate_array(inparray, inploc, outloc, axis=-1, kind='linear'):
     assert inparray.ndim > axis+1, 'Insufficient dimensions in inparray for interpolation'
     assert inparray.shape[axis]==inploc.size, 'Dimension of interpolation axis of inparray is mismatched with number of locations at which interpolation is requested'
 
-    inbound_ind = NP.where(NP.logical_and(outloc >= inploc.min(), outloc <= inploc.max()))[0]
-    outbound_low_ind = NP.where(outloc < inploc.min())[0]
-    outbound_high_ind = NP.where(outloc > inploc.max())[0]
-
-    outarray = None
-    if inbound_ind.size > 0:
-        interpfunc = interpolate.interp1d(inploc, inparray, kind=kind, axis=axis, copy=False, assume_sorted=True)
-        outarray = interpfunc(outloc[inbound_ind])
-    if outbound_low_ind.size > 0:
-        if outarray is None:
-            outarray = NP.repeat(NP.take(inparray, [0], axis=axis), outbound_low_ind.size, axis=axis)
-        else:
-            outarray = NP.concatenate((NP.repeat(NP.take(inparray, [0], axis=axis), outbound_low_ind.size, axis=axis), outarray), axis=axis)
-    if outbound_high_ind.size > 0:
-        if outarray is None:
-            outarray = NP.repeat(NP.take(inparray, [-1], axis=axis), outbound_high_ind.size, axis=axis)
-        else:
-            outarray = NP.concatenate((outarray, NP.repeat(NP.take(inparray, [0], axis=axis), outbound_high_ind.size, axis=axis)), axis=axis)
-
-    return outarray
+    if NP.allclose(inploc, outloc):
+        return inparray # no interpolation required, just return outarray=inparray
+    else:
+        inbound_ind = NP.where(NP.logical_and(outloc >= inploc.min(), outloc <= inploc.max()))[0]
+        outbound_low_ind = NP.where(outloc < inploc.min())[0]
+        outbound_high_ind = NP.where(outloc > inploc.max())[0]
+    
+        outarray = None
+        if inbound_ind.size > 0:
+            interpfunc = interpolate.interp1d(inploc, inparray, kind=kind, axis=axis, copy=False, assume_sorted=True)
+            outarray = interpfunc(outloc[inbound_ind])
+        if outbound_low_ind.size > 0:
+            if outarray is None:
+                outarray = NP.repeat(NP.take(inparray, [0], axis=axis), outbound_low_ind.size, axis=axis)
+            else:
+                outarray = NP.concatenate((NP.repeat(NP.take(inparray, [0], axis=axis), outbound_low_ind.size, axis=axis), outarray), axis=axis)
+        if outbound_high_ind.size > 0:
+            if outarray is None:
+                outarray = NP.repeat(NP.take(inparray, [-1], axis=axis), outbound_high_ind.size, axis=axis)
+            else:
+                outarray = NP.concatenate((outarray, NP.repeat(NP.take(inparray, [0], axis=axis), outbound_high_ind.size, axis=axis)), axis=axis)
+    
+        return outarray
 
 #################################################################################
 
