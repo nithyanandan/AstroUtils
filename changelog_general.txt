@@ -1,3 +1,13 @@
+From ef074dd (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Add function interp_coevalcubes_inpdict() along with docstring
+that now takes a consolidated dictionary input.
+(*) Revert function interp_coevalcubes() to its previous version
+where multiple items are given as inputs individually
+
 From 95a22e3 (cosmotiling):
 ==========================
 
