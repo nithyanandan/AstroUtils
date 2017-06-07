@@ -298,14 +298,15 @@ def interp_coevalcubes(invals, outvals, inpcubes=None, cubefiles=None,
         if cube_source.lower() not in ['21cmfast']:
             raise ValueError('Processing of {0} cubes not supported currently',format(cube_source))
         if cube_source.lower() == '21cmfast':
-            if not isinstance(cubedims, (int,list,tuple,NP.ndarray)):
-                raise TypeError('Input cubedims must be specified as an integer, list, tuple or numpy array')
-            if isinstance(cubedims, int):
-                cubedims = NP.asarray([cubedims, cubedims, cubedims])
-            else:
-                cubedims = NP.asarray(cubedims).reshape(-1)
-            if cubedims.size != 3:
-                raise ValueError('Input cubedims must be a three element iterable')
+            if cubedims is not None:
+                if not isinstance(cubedims, (int,list,tuple,NP.ndarray)):
+                    raise TypeError('Input cubedims must be specified as an integer, list, tuple or numpy array')
+                if isinstance(cubedims, int):
+                    cubedims = NP.asarray([cubedims, cubedims, cubedims])
+                else:
+                    cubedims = NP.asarray(cubedims).reshape(-1)
+                if cubedims.size != 3:
+                    raise ValueError('Input cubedims must be a three element iterable')
             
             inpcubes = [read_21cmfast_cube(cubefile) for cubefile in cubefiles]
 

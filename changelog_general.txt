@@ -1,3 +1,14 @@
+From e99ff5c (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Minor change in interp_coevalcubes()
+
+In scripts/run_cosmotile.py,
+
+(*) Update body to run cosmotiling in series or parallel
+
 From dc267b2 (cosmotiling):
 ==========================
 
