@@ -121,8 +121,8 @@ def convert_coevalcube_to_healpix(inpcube, inpres, nside, freq=None, redshift=No
 #################################################################################
 
 def convert_coevalcubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=None,
-                                           freqs=None, los_axis=-1, method='linear',
-                                           rest_freq=CNST.rest_freq_HI, cosmo=None,
+                                            freqs=None, los_axis=-1, method='linear',
+                                            rest_freq=CNST.rest_freq_HI, cosmo=None,
                                             parallel=False, nproc=None):
 
     """

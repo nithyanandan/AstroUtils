@@ -1,7 +1,20 @@
+From 530f289 (cosmotiling):
+==========================
+
+(*) Add scripts folder and its contents to repo
+
+In setup.py,
+
+(*) Add scripts folder specification
+
+In scripts/
+
+(*) Start working on file run_cosmotile.py
+
 From 60cca6f (cosmotiling):
 ==========================
 
-In astroutils/tilesky.py,
+In astroutils/cosmotile.py,
 
 (*) Import warnings module
 (*) Introduce serial processing option in function
