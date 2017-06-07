@@ -1,3 +1,14 @@
+From 74a95d8 (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Add function coevalcube_interp_tile2hpx_wrapper() along with 
+docstring that now takes consolidated dictionary inputs for
+interpolation and tiling and serves as a wrapper for those 
+functionalities by wrapping interp_coevalcubes() and 
+convert_coevalcube_to_healpix()
+
 From 36862cd (cosmotiling):
 ==========================
 

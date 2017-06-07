@@ -685,3 +685,34 @@ def convert_coevalcubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=N
 
 #################################################################################
 
+def coevalcube_interp_tile2hpx_wrapper(interpdict, tiledict):
+
+    """
+    -----------------------------------------------------------------------------
+    Interpolate cosmological coeval cubes and transform to produce healpix 
+    lightcone cube
+
+    Inputs:
+
+    interpdict  [dictionary] See docstring of interp_coevalcubes_inpdict()
+                input, namely, inpdict
+
+    tiledict    [dictionary] See docstring of 
+                convert_coevalcube_to_healpix_inpdict() input, namely, inpdict
+
+    Output:
+
+    HEALPIX lightcone cube of specified nside parameter. It is of shape npix
+    -----------------------------------------------------------------------------
+    """
+    
+    try:
+        interpdict, tiledict
+    except NameError:
+        raise NameError('Inputs interpdict and tiledict must be specified')
+
+    interpcube = interp_coevalcubes_inpdict(interpdict)[0] # List should contain only one element
+    tiledict['inpcube'] = interpcube
+    return convert_coevalcube_to_healpix(tiledict)
+    
+#################################################################################
