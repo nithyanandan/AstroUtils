@@ -1,0 +1,199 @@
+##### IMPORTANT INFORMATION #####
+##### DO NOT MODIFY THIS FILE #####
+##### MAKE A COPY OF THIS FILE AND CUSTOMIZE #####
+
+########## Directory Structure information #########
+
+dirstruct   :
+                                # Directory information
+
+    indir           : '/data3/t_nithyanandan/EoR_models/21cmFAST/Andrei_Mesinger/Faint_galaxies_1024_coeval/Boxes/'
+                                # Folder containing cosmological
+                                # coeval boxes
+
+    infile_prefix   : 'delta_T_v3_no_halos_'
+                                # prefix for selecting infiles. If
+                                # set to null (default), no prefix
+                                # is assumed
+
+    infile_suffix   : null
+                                # prefix for selecting infiles. If
+                                # set to null (default), no prefix
+                                # is assumed
+
+    interpdir       : null
+                                # Folder to store interpolated
+                                # coeval cubes. If set to nul
+                                # (default), interpolated coeval
+                                # cubes will not be saved
+
+    outdir          : '/data3/t_nithyanandan/EoR_models/21cmFAST/Andrei_Mesinger/Faint_galaxies_1024_coeval/hpxsurfaces/'
+                                # Output folder to put the healpix
+                                # surfaces
+
+    outfile_prefix  : null
+                                # Identification string to be
+                                # prefixed to the output file
+                                # which will be saved in HDF5
+                                # format. If the prefix is not null,
+                                # The HDF5 file saved
+                                # will have this prefix appended
+                                # with '_light_cone_surfaces.hdf5',
+                                # otherwise it will just be named
+                                # 'light_cone_surfaces.hdf5'
+
+########## Format specifications ##########
+
+format     :
+                                # Input file format specifications
+
+    delimiter       : '_'
+                                # Delimiter for parameters in the
+                                # filename
+
+    z_placeholder   : 5
+                                # 0-indexed position in the delimited
+                                # filename where redshift parameter
+                                # can be found
+
+    z_identifier    : 'z'
+                                # This string is present in the
+                                # delimited filename either before
+                                # of after (see z_identifier_place)
+                                # the redshift value. If no such
+                                # identifier string present, set to
+                                # null (default)
+
+    z_identifier_place: 'before'
+                                # If set to 'before' the z_identifier
+                                # string appears before the redshift
+                                # value in the delimited string from
+                                # filename. If set to 'after' it lies
+                                # after. It is only applicable if
+                                # z_identifier is not null
+
+    
+
+########## Simulation parameters ##########
+
+sim         :
+                                # EoR Simulation/model information
+
+    source      : '21cmfast'
+                                # Source of simulation
+
+    cosmo       :
+                                # Cosmological parameters
+
+            name    : 'custom'
+                                # Name of cosmology. If set to
+                                # 'custom' it will use the
+                                # parameters below. Otherwise
+                                # the name should be a meaningful
+                                # descriptor which can be used
+                                # to load preset cosmology parameters
+                                # from astropy.cosmology (e.g. WMAP9,
+                                # etc.) in which case the following
+                                # parameters will be ignored
+
+            h       : 0.678
+                                # Hubble factor
+
+            Om0     : 0.308
+                                # Matter density
+
+            Ode0    : null
+                                # Dark energy density. If set to
+                                # null, it is 1-Om0, otherwise it
+                                # must be specified
+
+            Ob0     : 0.02226
+                                # Baryon density. The actual baryon
+                                # density is this number divided by
+                                # h**2
+
+            w0      : -1
+                                # Dark energy equation of state
+                                # parameter. Default=-1
+
+            Y_He    : 0.245
+                                # Helium mass fraction
+
+            sigma8  : 0.815
+                                # Linear rms mass fluctuation on
+                                # 8 h/Mpc scales at z=0
+
+    units       : 'mK'
+                                # Units of the simulation output
+                                # Accepted values are 'K' (default)
+                                # and 'mK'
+
+########## Output parameters ##########
+
+output      :
+                                # Output parameters
+
+    redshifts       : null
+                                # Output redshifts. If set to
+                                # null, frequencies (see below) will
+                                # be checked for non-null values.
+                                # If both redshifts and frequencies
+                                # are set to null, frequency 
+                                # parameters below will be used. 
+                                # Otherwise it must be a list of 
+                                # redshifts and frequency parameters 
+                                # will be ignored
+
+    frequencies     : null
+                                # Output frequencies as a list.
+                                # Allows specifying arbitrary list
+                                # of frequencies. Will be checked
+                                # if redshifts is not null. If both
+                                # redshifts and frequencies are null,
+                                # frequency parameters below will be
+                                # used, otherwise they will be ignored
+
+    f0              : 150000000.0
+                                # Center frequency (in Hz)
+
+    freq_resolution : 390625.0
+                                # Frequency resolution (in Hz)
+
+    nchan           : 256
+                                # Number of channels
+
+    nside           : 256
+                                # NSIDE parameter for HEALPIX
+                                # output
+
+    rest_frequency  : 1420405751.77
+                                # Rest frequency (in Hz). Default is
+                                # for HI spin flip transition
+
+########## Processing parameters ##########
+
+processing  :
+                                # Processing parameters
+
+    parallel        : true
+                                # If set to true (parallelize using
+                                # multiprocessing), otherwise set
+                                # to false (default)
+
+    nproc           : 16
+                                # Number of parallel threads if
+                                # parallel is set to true, otherwise
+                                # ignored. If set to null, will 
+                                # default to number of cores in the
+                                # system
+
+    wait_after_run  : true
+                                # If true, keep python shell open
+                                # after completing the run using
+                                # set_trace() of python debugger.
+                                # If false, close python shell
+                                # and return to command prompt
+                                # after successful completion
+
+    
+    

@@ -1,9 +1,12 @@
 import os, sys
 from os.path import basename
 import numpy as NP
+from scipy import interpolate
 import healpy as HP
+import h5py
 import astropy.cosmology as cosmology
 import multiprocessing as MP
+import itertools as IT
 import warnings
 import constants as CNST
 import mathops as OPS
@@ -37,7 +40,7 @@ def read_21cmfast_cube(cubefile, dtype=NP.float32):
         dim = int('' + cubefile.split('_')[-2])
         label = str('' + cubefile.split('_')[-1])
 
-    with open(filename, 'rb') as fileobj:
+    with open(cubefile, 'rb') as fileobj:
         data = fileobj.read()
     data = NP.fromstring(data, dtype)
     if sys.byteorder == 'big':
@@ -143,7 +146,7 @@ def interp_coevalcubes_inpdict(inpdict):
         raise TypeError('Input inpdict must be a dictionary')
 
     for key,val in inpdict.iteritems():
-        eval(key + '=val')
+        exec(key + '=val')
 
     try:
         invals, outvals
@@ -185,7 +188,7 @@ def interp_coevalcubes_inpdict(inpdict):
     except NameError:
         returncubes = True
 
-    return interp_coevalcubes(invals, outvals, inpcubes=inpcubes, cubefiles=cubefiles, cubedims=cubedims, cube_source=cube_source, interp_method=interp_method, outfiles=outfile, returncubes=returncubes)
+    return interp_coevalcubes(invals, outvals, inpcubes=inpcubes, cubefiles=cubefiles, cubedims=cubedims, cube_source=cube_source, interp_method=interp_method, outfiles=outfiles, returncubes=returncubes)
 
 #################################################################################
 
@@ -315,11 +318,13 @@ def interp_coevalcubes(invals, outvals, inpcubes=None, cubefiles=None,
     else:
         inpcubes = NP.asarray(inpcubes)
         outcubes = OPS.interpolate_array(inpcubes, invals, outvals, axis=0, kind=interp_method)
-        outcubes = [NP.take(outcubes, i, axis=0) for i in range(outvals.size)]
+        outcubes = NP.array_split(outcubes, outcubes.shape[0], axis=0)
+        outcubes = [NP.squeeze(ocube) for ocube in outcubes]
+        # outcubes = [NP.take(outcubes, i, axis=0) for i in range(outvals.size)]
 
     if outfiles is not None:
         for fi,outfile in enumerate(outfiles):
-            write_coeval_cube(outfile, outcubes[fi]):
+            write_coeval_cube(outfile, outcubes[fi])
 
     if returncubes:
         return outcubes
@@ -393,7 +398,7 @@ def convert_coevalcube_to_healpix_inpdict(inpdict):
         raise TypeError('Input inpdict must be a dictionary')
 
     for key,val in inpdict.iteritems():
-        eval(key + '=val')
+        exec(key + '=val')
 
     try:
         inpcube, nside, inpres
@@ -521,7 +526,7 @@ def convert_coevalcube_to_healpix(inpcube, inpres, nside, freq=None, redshift=No
             raise ValueError('Redshift must be positive')
 
     comoving_distance = cosmo.comoving_distance(redshift).value
-    x, y, z = HP.pix2vec(nside, np.arange(HP.nside2npix(nside)))
+    x, y, z = HP.pix2vec(nside, NP.arange(HP.nside2npix(nside)))
     xmod = NP.mod(x*comoving_distance, inpres[0]*inpcube.shape[0])
     ymod = NP.mod(y*comoving_distance, inpres[1]*inpcube.shape[1])
     zmod = NP.mod(z*comoving_distance, inpres[2]*inpcube.shape[2])
@@ -532,7 +537,7 @@ def convert_coevalcube_to_healpix(inpcube, inpres, nside, freq=None, redshift=No
         zi = zmod / inpres[2]
         hpx = inpcube[xi.astype(int), yi.astype(int), zi.astype(int)]
     else:
-        xyz_mod = NP.hstack((xmod.reshape(-1,1)), ymod.reshape(-1,1), zmod.reshape(-1,1))
+        xyz_mod = NP.hstack((xmod.reshape(-1,1), ymod.reshape(-1,1), zmod.reshape(-1,1)))
         hpx = interpolate.interpn((inpres[0]*NP.arange(inpcube.shape[0]), inpres[1]*NP.arange(inpcube.shape[1]), inpres[2]*NP.arange(inpcube.shape[2])), inpcube, xyz_mod, method=method, bounds_error=False, fill_value=None)
 
     return hpx
@@ -658,10 +663,10 @@ def convert_coevalcubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=N
     if parallel:
         try:
             list_inpcubes = [NP.take(inpcubes, ind, axis=los_axis) for ind in xrange(redshifts.size)]
-            list_nsides = [nside i in xrange(redshifts.size)]
-            list_methods = [method for i in xrange(redshifts.size)]
-            list_rest_freqs = [rest_freq for i in xrange(redshifts.size)]
-            list_cosmo = [cosmo for i in xrange(redshifts.size)]
+            list_nsides = [nside] * redshifts.size
+            list_methods = [method] * redshifts.size
+            list_rest_freqs = [rest_freq] * redshifts.size
+            list_cosmo = [cosmo] * redshifts.size
         
             if nproc is None:
                 nproc = MP.cpu_count()
@@ -687,7 +692,7 @@ def convert_coevalcubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=N
 #################################################################################
 
 def coevalcube_interp_tile2hpx_wrapper_arg_splitter(args, **kwargs):
-    return interp_coevalcubes(*args, **kwargs)
+    return coevalcube_interp_tile2hpx_wrapper(*args, **kwargs)
 
 def coevalcube_interp_tile2hpx_wrapper(interpdict, tiledict):
 
@@ -717,6 +722,99 @@ def coevalcube_interp_tile2hpx_wrapper(interpdict, tiledict):
 
     interpcube = interp_coevalcubes_inpdict(interpdict)[0] # List should contain only one element
     tiledict['inpcube'] = interpcube
-    return convert_coevalcube_to_healpix(tiledict)
+    return convert_coevalcube_to_healpix_inpdict(tiledict)
     
+#################################################################################
+
+def write_lightcone_surfaces(light_cone_surfaces, units, outfile, freqs,
+                             cosmo=None, is_healpix=False):
+
+    """
+    -----------------------------------------------------------------------------
+    Write light cone surfaces to HDF5 file
+
+    Inputs:
+
+    light_cone_surfaces
+                [numpy array] Light cone surfaces. Must be of shape nchan x npix
+
+    units       [string] Units of the values in light_cone_surfaces 
+
+    outfile     [string] Filename to write the output to
+
+    freqs       [numpy array] The frequencies corresponding to the surfaces. 
+                It is of size nchan and units in 'Hz'
+
+    cosmo       [dictionary or instance of class astropy.cosmology.FLRW] 
+                Cosmological parameters. If specified as dictionary, it must 
+                contain the following keys and values (no defaults):
+                'Om0'   [float] Matter density parameter at z=0
+                'Ode0'  [float] Dark energy density parameter at z=0
+                'Ob0'   [float] Baryon energy density parameter at z=0
+                'h'     [float] Hubble constant factor in units of km/s/Mpc
+                'w0'    [float] Dark energy equation of state parameter at z=0
+
+    is_healpix  [boolean] If the axis=1 of light_cone_surfaces represents a
+                HEALPIX surface. If False (default), it may not denote a 
+                HEALPIX surface. If True, it does.
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        light_cone_surfaces, units, outfile, freqs
+    except NameError:
+        raise NameError('Inputs light_cone_surfaces, units, outfile, freqs must be provided')
+
+    if not isinstance(light_cone_surfaces, NP.ndarray):
+        raise TypeError('Input light_cone_surfaces must be a numpy array')
+    if light_cone_surfaces.ndim != 2:
+        raise ValueError('Input light_cone_surfaces must be a two-dimensional numpy array')
+
+    if not isinstance(units, str):
+        raise TypeError('Input units must be specified')
+    
+    if not isinstance(outfile, str):
+        raise TypeError('Output file must be specified as a string')
+
+    if not isinstance(freqs, NP.ndarray):
+        raise TypeError('Input freqs must be a numpy array')
+    freqs = freqs.ravel()
+    if freqs.size != light_cone_surfaces.shape[0]:
+        raise ValueError('Size of input freqs must be same as that in light_cone_surfaces')
+    if NP.any(freqs <= 0.0):
+        raise ValueError('Input freqs must be negative')
+
+    if not isinstance(is_healpix, bool):
+        raise TypeError('Input is_healpix must be a boolean')
+
+    cosmoinfo = {'Om0': None, 'Ode0': None, 'h': None, 'Ob0': None, 'w0': None}
+    req_keys = cosmoinfo.keys()
+    if cosmo is None:
+        cosmo = cosmology.WMAP9
+        cosmoinfo = {'Om0': cosmo.Om0, 'Ode0': cosmo.Ode0, 'h': cosmo.h, 'Ob0': cosmo.Ob0, 'w0': cosmo.w(0.0)}
+    elif isinstance(cosmo, dict):
+        for key in cosmoinfo:
+            if key not in cosmo:
+                raise KeyError('Input cosmo is missing "{0}" value'.format(key))
+            if cosmo[key] is None:
+                raise ValueError('Cosmological parameter values cannot be set to None. No defaults can be assumed')
+            cosmoinfo[key] = cosmo[key]
+    elif isinstance(cosmo, cosmology.FLRW):
+        cosmoinfo = {'Om0': cosmo.Om0, 'Ode0': cosmo.Ode0, 'h': cosmo.h, 'Ob0': cosmo.Ob0, 'w0': cosmo.w(0.0)}
+    else:
+        raise TypeError('Input cosmology must be an instance of class astropy.cosmology.FLRW')
+
+    with h5py.File(outfile, 'w') as fileobj:
+        hdr_grp = fileobj.create_group('header')
+        hdr_grp['units'] = units
+        hdr_grp['is_healpix'] = int(is_healpix)
+        spec_grp = fileobj.create_group('specinfo')
+        spec_grp['freqs'] = freqs
+        spec_grp['freqs'].attrs['units'] = 'Hz'
+        cosmo_grp = fileobj.create_group('cosmology')
+        for key in cosmoinfo:
+            cosmo_grp[key] = cosmoinfo[key]
+        surfaces_grp = fileobj.create_group('skyinfo')
+        dset = surfaces_grp.create_dataset('surfaces', data=light_cone_surfaces, chunks=(1,light_cone_surfaces.shape[1]), compression='gzip', compression_opts=9)
+
 #################################################################################

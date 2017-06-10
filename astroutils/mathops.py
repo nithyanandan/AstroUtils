@@ -588,7 +588,7 @@ def interpolate_array(inparray, inploc, outloc, axis=-1, kind='linear'):
     assert isinstance(axis, int), 'Interpolation axis must be an integer'
     assert isinstance(kind, str), 'Kind of interpolation must be a string'
 
-    inploc = inploc.reshape(-1)
+    inploc = NP.asarray(inploc).reshape(-1)
     outloc = NP.asarray(outloc).reshape(-1)
     assert inparray.ndim > axis+1, 'Insufficient dimensions in inparray for interpolation'
     assert inparray.shape[axis]==inploc.size, 'Dimension of interpolation axis of inparray is mismatched with number of locations at which interpolation is requested'

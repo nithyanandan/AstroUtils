@@ -1,6 +1,21 @@
-import setuptools
+import setuptools, re, glob, os
 from setuptools import setup, find_packages
-import re
+from subprocess import Popen, PIPE
+
+githash = 'unknown'
+if os.path.isdir(os.path.dirname(os.path.abspath(__file__))+'/.git'):
+    try:
+        gitproc = Popen(['git', 'rev-parse', 'HEAD'], stdout = PIPE)
+        githash = gitproc.communicate()[0]
+        if gitproc.returncode != 0:
+            print "unable to run git, assuming githash to be unknown"
+            githash = 'unknown'
+    except EnvironmentError:
+        print "unable to run git, assuming githash to be unknown"
+githash = githash.replace('\n', '')
+
+with open(os.path.dirname(os.path.abspath(__file__))+'/astroutils/githash.txt', 'w+') as githash_file:
+    githash_file.write(githash)
 
 metafile = open('./astroutils/__init__.py').read()
 metadata = dict(re.findall("__([a-z]+)__\s*=\s*'([^']+)'", metafile))
@@ -23,6 +38,7 @@ setup(name='AstroUtils',
                  'Topic :: Scientific/Engineering :: Astronomy',
                  'Topic :: Utilities'],
     packages=find_packages(),
+    package_data={'astroutils': ['*.txt', 'examples/cosmotile/*.yaml']},
     include_package_data=True,
     scripts=glob.glob('scripts/*.py'),
     install_requires=['astropy>=1.0', 'blessings>=1.6', 'healpy>=1.5.3',

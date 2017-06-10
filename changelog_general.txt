@@ -1,3 +1,28 @@
+From 141ff69 (cosmotiling):
+==========================
+
+(*) Add astroutils/examples folder and its contents to git repo
+
+In astroutils/cosmotile.py,
+
+(*) Lots of syntax bug fixes
+(*) Add function write_lightcone_surfaces() along with docstring
+to write light cone surfaces to HDF5 file
+
+In scripts/run_cosmotile.py,
+
+(*) Lots of syntax bug fixes
+(*) Can run in serial or parallel
+
+In setup.py,
+
+(*) Import appropriate modules and include contents of scripts and
+examples folder
+
+In astroutils/mathops.py,
+
+(*) Minor bug fix in interpolate_array() function
+
 From e99ff5c (cosmotiling):
 ==========================
 
