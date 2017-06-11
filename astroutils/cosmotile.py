@@ -9,6 +9,7 @@ import multiprocessing as MP
 import itertools as IT
 import warnings
 import constants as CNST
+import catalog as SM
 import mathops as OPS
 
 #################################################################################
@@ -816,5 +817,89 @@ def write_lightcone_surfaces(light_cone_surfaces, units, outfile, freqs,
             cosmo_grp[key] = cosmoinfo[key]
         surfaces_grp = fileobj.create_group('skyinfo')
         dset = surfaces_grp.create_dataset('surfaces', data=light_cone_surfaces, chunks=(1,light_cone_surfaces.shape[1]), compression='gzip', compression_opts=9)
+
+#################################################################################
+
+def write_lightcone_catalog(init_parms, outfile=None, action='return'):
+
+    """
+    -----------------------------------------------------------------------------
+    Write light cone surfaces to HDF5 file that can be read in as an instance of
+    class SkyModel
+
+    Inputs:
+
+    init_parms  [dictionary] Dictionary containing parameters used to create
+                an instance of class SkyModel. Sky model Initialization 
+                parameters are specified using the following keys and values
+                (identical to those used in initializing an instance of class
+                SkyModel):
+                'name'      [scalar or vector] Name of the catalog. If 
+                            scalar, will be used for all sources in the sky 
+                            model. If vector, will be used for corresponding 
+                            object. If vector, size must equal the number of 
+                            objects.
+                'frequency' [scalar or vector] Frequency range for which sky 
+                            model is applicable. Units in Hz.
+                'location'  [numpy array or list of lists] Positions of the 
+                            sources in sky model. Each position is specified 
+                            as a row (numpy array) or a 2-element list which 
+                            is input as a list of lists for all the sources 
+                            in the sky model
+                'spec_type' [string] specifies the flux variation along the 
+                            spectral axis. Allowed values are 'func' and 
+                            'spectrum'. It must be set to 'spectrum' and values
+                            for key 'spectrum' (see below) must be specified.
+                'spectrum'  [numpy array] Spectrum of the catalog. Will be 
+                            applicable if attribute spec_type is set to 
+                            'spectrum'. It must be of shape nsrc x nchan
+                'src_shape' [3-column numpy array or list of 3-element 
+                            lists] source shape specified by major axis 
+                            FWHM (first column), minor axis FWHM (second 
+                            column), and position angle (third column). The 
+                            major and minor axes and position angle are 
+                            stored in degrees. The number of rows must match 
+                            the number of sources. Position angle is in 
+                            degrees east of north (same convention as local 
+                            azimuth)
+                'epoch'     [string] Epoch appropriate for the coordinate 
+                            system. Default is 'J2000'
+                'coords'    [string] Coordinate system used for the source 
+                            positions in the sky model. Currently accepted 
+                            values are 'radec' (RA-Dec)
+                'src_shape_units' 
+                            [3-element list or tuple of strings] Specifies 
+                            the units of major axis FWHM, minor axis FWHM, 
+                            and position angle. Accepted values for major 
+                            and minor axes units are 'arcsec', 'arcmin', 
+                            'degree', or 'radian'. Accepted values for 
+                            position angle units are 'degree' or 'radian'
+
+    outfile     [string] Output filename including full path omitting the
+                extension (.hdf5) which will be appended automatically. This will
+                occur only if action is set to 'store'
+
+    action      [string] Specifies if the instance of class SkyModel is to be 
+                returned if action='return' (default) or save to file specified 
+                in outfile if action='store'
+    -----------------------------------------------------------------------------
+    """
+
+    if not isinstance(action, str):
+        raise TypeError('Input action must be a string')
+    if action.lower() not in ['store', 'return']:
+        raise ValueError('Input action must be set to "store" or "return"')
+    if action.lower() == 'store':
+        if not isinstance(outfile, str):
+            raise TypeError('Output filename must be a string')
+
+    skymod = SM.SkyModel(init_file=None, init_parms=init_parms)
+    if (skymod.spec_type != 'spectrum') and (skymod.spectrum is not None):
+        raise ValueError('Input data must be specified in the form of a spectrum')
+
+    if action.lower() == 'store':
+        skymod.save(outfile, fileformat='hdf5')
+    else:
+        return skymod
 
 #################################################################################

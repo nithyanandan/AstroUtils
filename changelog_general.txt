@@ -1,3 +1,24 @@
+From ef5df47 (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Add function write_lightcone_catalog() along with docstring to
+write lightcone surfaces to instance of class SkyModel
+
+In scripts/run_cosmotile.py,
+
+(*) Update to save to skymodel file
+
+In astroutils/examples/cosmotile/cosmotile_parms.yaml,
+
+(*) Add parameters to save to skymodel file
+
+In astroutils/catalog.py,
+
+(*) Fix bugs in saving and loading attribute src_shape in member
+functions __init__() and save() of class SkyModel
+
 From 141ff69 (cosmotiling):
 ==========================
 

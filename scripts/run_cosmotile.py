@@ -37,12 +37,13 @@ if __name__ == '__main__':
     infile_suffix = parms['dirstruct']['infile_suffix']
     if infile_suffix is None:
         infile_suffix = ''
+    save = parms['dirstruct']['write']
     outdir = parms['dirstruct']['outdir']
     outfile_prefix = parms['dirstruct']['outfile_prefix']
     if outfile_prefix is None:
-        outfile = outdir + 'light_cone_surfaces.hdf5'
+        outfile = outdir + 'light_cone_surfaces'
     elif isinstance(outfile_prefix, str):
-        outfile = outdir + outfile_prefix + '_light_cone_surfaces.hdf5'
+        outfile = outdir + outfile_prefix + '_light_cone_surfaces'
     else:
         raise TypeError('Output filename prefix must be set to None or a string')
 
@@ -84,6 +85,7 @@ if __name__ == '__main__':
 
     zout = parms['output']['redshifts']
     ofreqs = parms['output']['frequencies']
+    save_as_skymodel = parms['output']['skymodel']
     if zout is None:
         if ofreqs is None:
             nchan = parms['output']['nchan']
@@ -153,7 +155,7 @@ if __name__ == '__main__':
     interpdicts = []
     tiledicts = []
     for zind,redshift in enumerate(zout):
-        idict = {'outvals': NP.asarray(redshift).reshape(-1), 'inpcubes': None, 'cubedims': None, 'cube_source': '21cmfast', 'interp_method':'linear', 'outfiles': None, 'returncubes': True}
+        idict = {'outvals': NP.asarray(redshift).reshape(-1), 'inpcubes': None, 'cubedims': None, 'cube_source': cube_source, 'interp_method':'linear', 'outfiles': None, 'returncubes': True}
         tdict = {'inpres': cuberes, 'nside': nside, 'redshift': redshift, 'freq': None, 'method': 'linear', 'rest_freq': rest_freq, 'cosmo': cosmo}
         if redshift <= zin.min():
             idict['invals'] = [zin.min()]
@@ -197,7 +199,16 @@ if __name__ == '__main__':
         progress.finish()
 
     hpxsurfaces = conv_factor * NP.asarray(hpxsurfaces)
-    cosmotile.write_lightcone_surfaces(hpxsurfaces, units, outfile, ofreqs, cosmo=cosmo, is_healpix=is_healpix)
+    if save:
+        if save_as_skymodel:
+            angres = NP.degrees(HP.nside2resol(nside))
+            pixarea = HP.nside2pixarea(nside)
+            colat, ra = NP.degrees(HP.pix2ang(nside, NP.arange(HP.nside2npix(nside))))
+            radec = NP.hstack((ra.reshape(-1,1), 90.0 - colat.reshape(-1,1)))
+            init_parms = {'name': cube_source, 'frequency': ofreqs, 'location': radec, 'spec_type': 'spectrum', 'spectrum': hpxsurfaces.T, 'src_shape': NP.hstack((angres+NP.zeros(ra.size).reshape(-1,1), angres+NP.zeros(ra.size).reshape(-1,1), NP.zeros(ra.size).reshape(-1,1))), 'epoch': 'J2000', 'coords': 'radec', 'src_shape_units': ('degree', 'degree', 'degree')}
+            cosmotile.write_lightcone_catalog(init_parms, outfile=outfile, action='store')
+        else:
+            cosmotile.write_lightcone_surfaces(hpxsurfaces, units, outfile, ofreqs, cosmo=cosmo, is_healpix=is_healpix)
 
     if wait_after_run:
         PDB.set_trace()

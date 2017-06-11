@@ -27,6 +27,12 @@ dirstruct   :
                                 # (default), interpolated coeval
                                 # cubes will not be saved
 
+    write           : true
+                                # If set to true (default), write
+                                # the lightcone surfaces to disk
+                                # as specified by outdir and
+                                # outfile_prefix parameters below
+
     outdir          : '/data3/t_nithyanandan/EoR_models/21cmFAST/Andrei_Mesinger/Faint_galaxies_1024_coeval/hpxsurfaces/'
                                 # Output folder to put the healpix
                                 # surfaces
@@ -40,7 +46,10 @@ dirstruct   :
                                 # will have this prefix appended
                                 # with '_light_cone_surfaces.hdf5',
                                 # otherwise it will just be named
-                                # 'light_cone_surfaces.hdf5'
+                                # 'light_cone_surfaces.hdf5'. The
+                                # extension '.hdf5' will be
+                                # automatically specified and should
+                                # not be specified
 
 ########## Format specifications ##########
 
@@ -170,6 +179,13 @@ output      :
                                 # Rest frequency (in Hz). Default is
                                 # for HI spin flip transition
 
+    skymodel        : true
+                                # If true (default), an instance of
+                                # class SkyModel is to be created and
+                                # saved depending on the parameter
+                                # 'write'. Otherwise, just save raw
+                                # lightcone surfaces.
+                                
 ########## Processing parameters ##########
 
 processing  :
