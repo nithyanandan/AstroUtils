@@ -1,3 +1,35 @@
+From f9e1560 (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Add input theta_phi and associated docstring in all functions
+wherever healpix nside input was involved.
+(*) Rename convert_coevalcube_to_healpix_arg_splitter() to
+convert_coevalcube_to_sphere_surface_arg_splitter()
+(*) Rename convert_coevalcube_to_healpix_inpdict() to
+convert_coevalcube_to_sphere_surface_inpdict()
+(*) Rename convert_coevalcube_to_healpix() to
+convert_coevalcube_to_sphere_surface()
+(*) Rename convert_coevalcubes_to_healpix_surfaces() to
+convert_coevalcubes_to_sphere_surfaces()
+(*) Rename coevalcube_interp_tile2hpx_wrapper_arg_splitter() to
+coeval_interp_cube_to_sphere_surface_wrapper_arg_splitter()
+(*) Rename coevalcube_interp_tile2hpx_wrapper() to
+coeval_interp_cube_to_sphere_surface_wrapper()
+(*) Update all docstrings to be consistent with these changes
+
+In scripts/run_cosmotile.py,
+
+(*) Add options to specify ranges of theta and phi for generating
+fractional spherical patches instead of using nside and generating
+whole spherical surfaces
+
+In astroutils/examples/cosmotile/cosmotile_parms.yaml,
+
+(*) Add theta_range, phi_range and angres inputs under "output"
+parameters
+
 From ef5df47 (cosmotiling):
 ==========================
 

@@ -33,8 +33,8 @@ dirstruct   :
                                 # as specified by outdir and
                                 # outfile_prefix parameters below
 
-    outdir          : '/data3/t_nithyanandan/EoR_models/21cmFAST/Andrei_Mesinger/Faint_galaxies_1024_coeval/hpxsurfaces/'
-                                # Output folder to put the healpix
+    outdir          : '/data3/t_nithyanandan/EoR_models/21cmFAST/Andrei_Mesinger/Faint_galaxies_1024_coeval/sphsurfaces/'
+                                # Output folder to put the spherical
                                 # surfaces
 
     outfile_prefix  : null
@@ -171,10 +171,6 @@ output      :
     nchan           : 256
                                 # Number of channels
 
-    nside           : 256
-                                # NSIDE parameter for HEALPIX
-                                # output
-
     rest_frequency  : 1420405751.77
                                 # Rest frequency (in Hz). Default is
                                 # for HI spin flip transition
@@ -186,12 +182,46 @@ output      :
                                 # 'write'. Otherwise, just save raw
                                 # lightcone surfaces.
                                 
+    nside           : null
+                                # NSIDE parameter if HEALPIX output
+                                # is desired. If set to null
+                                # (default), specific colatitude and
+                                # longitude parameters below must be
+                                # used. If nside is set, the co-lat
+                                # and longitude parameters below are
+                                # ignored.
+
+    theta_range     : [80.0, 100.0]
+                                # Range of theta (co-latitude) in
+                                # degrees. If nside is not set, these
+                                # parameters are used to determine
+                                # specific patches on the sphere.
+                                # All latitudes such as dec, alt, or
+                                # galactic latitudes must be converted
+                                # to the corresponding theta
+
+    phi_range       : [80.0, 100.0]
+                                # Range of phi (longitude) in degrees.
+                                # If nside is not set, there
+                                # parameters are used to determine
+                                # specific patches on the sphere. 
+                                # All longitudes such as ra, az, or
+                                # galactic longitudes must be 
+                                # converted to the corresponding phi
+
+    angres          : 1.0
+                                # Angular resolution (in degrees)
+                                # to generate theta and phi on a
+                                # spherical patch. The final angular
+                                # resolution will be equal or finer
+                                # than this. 
+
 ########## Processing parameters ##########
 
 processing  :
                                 # Processing parameters
 
-    parallel        : true
+    parallel        : false
                                 # If set to true (parallelize using
                                 # multiprocessing), otherwise set
                                 # to false (default)

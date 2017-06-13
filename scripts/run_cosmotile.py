@@ -50,6 +50,9 @@ if __name__ == '__main__':
     cube_source = parms['sim']['source']
     rest_freq = parms['output']['rest_frequency']
     nside = parms['output']['nside']
+    theta_range = parms['output']['theta_range']
+    phi_range = parms['output']['phi_range']
+    angres = parms['output']['angres']
     cosmoparms = parms['sim']['cosmo']
     if cosmoparms['name'] is None:
         cosmo = None
@@ -82,6 +85,25 @@ if __name__ == '__main__':
     if nside is not None:
         if HP.isnsideok(nside):
             is_healpix = True
+        else:
+            raise ValueError('Invalid nside presented')
+        theta_phi = None
+    else:
+        theta_range = NP.asarray(theta_range)
+        phi_range = NP.asarray(phi_range)
+        theta_range = NP.sort(theta_range)
+        phi_range = NP.sort(phi_range)
+        nside_patch = 1
+        angres_patch = HP.nside2resol(nside_patch)
+        while angres_patch > NP.radians(angres):
+            nside_patch *= 2
+            angres_patch = HP.nside2resol(nside_patch)
+        pixarea_patch = HP.nside2pixarea(nside_patch)
+        theta, phi = HP.pix2ang(nside_patch, NP.arange(HP.nside2npix(nside_patch)))
+        select_ind = NP.logical_and(NP.logical_and(theta >= NP.radians(theta_range[0]), theta <= NP.radians(theta_range[1])), NP.logical_and(phi >= NP.radians(phi_range[0]), phi <= NP.radians(phi_range[1])))
+        theta = theta[select_ind]
+        phi = phi[select_ind]
+        theta_phi = NP.degrees(NP.hstack((theta.reshape(-1,1), phi.reshape(-1,1))))
 
     zout = parms['output']['redshifts']
     ofreqs = parms['output']['frequencies']
@@ -156,7 +178,7 @@ if __name__ == '__main__':
     tiledicts = []
     for zind,redshift in enumerate(zout):
         idict = {'outvals': NP.asarray(redshift).reshape(-1), 'inpcubes': None, 'cubedims': None, 'cube_source': cube_source, 'interp_method':'linear', 'outfiles': None, 'returncubes': True}
-        tdict = {'inpres': cuberes, 'nside': nside, 'redshift': redshift, 'freq': None, 'method': 'linear', 'rest_freq': rest_freq, 'cosmo': cosmo}
+        tdict = {'inpres': cuberes, 'nside': nside, 'theta_phi': theta_phi, 'redshift': redshift, 'freq': None, 'method': 'linear', 'rest_freq': rest_freq, 'cosmo': cosmo}
         if redshift <= zin.min():
             idict['invals'] = [zin.min()]
             idict['cubefiles'] = [indir+fnames[-1]]
@@ -170,7 +192,7 @@ if __name__ == '__main__':
         interpdicts += [idict]
         tiledicts += [tdict]
 
-    hpxsurfaces = []
+    sphsurfaces = []
     if parallel:
         ts = time.time()
         if nproc is None:
@@ -179,8 +201,7 @@ if __name__ == '__main__':
         nproc = min([nproc, zout.size])
         try:
             pool = MP.Pool(processes=nproc)
-            hpxsurfaces = pool.map(cosmotile.coevalcube_interp_tile2hpx_wrapper_arg_splitter, IT.izip(interpdicts, tiledicts))
-            # hpxsurfaces = pool.map(convert_coevalcube_to_healpix_arg_splitter, IT.izip(list_inpcubes, inpres, list_nsides, list_freqs, list_redshifts, list_methods, list_rest_freqs, list_cosmo))
+            sphsurfaces = pool.map(cosmotile.coeval_interp_cube_to_sphere_surface_wrapper_arg_splitter, IT.izip(interpdicts, tiledicts))
             pool.close()
             pool.join()
             te = time.time()
@@ -188,27 +209,31 @@ if __name__ == '__main__':
         except MemoryError:
             parallel = False
             del pool
-            hpxsurfaces = []
+            sphsurfaces = []
             warnings.warn('Memory requirements too high. Downgrading to serial processing.')
         
     if not parallel:
         progress = PGB.ProgressBar(widgets=[PGB.Percentage(), PGB.Bar(marker='-', left=' |', right='| '), PGB.Counter(), '/{0:0d} Frequency channels '.format(ofreqs.size), PGB.ETA()], maxval=ofreqs.size).start()
         for ind in range(len(interpdicts)):
-            hpxsurfaces += [cosmotile.coevalcube_interp_tile2hpx_wrapper(interpdicts[ind], tiledicts[ind])]
+            sphsurfaces += [cosmotile.coeval_interp_cube_to_sphere_surface_wrapper(interpdicts[ind], tiledicts[ind])]
             progress.update(ind+1)
         progress.finish()
 
-    hpxsurfaces = conv_factor * NP.asarray(hpxsurfaces)
+    sphsurfaces = conv_factor * NP.asarray(sphsurfaces)
     if save:
         if save_as_skymodel:
-            angres = NP.degrees(HP.nside2resol(nside))
-            pixarea = HP.nside2pixarea(nside)
-            colat, ra = NP.degrees(HP.pix2ang(nside, NP.arange(HP.nside2npix(nside))))
-            radec = NP.hstack((ra.reshape(-1,1), 90.0 - colat.reshape(-1,1)))
-            init_parms = {'name': cube_source, 'frequency': ofreqs, 'location': radec, 'spec_type': 'spectrum', 'spectrum': hpxsurfaces.T, 'src_shape': NP.hstack((angres+NP.zeros(ra.size).reshape(-1,1), angres+NP.zeros(ra.size).reshape(-1,1), NP.zeros(ra.size).reshape(-1,1))), 'epoch': 'J2000', 'coords': 'radec', 'src_shape_units': ('degree', 'degree', 'degree')}
+            if nside is not None:
+                angres_patch = NP.degrees(HP.nside2resol(nside))
+                pixarea_patch = HP.nside2pixarea(nside)
+                theta, phi = NP.degrees(HP.pix2ang(nside, NP.arange(HP.nside2npix(nside))))
+            else:
+                theta = NP.degrees(theta)
+                phi = NP.degrees(phi)
+            radec = NP.hstack((phi.reshape(-1,1), 90.0 - theta.reshape(-1,1)))
+            init_parms = {'name': cube_source, 'frequency': ofreqs, 'location': radec, 'spec_type': 'spectrum', 'spectrum': pixarea_patch*sphsurfaces.T, 'src_shape': NP.hstack((angres_patch+NP.zeros(phi.size).reshape(-1,1), angres_patch+NP.zeros(phi.size).reshape(-1,1), NP.zeros(phi.size).reshape(-1,1))), 'epoch': 'J2000', 'coords': 'radec', 'src_shape_units': ('degree', 'degree', 'degree')}
             cosmotile.write_lightcone_catalog(init_parms, outfile=outfile, action='store')
         else:
-            cosmotile.write_lightcone_surfaces(hpxsurfaces, units, outfile, ofreqs, cosmo=cosmo, is_healpix=is_healpix)
+            cosmotile.write_lightcone_surfaces(sphsurfaces, units, outfile, ofreqs, cosmo=cosmo, is_healpix=is_healpix)
 
     if wait_after_run:
         PDB.set_trace()

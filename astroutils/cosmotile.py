@@ -332,16 +332,17 @@ def interp_coevalcubes(invals, outvals, inpcubes=None, cubefiles=None,
 
 #################################################################################
 
-def convert_coevalcube_to_healpix_arg_splitter(args, **kwargs):
-    return convert_coevalcube_to_healpix(*args, **kwargs)
+def convert_coevalcube_to_sphere_surface_arg_splitter(args, **kwargs):
+    return convert_coevalcube_to_sphere_surface(*args, **kwargs)
 
-def convert_coevalcube_to_healpix_inpdict(inpdict):
+def convert_coevalcube_to_sphere_surface_inpdict(inpdict):
 
     """
     -----------------------------------------------------------------------------
     Covert a cosmological coeval cube at a given resolution (in physical comoving 
-    distance) to HEALPIX coordinates of a specified nside covering the whole sky.
-    Wrapper for convert_coevalcube_to_healpix() 
+    distance) to HEALPIX coordinates of a specified nside covering the whole sky
+    or coordinates covering a spherical patch. Wrapper for 
+    convert_coevalcube_to_sphere_surface() 
 
     Inputs:
 
@@ -356,7 +357,11 @@ def convert_coevalcube_to_healpix_inpdict(inpdict):
                             Otherwise a three-element tuple, list or numpy array 
                             must be specified one for each dimension
                 nside       [scalar] HEALPIX nside parameter for output HEALPIX 
-                            map
+                            map. If set theta_phi will be ignored. 
+                theta_phi   [numpy array] nsrc x 2 numpy array of theta and phi 
+                            (in degrees) at which the lightcone surface should 
+                            be evaluated. One and only one of nside or theta_phi 
+                            must be specified.
                 freq        [scalar] Frequency (in Hz) to be processed. One and 
                             only one of inputs freq or z (see below) must be set 
                             in order to determined the redshift at which this 
@@ -368,7 +373,7 @@ def convert_coevalcube_to_healpix_inpdict(inpdict):
                             specified. If set to None, freq must be specified 
                             (see above)
                 method      [string] Method of interpolation from cube to 
-                            healpix pixels. Accepted values are 
+                            spherical surface pixels. Accepted values are 
                             'nearest_rounded' (fastest but not accurate), and 
                             those accepted by the input keyword method in 
                             scipy.interpolate.interpn(), namely, 'linear' and 
@@ -386,7 +391,9 @@ def convert_coevalcube_to_healpix_inpdict(inpdict):
 
     Output:
 
-    HEALPIX lightcone cube of specified nside parameter. It is of shape npix
+    Stacked lightcone surfaces covering spherical patch (whole sky using HEALPIX
+    if nside is specified) or just at specified theta and phi coordinates. It is 
+    of shape npix
     -----------------------------------------------------------------------------
     """
 
@@ -402,9 +409,19 @@ def convert_coevalcube_to_healpix_inpdict(inpdict):
         exec(key + '=val')
 
     try:
-        inpcube, nside, inpres
+        inpcube, inpres
     except NameError:
-        raise NameError('Inputs inpcube, nside and inpres must be specified in inpdict')
+        raise NameError('Inputs inpcube and inpres must be specified in inpdict')
+
+    try:
+        nside
+    except NameError:
+        nside = None
+
+    try:
+        theta_phi
+    except NameError:
+        theta_phi = None
 
     try:
         freq
@@ -431,18 +448,20 @@ def convert_coevalcube_to_healpix_inpdict(inpdict):
     except NameError:
         rest_freq = CNST.rest_freq_HI
 
-    return convert_coevalcube_to_healpix(inpcube, inpres, nside, freq=freq, redshift=redshift, method=method, rest_freq=rest_freq, cosmo=cosmo)
+    return convert_coevalcube_to_sphere_surface(inpcube, inpres, nside=nside, theta_phi=theta_phi, freq=freq, redshift=redshift, method=method, rest_freq=rest_freq, cosmo=cosmo)
 
 #################################################################################
 
-def convert_coevalcube_to_healpix(inpcube, inpres, nside, freq=None, redshift=None,
-                                 method='linear', rest_freq=CNST.rest_freq_HI,
-                                 cosmo=None):
+def convert_coevalcube_to_sphere_surface(inpcube, inpres, nside=None, 
+                                         theta_phi=None, freq=None, 
+                                         redshift=None, method='linear',
+                                         rest_freq=CNST.rest_freq_HI, cosmo=None):
 
     """
     -----------------------------------------------------------------------------
     Covert a cosmological coeval cube at a given resolution (in physical comoving 
-    distance) to HEALPIX coordinates of a specified nside covering the whole sky
+    distance) to specified coordinates on sphereical surface or whole sphere in 
+    HEALPIX coordinates 
 
     Inputs:
 
@@ -454,7 +473,12 @@ def convert_coevalcube_to_healpix(inpcube, inpres, nside, freq=None, redshift=No
                 applied to all three dimensions. Otherwise a three-element tuple, 
                 list or numpy array must be specified one for each dimension
 
-    nside       [scalar] HEALPIX nside parameter for output HEALPIX map
+    nside       [scalar] HEALPIX nside parameter for output HEALPIX map. If set
+                theta_phi will be ignored. 
+
+    theta_phi   [numpy array] nsrc x 2 numpy array of theta and phi (in degrees)
+                at which the lightcone surface should be evaluated. One and only
+                one of nside or theta_phi must be specified.
 
     freq        [scalar] Frequency (in Hz) to be processed. One and only one of
                 inputs freq or z (see below) must be set in order to determined
@@ -466,7 +490,7 @@ def convert_coevalcube_to_healpix(inpcube, inpres, nside, freq=None, redshift=No
                 freq (see above) or redshift must be specified. If set to None, 
                 freq must be specified (see above)
 
-    method      [string] Method of interpolation from cube to healpix pixels. 
+    method      [string] Method of interpolation from cube to sphere pixels. 
                 Accepted values are 'nearest_rounded' (fastest but not 
                 accurate), and those accepted by the input keyword method in 
                 scipy.interpolate.interpn(), namely, 'linear' and 'nearest', and 
@@ -484,20 +508,30 @@ def convert_coevalcube_to_healpix(inpcube, inpres, nside, freq=None, redshift=No
 
     Output:
 
-    HEALPIX lightcone cube of specified nside parameter. It is of shape npix
+    lightcone surface of specified patch on sphere or whole sphere in HEALPIX
+    coordinates. It is of shape nsrc
     -----------------------------------------------------------------------------
     """
 
     try:
-        inpcube, nside, inpres
+        inpcube, inpres
     except NameError:
-        raise NameError('Inputs inpcube, nside and inpres must be specified')
+        raise NameError('Inputs inpcube and inpres must be specified')
 
     assert isinstance(inpcube, NP.ndarray), 'Input cube must be a numpy array'
     assert inpcube.ndim==3, 'Input cube must be a 3D numpy array'
 
-    assert isinstance(nside, int), 'Parameter nside must be a scalar'
-    assert HP.isnsideok(nside), 'Invalid nside parameter specified'
+    if (nside is None) and (theta_phi is None):
+        raise TypeError('One of the inputs nside or theta_phi must not be None')
+    elif (nside is not None) and (theta_phi is not None):
+        raise TypeError('One and only one of the inputs nside or theta_phi must not be None')
+    elif nside is not None:
+        assert isinstance(nside, int), 'Parameter nside must be a scalar'
+        assert HP.isnsideok(nside), 'Invalid nside parameter specified'
+    else:
+        assert isinstance(theta_phi, NP.ndarray), 'Input theta_phi must be a numpy array'
+        assert theta_phi.ndim==2, 'Input theta_phi must be a 2D numpy array'
+        assert theta_phi.shape[1]==2, 'Input theta_phi must be a nsrc x 2 array'
 
     assert isinstance(method, str), 'Method of interpolation must be a string'
 
@@ -527,7 +561,13 @@ def convert_coevalcube_to_healpix(inpcube, inpres, nside, freq=None, redshift=No
             raise ValueError('Redshift must be positive')
 
     comoving_distance = cosmo.comoving_distance(redshift).value
-    x, y, z = HP.pix2vec(nside, NP.arange(HP.nside2npix(nside)))
+    if nside is not None:
+        x, y, z = HP.pix2vec(nside, NP.arange(HP.nside2npix(nside)))
+    else:
+        theta_phi = NP.radians(theta_phi)
+        z = NP.cos(theta_phi[:,0])
+        x = NP.sin(theta_phi[:,0]) * NP.cos(theta_phi[:,1])
+        y = NP.sin(theta_phi[:,0]) * NP.sin(theta_phi[:,1])
     xmod = NP.mod(x*comoving_distance, inpres[0]*inpcube.shape[0])
     ymod = NP.mod(y*comoving_distance, inpres[1]*inpcube.shape[1])
     zmod = NP.mod(z*comoving_distance, inpres[2]*inpcube.shape[2])
@@ -536,25 +576,27 @@ def convert_coevalcube_to_healpix(inpcube, inpres, nside, freq=None, redshift=No
         xi = xmod / inpres[0]
         yi = ymod / inpres[1]
         zi = zmod / inpres[2]
-        hpx = inpcube[xi.astype(int), yi.astype(int), zi.astype(int)]
+        patch = inpcube[xi.astype(int), yi.astype(int), zi.astype(int)]
     else:
         xyz_mod = NP.hstack((xmod.reshape(-1,1), ymod.reshape(-1,1), zmod.reshape(-1,1)))
-        hpx = interpolate.interpn((inpres[0]*NP.arange(inpcube.shape[0]), inpres[1]*NP.arange(inpcube.shape[1]), inpres[2]*NP.arange(inpcube.shape[2])), inpcube, xyz_mod, method=method, bounds_error=False, fill_value=None)
+        patch = interpolate.interpn((inpres[0]*NP.arange(inpcube.shape[0]), inpres[1]*NP.arange(inpcube.shape[1]), inpres[2]*NP.arange(inpcube.shape[2])), inpcube, xyz_mod, method=method, bounds_error=False, fill_value=None)
 
-    return hpx
+    return patch
 
 #################################################################################
 
-def convert_coevalcubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=None,
-                                            freqs=None, los_axis=-1, method='linear',
-                                            rest_freq=CNST.rest_freq_HI, cosmo=None,
-                                            parallel=False, nproc=None):
+def convert_coevalcubes_to_sphere_surfaces(inpcubes, inpres, nside=None,
+                                           theta_phi=None, redshifts=None,
+                                           freqs=None, los_axis=-1, method='linear',
+                                           rest_freq=CNST.rest_freq_HI, cosmo=None,
+                                           parallel=False, nproc=None):
 
     """
     -----------------------------------------------------------------------------
-    Covert array of comoving coeval cosmological cubes at a given resolution 
+    Convert array of comoving coeval cosmological cubes at a given resolution 
     (in physical comoving distance) to HEALPIX coordinates of a specified nside 
-    covering the whole sky as lightcone cube
+    covering the whole sky or just a spherical patch using given theta and phi 
+    coordinates with output as stacked lightcone surfaces
 
     Inputs:
 
@@ -567,7 +609,12 @@ def convert_coevalcubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=N
                 applied to all three dimensions. Otherwise a three-element tuple, 
                 list or numpy array must be specified one for each dimension
 
-    nside       [scalar] HEALPIX nside parameter for output HEALPIX map
+    nside       [scalar] HEALPIX nside parameter for output HEALPIX map. If set 
+                theta_phi will be ignored. 
+
+    theta_phi   [numpy array] nsrc x 2 numpy array of theta and phi (in degrees) 
+                at which the lightcone surface should be evaluated. One and only 
+                one of nside or theta_phi must be specified.
 
     freqs       [scalar] Frequency (in Hz) to be processed. One and only one of
                 inputs freq or z (see below) must be set in order to determined
@@ -582,8 +629,8 @@ def convert_coevalcubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=N
     los_axis    [integer] Denotes the axis that is along the line of sight.
                 Default=-1 (last axis)
 
-    method      [string] Method of interpolation from cube to healpix pixels. 
-                Accepted values are 'nearest_rounded' (fastest but not 
+    method      [string] Method of interpolation from cube to spherical surface 
+                pixels. Accepted values are 'nearest_rounded' (fastest but not 
                 accurate), and those accepted by the input keyword method in 
                 scipy.interpolate.interpn(), namely, 'linear' and 'nearest', and 
                 'splinef2d'. 'splinef2d' is only supported for 2-dimensional 
@@ -607,21 +654,31 @@ def convert_coevalcubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=N
 
     Output:
 
-    HEALPIX maps of specified nside parameter for each of the redshifts or 
-    frequencies as lightcone cube. It will be a numpy array of shape nchan x npix
+    Stacked spherical surfaces either covering whole sky (using nside and 
+    HEALPIX) or a patch at specified theta and phi for each of the redshifts or 
+    frequencies. It will be a numpy array of shape nchan x npix
     -----------------------------------------------------------------------------
     """
 
     try:
-        inpcubes, nside, inpres
+        inpcubes, inpres
     except NameError:
-        raise NameError('Inputs inpcubes, nside and inpres must be specified')
+        raise NameError('Inputs inpcubes and inpres must be specified')
 
     assert isinstance(inpcubes, NP.ndarray), 'Input cube must be a numpy array'
     assert inpcubes.ndim==4, 'Input cubes must be specified as a 4D numpy array (3 spatial and 1 spectral/redshift)'
 
-    assert isinstance(nside, int), 'Parameter nside must be a scalar'
-    assert HP.isnsideok(nside), 'Invalid nside parameter specified'
+    if (nside is None) and (theta_phi is None):
+        raise TypeError('One of the inputs nside or theta_phi must not be None')
+    elif (nside is not None) and (theta_phi is not None):
+        raise TypeError('One and only one of the inputs nside or theta_phi must not be None')
+    elif nside is not None:
+        assert isinstance(nside, int), 'Parameter nside must be a scalar'
+        assert HP.isnsideok(nside), 'Invalid nside parameter specified'
+    else:
+        assert isinstance(theta_phi, NP.ndarray), 'Input theta_phi must be a numpy array'
+        assert theta_phi.ndim==2, 'Input theta_phi must be a 2D numpy array'
+        assert theta_phi.shape[1]==2, 'Input theta_phi must be a nsrc x 2 array'
 
     assert isinstance(method, str), 'Method of interpolation must be a string'
 
@@ -660,11 +717,12 @@ def convert_coevalcubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=N
 
     assert isinstance(parallel, bool), 'Input parallel must be a boolean'
     
-    hpxsurfaces = []
+    sphsurfaces = []
     if parallel:
         try:
             list_inpcubes = [NP.take(inpcubes, ind, axis=los_axis) for ind in xrange(redshifts.size)]
             list_nsides = [nside] * redshifts.size
+            list_theta_phi = [theta_phi] * redshifts.size
             list_methods = [method] * redshifts.size
             list_rest_freqs = [rest_freq] * redshifts.size
             list_cosmo = [cosmo] * redshifts.size
@@ -674,28 +732,28 @@ def convert_coevalcubes_to_healpix_surfaces(inpcubes, inpres, nside, redshifts=N
             assert isinstance(nproc, int), 'Number of parallel processes must be an integer'
             nproc = min([nproc, redshifts.size])
             pool = MP.Pool(processes=nproc)
-            hpxsurfaces = pool.map(convert_coevalcube_to_healpix_arg_splitter, IT.izip(list_inpcubes, inpres, list_nsides, list_freqs, list_redshifts, list_methods, list_rest_freqs, list_cosmo))
+            sphsurfaces = pool.map(convert_coevalcube_to_sphere_surface_arg_splitter, IT.izip(list_inpcubes, inpres, list_nsides, list_theta_phi, list_freqs, list_redshifts, list_methods, list_rest_freqs, list_cosmo))
             pool.close()
             pool.join()
         except MemoryError:
             parallel = False
             del list_inpcubes
             del pool
-            hpxsurfaces = []
+            sphsurfaces = []
             warnings.warn('Memory requirements too high. Downgrading to serial processing.')
     if not parallel:
         for ind in range(redshifts.size):
-            hpxsurfaces += [convert_coevalcube_to_healpix(NP.take(inpcubes, ind, axis=los_axis), inpres[ind], nside, freq=list_freqs[ind], redshift=list_redshifts[ind], method=method, rest_freq=rest_freq, cosmo=cosmo)]
+            sphsurfaces += [convert_coevalcube_to_sphere_surface(NP.take(inpcubes, ind, axis=los_axis), inpres[ind], nside=nside, theta_phi=theta_phi, freq=list_freqs[ind], redshift=list_redshifts[ind], method=method, rest_freq=rest_freq, cosmo=cosmo)]
 
-    hpxsurfaces = NP.asarray(hpxsurfaces)
-    return hpxsurfaces
+    sphsurfaces = NP.asarray(sphsurfaces)
+    return sphsurfaces
 
 #################################################################################
 
-def coevalcube_interp_tile2hpx_wrapper_arg_splitter(args, **kwargs):
-    return coevalcube_interp_tile2hpx_wrapper(*args, **kwargs)
+def coeval_interp_cube_to_sphere_surface_wrapper_arg_splitter(args, **kwargs):
+    return coeval_interp_cube_to_sphere_surface_wrapper(*args, **kwargs)
 
-def coevalcube_interp_tile2hpx_wrapper(interpdict, tiledict):
+def coeval_interp_cube_to_sphere_surface_wrapper(interpdict, tiledict):
 
     """
     -----------------------------------------------------------------------------
@@ -708,11 +766,13 @@ def coevalcube_interp_tile2hpx_wrapper(interpdict, tiledict):
                 input, namely, inpdict
 
     tiledict    [dictionary] See docstring of 
-                convert_coevalcube_to_healpix_inpdict() input, namely, inpdict
+                convert_coevalcube_to_sphere_surface_inpdict() input, namely, 
+                inpdict
 
     Output:
 
-    HEALPIX lightcone cube of specified nside parameter. It is of shape npix
+    Stacked lightcone surfaces of specified sphereical patch (whole sphere if 
+    nside parameter given). It is of shape npix
     -----------------------------------------------------------------------------
     """
     
@@ -723,7 +783,7 @@ def coevalcube_interp_tile2hpx_wrapper(interpdict, tiledict):
 
     interpcube = interp_coevalcubes_inpdict(interpdict)[0] # List should contain only one element
     tiledict['inpcube'] = interpcube
-    return convert_coevalcube_to_healpix_inpdict(tiledict)
+    return convert_coevalcube_to_sphere_surface_inpdict(tiledict)
     
 #################################################################################
 
@@ -755,9 +815,9 @@ def write_lightcone_surfaces(light_cone_surfaces, units, outfile, freqs,
                 'h'     [float] Hubble constant factor in units of km/s/Mpc
                 'w0'    [float] Dark energy equation of state parameter at z=0
 
-    is_healpix  [boolean] If the axis=1 of light_cone_surfaces represents a
-                HEALPIX surface. If False (default), it may not denote a 
-                HEALPIX surface. If True, it does.
+    is_healpix  [boolean] The axis=1 of light_cone_surfaces represents a
+                HEALPIX surface if set to True. If False (default), it may not 
+                denote a HEALPIX surface. 
     -----------------------------------------------------------------------------
     """
 
