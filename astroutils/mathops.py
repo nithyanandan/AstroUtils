@@ -593,9 +593,12 @@ def interpolate_array(inparray, inploc, outloc, axis=-1, kind='linear'):
     assert inparray.ndim > axis+1, 'Insufficient dimensions in inparray for interpolation'
     assert inparray.shape[axis]==inploc.size, 'Dimension of interpolation axis of inparray is mismatched with number of locations at which interpolation is requested'
 
-    if NP.allclose(inploc, outloc):
-        return inparray # no interpolation required, just return outarray=inparray
-    else:
+    interp_required = True
+    if inploc.size == outloc.size:
+        if NP.allclose(inploc, outloc):
+            interp_required = False
+            return inparray # no interpolation required, just return outarray=inparray
+    if interp_required:
         inbound_ind = NP.where(NP.logical_and(outloc >= inploc.min(), outloc <= inploc.max()))[0]
         outbound_low_ind = NP.where(outloc < inploc.min())[0]
         outbound_high_ind = NP.where(outloc > inploc.max())[0]

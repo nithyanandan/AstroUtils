@@ -278,6 +278,9 @@ def interp_coevalcubes(invals, outvals, inpcubes=None, cubefiles=None,
     except NameError:
         raise NameError('Inputs invals and outvals must be specified')
 
+    assert isinstance(invals, (int, float, list, NP.ndarray)), 'Input values of interpolated variable must be a scalar, list or numpy array'
+    invals = NP.asarray(invals).reshape(-1)
+
     assert isinstance(outvals, (int, float, list, NP.ndarray)), 'Output values of interpolated variable must be a scalar, list or numpy array'
     outvals = NP.asarray(outvals).reshape(-1)
 
@@ -314,9 +317,12 @@ def interp_coevalcubes(invals, outvals, inpcubes=None, cubefiles=None,
             
             inpcubes = [read_21cmfast_cube(cubefile) for cubefile in cubefiles]
 
-    if NP.allclose(invals, outvals): # no interpolation required, just return outcube=inpcubes
-        outcubes = inpcubes
-    else:
+    interp_required = True
+    if invals.size == outvals.size:
+        if NP.allclose(invals, outvals): # no interpolation required, just return outcube=inpcubes
+            outcubes = inpcubes
+            interp_required = False
+    if interp_required:
         inpcubes = NP.asarray(inpcubes)
         outcubes = OPS.interpolate_array(inpcubes, invals, outvals, axis=0, kind=interp_method)
         outcubes = NP.array_split(outcubes, outcubes.shape[0], axis=0)
@@ -781,9 +787,27 @@ def coeval_interp_cube_to_sphere_surface_wrapper(interpdict, tiledict):
     except NameError:
         raise NameError('Inputs interpdict and tiledict must be specified')
 
-    interpcube = interp_coevalcubes_inpdict(interpdict)[0] # List should contain only one element
-    tiledict['inpcube'] = interpcube
-    return convert_coevalcube_to_sphere_surface_inpdict(tiledict)
+    # interpcube = interp_coevalcubes_inpdict(interpdict)[0] # List should contain only one element
+    # tiledict['inpcube'] = interpcube
+    # return convert_coevalcube_to_sphere_surface_inpdict(tiledict)
+
+    interpcubes = interp_coevalcubes_inpdict(interpdict)
+    sphsurfaces = []
+    for ind in range(len(interpcubes)):
+        if tiledict['freq'] is not None:
+            if isinstance(tiledict['freq'], (int,float)):
+                tdict = tiledict
+            else:
+                tdict = {'inpres': tiledict['inpres'], 'nside': tiledict['nside'], 'theta_phi': tiledict['theta_phi'], 'redshift': tiledict['redshift'], 'freq': tiledict['freq'][ind], 'method': tiledict['method'], 'rest_freq': tiledict['rest_freq'], 'cosmo': tiledict['cosmo']}
+        else:
+            if isinstance(tiledict['redshift'], (int,float)):
+                tdict = tiledict
+            else:
+                tdict = {'inpres': tiledict['inpres'], 'nside': tiledict['nside'], 'theta_phi': tiledict['theta_phi'], 'redshift': tiledict['redshift'][ind], 'freq': tiledict['freq'], 'method': tiledict['method'], 'rest_freq': tiledict['rest_freq'], 'cosmo': tiledict['cosmo']}            
+        tdict['inpcube'] = interpcubes[ind]
+        sphsurfaces += [convert_coevalcube_to_sphere_surface_inpdict(tdict)]
+
+    return sphsurfaces
     
 #################################################################################
 

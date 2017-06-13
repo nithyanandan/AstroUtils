@@ -226,6 +226,12 @@ processing  :
                                 # multiprocessing), otherwise set
                                 # to false (default)
 
+    prll_type       : 1
+                                # If set to 1 (default), one spherical
+                                # patch will be computed per process.
+                                # If set to 2, multiple spherical
+                                # patches will be computed per process
+
     nproc           : 16
                                 # Number of parallel threads if
                                 # parallel is set to true, otherwise

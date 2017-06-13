@@ -1,3 +1,29 @@
+From dbddf82 (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) In interp_coevalcubes(), add type checking on input invals
+(*) In interp_coevalcubes(), update comparison of invals and outvals
+to determine if interpolation is required
+(*) In coeval_interp_cube_to_sphere_surface_wrapper(), update to
+process tiling of many cubes in series
+
+In astroutils/examples/cosmotile/cosmotile_parms.yaml,
+
+(*) Add parameter to specify type of parallel processing that is
+called prll_type
+
+In scripts/run_cosmotile.py,
+
+(*) Update to handle different types of parallelization by binning
+output frequencies into bins of input frequencies
+
+In astroutils/mathops.py,
+
+(*) In interpolate_array(), update comparison of inploc and outloc
+to determine if interpolation is required
+
 From f9e1560 (cosmotiling):
 ==========================
 
