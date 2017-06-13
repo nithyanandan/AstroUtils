@@ -278,6 +278,9 @@ def interp_coevalcubes(invals, outvals, inpcubes=None, cubefiles=None,
     except NameError:
         raise NameError('Inputs invals and outvals must be specified')
 
+    assert isinstance(invals, (int, float, list, NP.ndarray)), 'Input values of interpolated variable must be a scalar, list or numpy array'
+    invals = NP.asarray(invals).reshape(-1)
+
     assert isinstance(outvals, (int, float, list, NP.ndarray)), 'Output values of interpolated variable must be a scalar, list or numpy array'
     outvals = NP.asarray(outvals).reshape(-1)
 
@@ -314,9 +317,12 @@ def interp_coevalcubes(invals, outvals, inpcubes=None, cubefiles=None,
             
             inpcubes = [read_21cmfast_cube(cubefile) for cubefile in cubefiles]
 
-    if NP.allclose(invals, outvals): # no interpolation required, just return outcube=inpcubes
-        outcubes = inpcubes
-    else:
+    interp_required = True
+    if invals.size == outvals.size:
+        if NP.allclose(invals, outvals): # no interpolation required, just return outcube=inpcubes
+            outcubes = inpcubes
+            interp_required = False
+    if interp_required:
         inpcubes = NP.asarray(inpcubes)
         outcubes = OPS.interpolate_array(inpcubes, invals, outvals, axis=0, kind=interp_method)
         outcubes = NP.array_split(outcubes, outcubes.shape[0], axis=0)

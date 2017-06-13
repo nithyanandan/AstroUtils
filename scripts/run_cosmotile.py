@@ -10,6 +10,7 @@ import healpy as HP
 import numpy as NP
 import astropy.cosmology as cosmology
 import progressbar as PGB
+import warnings
 from astroutils import cosmotile
 import astroutils
 import ipdb as PDB

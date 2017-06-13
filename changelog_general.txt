@@ -1,3 +1,17 @@
+From dbddf82 (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) In interp_coevalcubes(), add type checking on input invals
+(*) In interp_coevalcubes(), update comparison of invals and outvals
+to determine if interpolation is required
+
+In astroutils/mathops.py,
+
+(*) In interpolate_array(), update comparison of inploc and outloc
+to determine if interpolation is required
+
 From f9e1560 (cosmotiling):
 ==========================
 
