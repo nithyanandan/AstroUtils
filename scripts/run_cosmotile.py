@@ -202,13 +202,21 @@ if __name__ == '__main__':
         nproc = min([nproc, zout.size])
         try:
             pool = MP.Pool(processes=nproc)
-            sphsurfaces = pool.map(cosmotile.coeval_interp_cube_to_sphere_surface_wrapper_arg_splitter, IT.izip(interpdicts, tiledicts))
+            sphsurfaces = pool.imap(cosmotile.coeval_interp_cube_to_sphere_surface_wrapper_arg_splitter, IT.izip(interpdicts, tiledicts), chunksize=zout.size/nproc)
+            progress = PGB.ProgressBar(widgets=[PGB.Percentage(), PGB.Bar(marker='-', left=' |', right='| '), PGB.Counter(), '/{0:0d} frequencies'.format(zout.size), PGB.ETA()], maxval=zout.size).start()
+            for i,_ in enumerate(sphsurfaces):
+                print '{0:0d}/{1:0d} completed'.format(i, len(interpdicts))
+                progress.update(i+1)
+            progress.finish()
+
             pool.close()
             pool.join()
             te = time.time()
             print 'Time consumed: {0:.1f} seconds'.format(te-ts)
         except MemoryError:
             parallel = False
+            pool.close()
+            pool.join()
             del pool
             sphsurfaces = []
             warnings.warn('Memory requirements too high. Downgrading to serial processing.')
@@ -220,7 +228,8 @@ if __name__ == '__main__':
             progress.update(ind+1)
         progress.finish()
 
-    sphsurfaces = conv_factor * NP.asarray(sphsurfaces)
+    sphpatches = NP.asarray([sphsurf for sphsurf in sphsurfaces])
+    sphpatches = conv_factor * NP.asarray(sphpatches)
     if save:
         if save_as_skymodel:
             if nside is not None:
@@ -231,10 +240,10 @@ if __name__ == '__main__':
                 theta = NP.degrees(theta)
                 phi = NP.degrees(phi)
             radec = NP.hstack((phi.reshape(-1,1), 90.0 - theta.reshape(-1,1)))
-            init_parms = {'name': cube_source, 'frequency': ofreqs, 'location': radec, 'spec_type': 'spectrum', 'spectrum': pixarea_patch*sphsurfaces.T, 'src_shape': NP.hstack((angres_patch+NP.zeros(phi.size).reshape(-1,1), angres_patch+NP.zeros(phi.size).reshape(-1,1), NP.zeros(phi.size).reshape(-1,1))), 'epoch': 'J2000', 'coords': 'radec', 'src_shape_units': ('degree', 'degree', 'degree')}
+            init_parms = {'name': cube_source, 'frequency': ofreqs, 'location': radec, 'spec_type': 'spectrum', 'spectrum': pixarea_patch*sphpatches.T, 'src_shape': NP.hstack((angres_patch+NP.zeros(phi.size).reshape(-1,1), angres_patch+NP.zeros(phi.size).reshape(-1,1), NP.zeros(phi.size).reshape(-1,1))), 'epoch': 'J2000', 'coords': 'radec', 'src_shape_units': ('degree', 'degree', 'degree')}
             cosmotile.write_lightcone_catalog(init_parms, outfile=outfile, action='store')
         else:
-            cosmotile.write_lightcone_surfaces(sphsurfaces, units, outfile, ofreqs, cosmo=cosmo, is_healpix=is_healpix)
+            cosmotile.write_lightcone_surfaces(sphpatches, units, outfile, ofreqs, cosmo=cosmo, is_healpix=is_healpix)
 
     if wait_after_run:
         PDB.set_trace()

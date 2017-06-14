@@ -1,3 +1,17 @@
+From a90ecf7 (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Add function fastread_21cmfast_cube() that replaces the
+previous and slow read_21cmfast_cube() 
+(*) Import time module to track time consumption in functions 
+interp_coevalcubes() and convert_coevalcube_to_sphere_surface()
+
+In scripts/run_cosmotile.py,
+
+(*) Use multiprocessing.imap() to do parallel processing
+
 From dbddf82 (cosmotiling):
 ==========================
 
