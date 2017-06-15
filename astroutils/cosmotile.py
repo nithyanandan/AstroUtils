@@ -7,7 +7,7 @@ import h5py
 import astropy.cosmology as cosmology
 import multiprocessing as MP
 import itertools as IT
-import warnings
+import time, warnings
 import constants as CNST
 import catalog as SM
 import mathops as OPS
@@ -47,6 +47,42 @@ def read_21cmfast_cube(cubefile, dtype=NP.float32):
     if sys.byteorder == 'big':
         data = data.byteswap()
     data = NP.asarray(data.reshape((dim, dim, dim), order='F'), order='C') # convert to C-order from F-order (it has to be read in F-order first)
+    return data
+
+#################################################################################
+
+def fastread_21cmfast_cube(cubefile, dtype=NP.float32):
+    
+    """
+    -----------------------------------------------------------------------------
+    Read 21cmfast cosmological cubes -- coeval or lightcone versions. This is 
+    faster than read_21cmfast_cube() because it uses numpy.fromfile()
+
+    Inputs:
+
+    cubefile    [string] Filename including full path for reading in the input 
+                21cmfast cosmological cube. 21cmfast cubes are stored in binary 
+                files. 
+
+    Output:
+
+    Numpy array containing the cosmological coeval/lightcone 21cmfast cube. It 
+    is of shape nx x ny x nz where this is determined by cube dimensions parsed
+    from the cubefile string
+    -----------------------------------------------------------------------------
+    """
+
+    if basename(cubefile)[-11:]=='lighttravel':
+        dim = int('' + cubefile.split('_')[-3])
+        label = str('' + cubefile.split('_')[-2])
+    else:
+        dim = int('' + cubefile.split('_')[-2])
+        label = str('' + cubefile.split('_')[-1])
+
+    data = NP.fromfile(cubefile, dtype=dtype, count=-1)
+    if sys.byteorder == 'big':
+        data = data.byteswap()
+    data = data.reshape((dim, dim, dim), order='F') # it has to be read in F-order
     return data
 
 #################################################################################
@@ -315,7 +351,13 @@ def interp_coevalcubes(invals, outvals, inpcubes=None, cubefiles=None,
                 if cubedims.size != 3:
                     raise ValueError('Input cubedims must be a three element iterable')
             
-            inpcubes = [read_21cmfast_cube(cubefile) for cubefile in cubefiles]
+            print '\nReading in 21cmfast cubes...'
+            ts = time.time()
+
+            inpcubes = [fastread_21cmfast_cube(cubefile) for cubefile in cubefiles]
+
+            te = time.time()
+            print 'Reading 21cmfast cubes took {0:.1f} seconds'.format(te-ts)
 
     interp_required = True
     if invals.size == outvals.size:
@@ -324,7 +366,14 @@ def interp_coevalcubes(invals, outvals, inpcubes=None, cubefiles=None,
             interp_required = False
     if interp_required:
         inpcubes = NP.asarray(inpcubes)
+        print 'Interpolating 21cmfast cube at desired parameter value(s)...'
+        ts = time.time()
+        
         outcubes = OPS.interpolate_array(inpcubes, invals, outvals, axis=0, kind=interp_method)
+
+        te = time.time()
+        print 'Interpolating 21cmfast cube at desired parameter value(s) took {0:.1f} seconds'.format(te-ts)
+
         outcubes = NP.array_split(outcubes, outcubes.shape[0], axis=0)
         outcubes = [NP.squeeze(ocube) for ocube in outcubes]
         # outcubes = [NP.take(outcubes, i, axis=0) for i in range(outvals.size)]
@@ -578,6 +627,7 @@ def convert_coevalcube_to_sphere_surface(inpcube, inpres, nside=None,
     ymod = NP.mod(y*comoving_distance, inpres[1]*inpcube.shape[1])
     zmod = NP.mod(z*comoving_distance, inpres[2]*inpcube.shape[2])
 
+    print 'Interpolating to spherical surface...'
     if method == 'nearest_rounded':
         xi = xmod / inpres[0]
         yi = ymod / inpres[1]
@@ -586,6 +636,7 @@ def convert_coevalcube_to_sphere_surface(inpcube, inpres, nside=None,
     else:
         xyz_mod = NP.hstack((xmod.reshape(-1,1), ymod.reshape(-1,1), zmod.reshape(-1,1)))
         patch = interpolate.interpn((inpres[0]*NP.arange(inpcube.shape[0]), inpres[1]*NP.arange(inpcube.shape[1]), inpres[2]*NP.arange(inpcube.shape[2])), inpcube, xyz_mod, method=method, bounds_error=False, fill_value=None)
+    print 'Interpolated to spherical surface'
 
     return patch
 

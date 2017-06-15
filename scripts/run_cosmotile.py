@@ -5,13 +5,13 @@ import argparse
 import yaml
 import multiprocessing as MP
 import itertools as IT
-import time 
 import healpy as HP
 import numpy as NP
 import astropy.cosmology as cosmology
 import progressbar as PGB
-import warnings
+import time, warnings
 from astroutils import cosmotile
+from astroutils import mathops as OPS
 import astroutils
 import ipdb as PDB
 
@@ -128,6 +128,7 @@ if __name__ == '__main__':
         raise ValueError('Output frequencies must not be negative')
 
     parallel = parms['processing']['parallel']
+    prll_type = parms['processing']['prll_type']
     nproc = parms['processing']['nproc']
     wait_after_run = parms['processing']['wait_after_run']
     fname_delimiter = parms['format']['delimiter']
@@ -177,21 +178,34 @@ if __name__ == '__main__':
 
     interpdicts = []
     tiledicts = []
-    for zind,redshift in enumerate(zout):
-        idict = {'outvals': NP.asarray(redshift).reshape(-1), 'inpcubes': None, 'cubedims': None, 'cube_source': cube_source, 'interp_method':'linear', 'outfiles': None, 'returncubes': True}
-        tdict = {'inpres': cuberes, 'nside': nside, 'theta_phi': theta_phi, 'redshift': redshift, 'freq': None, 'method': 'linear', 'rest_freq': rest_freq, 'cosmo': cosmo}
-        if redshift <= zin.min():
-            idict['invals'] = [zin.min()]
-            idict['cubefiles'] = [indir+fnames[-1]]
-        elif redshift >= zin.max():
-            idict['invals'] = [zin.max()]
-            idict['cubefiles'] = [indir+fnames[0]]
-        else:
-            insert_ind = NP.searchsorted(infreqs, ofreqs[zind])
-            idict['invals'] = [zin[insert_ind], zin[insert_ind-1]]
-            idict['cubefiles'] = [indir+fnames[insert_ind], indir+fnames[insert_ind-1]]
-        interpdicts += [idict]
-        tiledicts += [tdict]
+    if prll_type == 1:
+        for zind,redshift in enumerate(zout):
+            idict = {'outvals': NP.asarray(redshift).reshape(-1), 'inpcubes': None, 'cubedims': None, 'cube_source': cube_source, 'interp_method':'linear', 'outfiles': None, 'returncubes': True}
+            tdict = {'inpres': cuberes, 'nside': nside, 'theta_phi': theta_phi, 'redshift': redshift, 'freq': None, 'method': 'linear', 'rest_freq': rest_freq, 'cosmo': cosmo}
+            if redshift <= zin.min():
+                idict['invals'] = [zin.min()]
+                idict['cubefiles'] = [indir+fnames[-1]]
+            elif redshift >= zin.max():
+                idict['invals'] = [zin.max()]
+                idict['cubefiles'] = [indir+fnames[0]]
+            else:
+                insert_ind = NP.searchsorted(infreqs, ofreqs[zind])
+                idict['invals'] = [zin[insert_ind], zin[insert_ind-1]]
+                idict['cubefiles'] = [indir+fnames[insert_ind], indir+fnames[insert_ind-1]]
+            interpdicts += [idict]
+            tiledicts += [tdict]
+    else:
+        bincount, binedges, binnum, ri = OPS.binned_statistic(ofreqs, values=None, statistic='count', bins=infreqs, range=None)
+        for binind in range(bincount.size):
+            if bincount[binind] > 0:
+                select_ind = ri[ri[binind]:ri[binind+1]]
+                ofreqs_in_bin = ofreqs[select_ind]
+                sorted_ofreqs_in_bin = NP.sort(ofreqs_in_bin)
+                idict = {'invals': NP.asarray([infreqs[binind], infreqs[binind+1]]), 'outvals': sorted_ofreqs_in_bin.reshape(-1), 'inpcubes': None, 'cubedims': None, 'cube_source': cube_source, 'cubefiles': [indir+fnames[binind], indir+fnames[binind+1]], 'interp_method':'linear', 'outfiles': None, 'returncubes': True}
+                tdict = {'inpres': cuberes, 'nside': nside, 'theta_phi': theta_phi, 'redshift': None, 'freq': sorted_ofreqs_in_bin.reshape(-1), 'method': 'linear', 'rest_freq': rest_freq, 'cosmo': cosmo}
+
+                interpdicts += [idict]
+                tiledicts += [tdict]
 
     sphsurfaces = []
     if parallel:
@@ -199,16 +213,24 @@ if __name__ == '__main__':
         if nproc is None:
             nproc = MP.cpu_count()
         assert isinstance(nproc, int), 'Number of parallel processes must be an integer'
-        nproc = min([nproc, zout.size])
+        nproc = min([nproc, len(interpdicts)])
         try:
             pool = MP.Pool(processes=nproc)
-            sphsurfaces = pool.map(cosmotile.coeval_interp_cube_to_sphere_surface_wrapper_arg_splitter, IT.izip(interpdicts, tiledicts))
+            sphsurfaces = pool.imap(cosmotile.coeval_interp_cube_to_sphere_surface_wrapper_arg_splitter, IT.izip(interpdicts, tiledicts), chunksize=zout.size/nproc)
+            progress = PGB.ProgressBar(widgets=[PGB.Percentage(), PGB.Bar(marker='-', left=' |', right='| '), PGB.Counter(), '/{0:0d} frequencies '.format(zout.size), PGB.ETA()], maxval=zout.size).start()
+            for i,_ in enumerate(sphsurfaces):
+                print '{0:0d}/{1:0d} completed'.format(i, len(interpdicts))
+                progress.update(i+1)
+            progress.finish()
+
             pool.close()
             pool.join()
             te = time.time()
             print 'Time consumed: {0:.1f} seconds'.format(te-ts)
         except MemoryError:
             parallel = False
+            pool.close()
+            pool.join()
             del pool
             sphsurfaces = []
             warnings.warn('Memory requirements too high. Downgrading to serial processing.')
@@ -220,7 +242,9 @@ if __name__ == '__main__':
             progress.update(ind+1)
         progress.finish()
 
-    sphsurfaces = conv_factor * NP.asarray(sphsurfaces)
+    PDB.set_trace()
+    sphpatches = conv_factor * NP.asarray([item for sublist in sphsurfaces for item in sublist])
+
     if save:
         if save_as_skymodel:
             if nside is not None:
@@ -231,10 +255,10 @@ if __name__ == '__main__':
                 theta = NP.degrees(theta)
                 phi = NP.degrees(phi)
             radec = NP.hstack((phi.reshape(-1,1), 90.0 - theta.reshape(-1,1)))
-            init_parms = {'name': cube_source, 'frequency': ofreqs, 'location': radec, 'spec_type': 'spectrum', 'spectrum': pixarea_patch*sphsurfaces.T, 'src_shape': NP.hstack((angres_patch+NP.zeros(phi.size).reshape(-1,1), angres_patch+NP.zeros(phi.size).reshape(-1,1), NP.zeros(phi.size).reshape(-1,1))), 'epoch': 'J2000', 'coords': 'radec', 'src_shape_units': ('degree', 'degree', 'degree')}
+            init_parms = {'name': cube_source, 'frequency': ofreqs, 'location': radec, 'spec_type': 'spectrum', 'spectrum': pixarea_patch*sphpatches.T, 'src_shape': NP.hstack((angres_patch+NP.zeros(phi.size).reshape(-1,1), angres_patch+NP.zeros(phi.size).reshape(-1,1), NP.zeros(phi.size).reshape(-1,1))), 'epoch': 'J2000', 'coords': 'radec', 'src_shape_units': ('degree', 'degree', 'degree')}
             cosmotile.write_lightcone_catalog(init_parms, outfile=outfile, action='store')
         else:
-            cosmotile.write_lightcone_surfaces(sphsurfaces, units, outfile, ofreqs, cosmo=cosmo, is_healpix=is_healpix)
+            cosmotile.write_lightcone_surfaces(sphpatches, units, outfile, ofreqs, cosmo=cosmo, is_healpix=is_healpix)
 
     if wait_after_run:
         PDB.set_trace()

@@ -1,3 +1,22 @@
+From 23f9521 (cosmotiling-adv):
+==============================
+
+In astroutils/cosmotile.py,
+
+(*) Import time module
+(*) Print status and diagnostic messages including time consumed for
+reading 21cmfast cubes and interpolating coeval cubes
+(*) Add function fastread_21cmfast_cube() along with docstring which
+is a faster routine and a replacement for read_21cmfast_cube()
+
+In scripts/run_cosmotile.py,
+
+(*) Update to use different types of parallelization by binning
+output frequencies into bins of input frequencies. This was supposed
+to have been included in the previous commit but was not. Now uses
+prll_type parameter 
+(*) Import AstroUtils module mathops
+
 From dbddf82 (cosmotiling):
 ==========================
 
