@@ -199,13 +199,13 @@ if __name__ == '__main__':
         if nproc is None:
             nproc = MP.cpu_count()
         assert isinstance(nproc, int), 'Number of parallel processes must be an integer'
-        nproc = min([nproc, zout.size])
+        nproc = min([nproc, zout[:4].size])
         try:
             pool = MP.Pool(processes=nproc)
-            sphsurfaces = pool.imap(cosmotile.coeval_interp_cube_to_sphere_surface_wrapper_arg_splitter, IT.izip(interpdicts, tiledicts), chunksize=zout.size/nproc)
-            progress = PGB.ProgressBar(widgets=[PGB.Percentage(), PGB.Bar(marker='-', left=' |', right='| '), PGB.Counter(), '/{0:0d} frequencies'.format(zout.size), PGB.ETA()], maxval=zout.size).start()
+            sphsurfaces = pool.imap(cosmotile.coeval_interp_cube_to_sphere_surface_wrapper_arg_splitter, IT.izip(interpdicts[:4], tiledicts[:4]), chunksize=zout[:4].size/nproc)
+            progress = PGB.ProgressBar(widgets=[PGB.Percentage(), PGB.Bar(marker='-', left=' |', right='| '), PGB.Counter(), '/{0:0d} frequencies'.format(zout[:4].size), PGB.ETA()], maxval=zout[:4].size).start()
             for i,_ in enumerate(sphsurfaces):
-                print '{0:0d}/{1:0d} completed'.format(i, len(interpdicts))
+                print '{0:0d}/{1:0d} completed'.format(i, len(interpdicts[:4]))
                 progress.update(i+1)
             progress.finish()
 
@@ -228,6 +228,7 @@ if __name__ == '__main__':
             progress.update(ind+1)
         progress.finish()
 
+    PDB.set_trace()
     sphpatches = NP.asarray([sphsurf for sphsurf in sphsurfaces])
     sphpatches = conv_factor * NP.asarray(sphpatches)
     if save:

@@ -1,3 +1,14 @@
+From d9230c8 (cosmotiling):
+==========================
+
+(*) Add astroutils/examples/cosmotile/cosmosmooth_parms.yaml to repo
+(*) Add scripts/smooth_cosmocubes.py to repo
+
+In astroutils/cosmotile.py,
+
+(*) Add functions cube_smooth_downsample_save(), write_coeval_cube()
+and smooth_downsample_cube() along with docstrings.
+
 From a90ecf7 (cosmotiling):
 ==========================
 
