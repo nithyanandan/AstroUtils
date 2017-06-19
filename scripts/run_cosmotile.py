@@ -71,6 +71,7 @@ if __name__ == '__main__':
         cosmo = cosmology.WMAP9
     else:
         raise ValueError('{0} preset not currently accepted for cosmology'.format(cosmoparms['name'].lower()))
+    process_stage = parms['sim']['process_stage']
     units = parms['sim']['units']
     if not isinstance(units, str):
         raise TypeError('Input units must be a string')
@@ -178,7 +179,7 @@ if __name__ == '__main__':
     interpdicts = []
     tiledicts = []
     for zind,redshift in enumerate(zout):
-        idict = {'outvals': NP.asarray(redshift).reshape(-1), 'inpcubes': None, 'cubedims': None, 'cube_source': cube_source, 'interp_method':'linear', 'outfiles': None, 'returncubes': True}
+        idict = {'outvals': NP.asarray(redshift).reshape(-1), 'inpcubes': None, 'cubedims': None, 'cube_source': cube_source, 'process_stage': process_stage, 'interp_method':'linear', 'outfiles': None, 'returncubes': True}
         tdict = {'inpres': cuberes, 'nside': nside, 'theta_phi': theta_phi, 'redshift': redshift, 'freq': None, 'method': 'linear', 'rest_freq': rest_freq, 'cosmo': cosmo}
         if redshift <= zin.min():
             idict['invals'] = [zin.min()]
@@ -199,15 +200,15 @@ if __name__ == '__main__':
         if nproc is None:
             nproc = MP.cpu_count()
         assert isinstance(nproc, int), 'Number of parallel processes must be an integer'
-        nproc = min([nproc, zout[:4].size])
+        nproc = min([nproc, zout.size])
         try:
             pool = MP.Pool(processes=nproc)
-            sphsurfaces = pool.imap(cosmotile.coeval_interp_cube_to_sphere_surface_wrapper_arg_splitter, IT.izip(interpdicts[:4], tiledicts[:4]), chunksize=zout[:4].size/nproc)
-            progress = PGB.ProgressBar(widgets=[PGB.Percentage(), PGB.Bar(marker='-', left=' |', right='| '), PGB.Counter(), '/{0:0d} frequencies'.format(zout[:4].size), PGB.ETA()], maxval=zout[:4].size).start()
-            for i,_ in enumerate(sphsurfaces):
-                print '{0:0d}/{1:0d} completed'.format(i, len(interpdicts[:4]))
-                progress.update(i+1)
-            progress.finish()
+            sphsurfaces = pool.map(cosmotile.coeval_interp_cube_to_sphere_surface_wrapper_arg_splitter, IT.izip(interpdicts, tiledicts), chunksize=zout.size/nproc)
+            # progress = PGB.ProgressBar(widgets=[PGB.Percentage(), PGB.Bar(marker='-', left=' |', right='| '), PGB.Counter(), '/{0:0d} frequencies'.format(zout.size), PGB.ETA()], maxval=zout.size).start()
+            # for i,_ in enumerate(sphsurfaces):
+            #     print '{0:0d}/{1:0d} completed'.format(i, len(interpdicts))
+            #     progress.update(i+1)
+            # progress.finish()
 
             pool.close()
             pool.join()
@@ -228,7 +229,6 @@ if __name__ == '__main__':
             progress.update(ind+1)
         progress.finish()
 
-    PDB.set_trace()
     sphpatches = NP.asarray([sphsurf for sphsurf in sphsurfaces])
     sphpatches = conv_factor * NP.asarray(sphpatches)
     if save:

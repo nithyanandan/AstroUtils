@@ -1,3 +1,28 @@
+From 5db2c3d (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Add input process_stage as a key in input inpdict in
+cube_smooth_downsample_save(). Update docstring accordingly. This will
+determine if processed cube is read from a HDF5 file or a raw cube
+from a binary file
+(*) Add input process_stage as an input in interp_coevalcubes() along
+with docstring. This input will determine if coeval cubes to be read
+are processed HDF5 files or raw binary files
+(*) Add function read_coeval_cube() along with docstring to read
+processed coeval cubes from HDF5 file
+
+In astroutils/examples/cosmotile/cosmotile_parms.yaml,
+
+(*) Add parameter process_stage to determine if input coeval cubes
+are processed or raw
+
+In scripts/run_cosmotile.py,
+
+(*) Read in process_stage parameter and process accordingly
+(*) Change parallel processing from using pool.imap() to pool.map()
+
 From d9230c8 (cosmotiling):
 ==========================
 

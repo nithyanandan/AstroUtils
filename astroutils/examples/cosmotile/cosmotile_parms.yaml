@@ -137,6 +137,11 @@ sim         :
                                 # Accepted values are 'K' (default)
                                 # and 'mK'
 
+    process_stage : 'processed'
+                                # Specifies if the input cubes are
+                                # 'raw' or 'processed' (smoothing
+                                # and/or downsampling)
+
 ########## Output parameters ##########
 
 output      :
@@ -214,7 +219,8 @@ output      :
                                 # to generate theta and phi on a
                                 # spherical patch. The final angular
                                 # resolution will be equal or finer
-                                # than this. 
+                                # than this. It will be assumed to
+                                # be FWHM
 
 ########## Processing parameters ##########
 

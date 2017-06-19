@@ -101,6 +101,9 @@ def cube_smooth_downsample_save(inpdict):
     inpdict     [dictionary] It should contain the following keys and values:
                 'infile'    [string] Filename containing the raw coeval cube in
                             binary format
+                'process_stage'
+                            [string] Indicates whether the input file is 'raw'
+                            (default) or 'processed' 
                 'smooth_axes'
                             [int or list/array of ints] Axes to be smoothed as a
                             list. 
@@ -128,11 +131,23 @@ def cube_smooth_downsample_save(inpdict):
     -----------------------------------------------------------------------------
     """
 
-    data = fastread_21cmfast_cube(inpdict['infile'])
+    process_stage = 'raw'
+    if 'process_stage' in inpdict:
+        if inpdict['process_stage'].lower() not in ['raw', 'processed']:
+            raise ValueError('Process stage of input data must be set to "raw" or "processed"')
+        process_stage = inpdict['process_stage'].lower()
+            
+    if process_stage == 'raw':
+        data = fastread_21cmfast_cube(inpdict['infile'])
+    else:
+        data, hdrinfo = read_coeval_cube(inpdict['infile'])
     indata_dims = NP.asarray(data.shape)
     smooth_downsample_dict = {'indata': data, 'smooth_axes': inpdict['smooth_axes'], 'downsample_axes': inpdict['downsample_axes'], 'smooth_scale': inpdict['smooth_scale'], 'downsample_factor': inpdict['downsample_factor']}
     data = smooth_downsample_cube(smooth_downsample_dict)
-    inpres = inpdict['inpres']
+    if process_stage == 'raw':
+        inpres = inpdict['inpres']
+    else:
+        inpres = hdrinfo['pixres']
     outres = inpres * indata_dims / NP.asarray(data.shape)
     hdrinfo = {'pixres': outres}
     write_coeval_cube(data, inpdict['outfile'], hdrinfo=hdrinfo)
@@ -385,6 +400,11 @@ def interp_coevalcubes_inpdict(inpdict):
         cube_source = None
 
     try:
+        process_stage
+    except NameError:
+        process_stage = 'raw'
+        
+    try:
         interp_method
     except NameError:
         interp_method = 'linear'
@@ -399,13 +419,13 @@ def interp_coevalcubes_inpdict(inpdict):
     except NameError:
         returncubes = True
 
-    return interp_coevalcubes(invals, outvals, inpcubes=inpcubes, cubefiles=cubefiles, cubedims=cubedims, cube_source=cube_source, interp_method=interp_method, outfiles=outfiles, returncubes=returncubes)
+    return interp_coevalcubes(invals, outvals, inpcubes=inpcubes, cubefiles=cubefiles, cubedims=cubedims, cube_source=cube_source, process_stage=process_stage, interp_method=interp_method, outfiles=outfiles, returncubes=returncubes)
 
 #################################################################################
 
 def interp_coevalcubes(invals, outvals, inpcubes=None, cubefiles=None,
-                       cubedims=None, cube_source=None, interp_method='linear',
-                       outfiles=None, returncubes=True):
+                       cubedims=None, cube_source=None, process_stage='raw', 
+                       interp_method='linear', outfiles=None, returncubes=True):
 
     """
     -----------------------------------------------------------------------------
@@ -452,6 +472,10 @@ def interp_coevalcubes(invals, outvals, inpcubes=None, cubefiles=None,
 
     cube_source [string] Source of input cubes. At the moment, the accepted 
                 values are '21cmfast'
+
+    process_stage
+                [string] Indicates whether the input file is 'raw' (default) or 
+                'processed' 
 
     method      [string] Method of interpolation across coeval cubes along axis
                 for which invals are provided. Usually it is the spectral, 
@@ -505,6 +529,10 @@ def interp_coevalcubes(invals, outvals, inpcubes=None, cubefiles=None,
         else:
             raise TypeError('outfiles must be a string or list of strings')
 
+    assert isinstance(process_stage, str), 'Input process_stage must be a string'
+    if process_stage.lower() not in ['raw', 'processed']:
+        raise ValueError('Input process_stage must be set to "raw" or "processed"')
+
     if (cubefiles is None) and (inpcubes is None):
         raise ValueError('One of the inputs cubefiles and inpcubes must be specified')
     elif (cubefiles is not None) and (inpcubes is not None):
@@ -528,7 +556,10 @@ def interp_coevalcubes(invals, outvals, inpcubes=None, cubefiles=None,
             print '\nReading in 21cmfast cubes...'
             ts = time.time()
 
-            inpcubes = [fastread_21cmfast_cube(cubefile) for cubefile in cubefiles]
+            if process_stage.lower() == 'raw':
+                inpcubes = [fastread_21cmfast_cube(cubefile) for cubefile in cubefiles]
+            else:
+                inpcubes = [read_coeval_cube(cubefile)[0] for cubefile in cubefiles]
 
             te = time.time()
             print 'Reading 21cmfast cubes took {0:.1f} seconds'.format(te-ts)
@@ -1229,5 +1260,40 @@ def write_coeval_cube(data, outfile, hdrinfo=None):
 
         dset = fileobj.create_dataset('data', data=data, compression='gzip', compression_opts=9)
         
+#################################################################################
+
+def read_coeval_cube(infile):
+
+    """
+    -----------------------------------------------------------------------------
+    Read processed cosmological coeval cubes from HDF5 file
+
+    Inputs:
+
+    infile      [string] Filename including full path where the processed data 
+                is to be read in HDF5 format. It should not include the extension 
+                as it will be determined internally
+
+    Output:
+
+    Tuple containing processed 21cmfast coeval cube as a 3D numpy array and a 
+    dictionary that contains header information (set to None if no header info 
+    found)
+    -----------------------------------------------------------------------------
+    """
+
+    if not isinstance(infile, str):
+        raise TypeError('infile must be a string')
+
+    hdrinfo = None
+    with h5py.File(infile, 'r') as fileobj:
+        if 'header' in fileobj:
+            hdrinfo = {key: fileobj['header'][key].value for key in fileobj['header']}
+        if 'data' not in fileobj:
+            raise KeyError('Input HDF5 file does not contain data')
+        data = fileobj['data'].value
+
+    return (data, hdrinfo)
+
 #################################################################################
 
