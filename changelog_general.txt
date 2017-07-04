@@ -1,3 +1,10 @@
+From e5e2950 (cosmotiling-adv):
+==============================
+
+In astroutils/nonmathops.py,
+
+(*) Import warnings module
+
 From 23f9521 (cosmotiling-adv):
 ==============================
 
