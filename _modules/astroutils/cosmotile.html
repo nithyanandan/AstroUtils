@@ -1,0 +1,1384 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>astroutils.cosmotile &mdash; AstroUtils 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="AstroUtils 0.1.0 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for astroutils.cosmotile</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">os.path</span> <span class="kn">import</span> <span class="n">basename</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">NP</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">interpolate</span>
+<span class="kn">import</span> <span class="nn">scipy</span> <span class="kn">as</span> <span class="nn">SP</span>
+<span class="kn">import</span> <span class="nn">healpy</span> <span class="kn">as</span> <span class="nn">HP</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">astropy.cosmology</span> <span class="kn">as</span> <span class="nn">cosmology</span>
+<span class="kn">import</span> <span class="nn">multiprocessing</span> <span class="kn">as</span> <span class="nn">MP</span>
+<span class="kn">import</span> <span class="nn">itertools</span> <span class="kn">as</span> <span class="nn">IT</span>
+<span class="kn">import</span> <span class="nn">time</span><span class="o">,</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">constants</span> <span class="kn">as</span> <span class="nn">CNST</span>
+<span class="kn">import</span> <span class="nn">catalog</span> <span class="kn">as</span> <span class="nn">SM</span>
+<span class="kn">import</span> <span class="nn">mathops</span> <span class="kn">as</span> <span class="nn">OPS</span>
+<span class="kn">import</span> <span class="nn">DSP_modules</span> <span class="kn">as</span> <span class="nn">DSP</span>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="read_21cmfast_cube"><a class="viewcode-back" href="../../astroutils.html#astroutils.cosmotile.read_21cmfast_cube">[docs]</a><span class="k">def</span> <span class="nf">read_21cmfast_cube</span><span class="p">(</span><span class="n">cubefile</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">NP</span><span class="o">.</span><span class="n">float32</span><span class="p">):</span>
+    
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Read 21cmfast cosmological cubes -- coeval or lightcone versions. Use faster</span>
+<span class="sd">    version fastread_21cmfast_cube()</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    cubefile    [string] Filename including full path for reading in the input </span>
+<span class="sd">                21cmfast cosmological cube. 21cmfast cubes are stored in binary </span>
+<span class="sd">                files. </span>
+
+<span class="sd">    Output:</span>
+
+<span class="sd">    Numpy array containing the cosmological coeval/lightcone 21cmfast cube. It </span>
+<span class="sd">    is of shape nx x ny x nz where this is determined by cube dimensions parsed</span>
+<span class="sd">    from the cubefile string</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">basename</span><span class="p">(</span><span class="n">cubefile</span><span class="p">)[</span><span class="o">-</span><span class="mi">11</span><span class="p">:]</span><span class="o">==</span><span class="s1">&#39;lighttravel&#39;</span><span class="p">:</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="s1">&#39;&#39;</span> <span class="o">+</span> <span class="n">cubefile</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">3</span><span class="p">])</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="s1">&#39;&#39;</span> <span class="o">+</span> <span class="n">cubefile</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="s1">&#39;&#39;</span> <span class="o">+</span> <span class="n">cubefile</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="s1">&#39;&#39;</span> <span class="o">+</span> <span class="n">cubefile</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">cubefile</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fileobj</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">fileobj</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">fromstring</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">dtype</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">byteorder</span> <span class="o">==</span> <span class="s1">&#39;big&#39;</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">byteswap</span><span class="p">()</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">dim</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">dim</span><span class="p">),</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">),</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">)</span> <span class="c1"># convert to C-order from F-order (it has to be read in F-order first)</span>
+    <span class="k">return</span> <span class="n">data</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="fastread_21cmfast_cube"><a class="viewcode-back" href="../../astroutils.html#astroutils.cosmotile.fastread_21cmfast_cube">[docs]</a><span class="k">def</span> <span class="nf">fastread_21cmfast_cube</span><span class="p">(</span><span class="n">cubefile</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">NP</span><span class="o">.</span><span class="n">float32</span><span class="p">):</span>
+    
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Read 21cmfast cosmological cubes -- coeval or lightcone versions. This is </span>
+<span class="sd">    faster than read_21cmfast_cube() because it uses numpy.fromfile()</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    cubefile    [string] Filename including full path for reading in the input </span>
+<span class="sd">                21cmfast cosmological cube. 21cmfast cubes are stored in binary </span>
+<span class="sd">                files. </span>
+
+<span class="sd">    Output:</span>
+
+<span class="sd">    Numpy array containing the cosmological coeval/lightcone 21cmfast cube. It </span>
+<span class="sd">    is of shape nx x ny x nz where this is determined by cube dimensions parsed</span>
+<span class="sd">    from the cubefile string</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">basename</span><span class="p">(</span><span class="n">cubefile</span><span class="p">)[</span><span class="o">-</span><span class="mi">11</span><span class="p">:]</span><span class="o">==</span><span class="s1">&#39;lighttravel&#39;</span><span class="p">:</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="s1">&#39;&#39;</span> <span class="o">+</span> <span class="n">cubefile</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">3</span><span class="p">])</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="s1">&#39;&#39;</span> <span class="o">+</span> <span class="n">cubefile</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="s1">&#39;&#39;</span> <span class="o">+</span> <span class="n">cubefile</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="s1">&#39;&#39;</span> <span class="o">+</span> <span class="n">cubefile</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">fromfile</span><span class="p">(</span><span class="n">cubefile</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">count</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">byteorder</span> <span class="o">==</span> <span class="s1">&#39;big&#39;</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">byteswap</span><span class="p">()</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">dim</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">dim</span><span class="p">),</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">)</span> <span class="c1"># it has to be read in F-order</span>
+    <span class="k">return</span> <span class="n">data</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="cube_smooth_downsample_save"><a class="viewcode-back" href="../../astroutils.html#astroutils.cosmotile.cube_smooth_downsample_save">[docs]</a><span class="k">def</span> <span class="nf">cube_smooth_downsample_save</span><span class="p">(</span><span class="n">inpdict</span><span class="p">):</span>
+    
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Read, smooth, downsample and save a cube</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    inpdict     [dictionary] It should contain the following keys and values:</span>
+<span class="sd">                &#39;infile&#39;    [string] Filename containing the raw coeval cube in</span>
+<span class="sd">                            binary format</span>
+<span class="sd">                &#39;process_stage&#39;</span>
+<span class="sd">                            [string] Indicates whether the input file is &#39;raw&#39;</span>
+<span class="sd">                            (default) or &#39;processed&#39; </span>
+<span class="sd">                &#39;smooth_axes&#39;</span>
+<span class="sd">                            [int or list/array of ints] Axes to be smoothed as a</span>
+<span class="sd">                            list. </span>
+<span class="sd">                &#39;smooth_scale&#39;</span>
+<span class="sd">                            [int, float or list] Smoothing scales (in units of </span>
+<span class="sd">                            pixels). If it is a scalar, it will be applied to all</span>
+<span class="sd">                            axes specified in &#39;smooth_axes&#39; otherwise if given as</span>
+<span class="sd">                            a list, its length must match the number of elements </span>
+<span class="sd">                            in &#39;smooth_axes&#39;. If set to None, no smoothing is </span>
+<span class="sd">                            done.</span>
+<span class="sd">                &#39;downsample_axes&#39;</span>
+<span class="sd">                            [int or list/array of ints] Axes to be downsampled </span>
+<span class="sd">                            as a list. Value under &#39;indata&#39; must contain these </span>
+<span class="sd">                            axes</span>
+<span class="sd">                &#39;downsample_factor&#39;</span>
+<span class="sd">                            [int, float or list] Downsampling factor. If it is a </span>
+<span class="sd">                            scalar, it will be applied to all axes specified in </span>
+<span class="sd">                            &#39;downsample_axes&#39; otherwise if given as</span>
+<span class="sd">                            a list, its length must match the number of elements </span>
+<span class="sd">                            in &#39;downsample_axes&#39;. If set to None, no downsampling </span>
+<span class="sd">                            is done.</span>
+<span class="sd">                &#39;outfile&#39;   [string] Filename to save the smoothed and optionally </span>
+<span class="sd">                            downsampled cube in HDF5 format. No extension should </span>
+<span class="sd">                            be provided as it will be determined internally</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">process_stage</span> <span class="o">=</span> <span class="s1">&#39;raw&#39;</span>
+    <span class="k">if</span> <span class="s1">&#39;process_stage&#39;</span> <span class="ow">in</span> <span class="n">inpdict</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">inpdict</span><span class="p">[</span><span class="s1">&#39;process_stage&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;raw&#39;</span><span class="p">,</span> <span class="s1">&#39;processed&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Process stage of input data must be set to &quot;raw&quot; or &quot;processed&quot;&#39;</span><span class="p">)</span>
+        <span class="n">process_stage</span> <span class="o">=</span> <span class="n">inpdict</span><span class="p">[</span><span class="s1">&#39;process_stage&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            
+    <span class="k">if</span> <span class="n">process_stage</span> <span class="o">==</span> <span class="s1">&#39;raw&#39;</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">fastread_21cmfast_cube</span><span class="p">(</span><span class="n">inpdict</span><span class="p">[</span><span class="s1">&#39;infile&#39;</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">data</span><span class="p">,</span> <span class="n">hdrinfo</span> <span class="o">=</span> <span class="n">read_coeval_cube</span><span class="p">(</span><span class="n">inpdict</span><span class="p">[</span><span class="s1">&#39;infile&#39;</span><span class="p">])</span>
+    <span class="n">indata_dims</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">smooth_downsample_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;indata&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">,</span> <span class="s1">&#39;smooth_axes&#39;</span><span class="p">:</span> <span class="n">inpdict</span><span class="p">[</span><span class="s1">&#39;smooth_axes&#39;</span><span class="p">],</span> <span class="s1">&#39;downsample_axes&#39;</span><span class="p">:</span> <span class="n">inpdict</span><span class="p">[</span><span class="s1">&#39;downsample_axes&#39;</span><span class="p">],</span> <span class="s1">&#39;smooth_scale&#39;</span><span class="p">:</span> <span class="n">inpdict</span><span class="p">[</span><span class="s1">&#39;smooth_scale&#39;</span><span class="p">],</span> <span class="s1">&#39;downsample_factor&#39;</span><span class="p">:</span> <span class="n">inpdict</span><span class="p">[</span><span class="s1">&#39;downsample_factor&#39;</span><span class="p">]}</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">smooth_downsample_cube</span><span class="p">(</span><span class="n">smooth_downsample_dict</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">process_stage</span> <span class="o">==</span> <span class="s1">&#39;raw&#39;</span><span class="p">:</span>
+        <span class="n">inpres</span> <span class="o">=</span> <span class="n">inpdict</span><span class="p">[</span><span class="s1">&#39;inpres&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">inpres</span> <span class="o">=</span> <span class="n">hdrinfo</span><span class="p">[</span><span class="s1">&#39;pixres&#39;</span><span class="p">]</span>
+    <span class="n">outres</span> <span class="o">=</span> <span class="n">inpres</span> <span class="o">*</span> <span class="n">indata_dims</span> <span class="o">/</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">hdrinfo</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;pixres&#39;</span><span class="p">:</span> <span class="n">outres</span><span class="p">}</span>
+    <span class="n">write_coeval_cube</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">inpdict</span><span class="p">[</span><span class="s1">&#39;outfile&#39;</span><span class="p">],</span> <span class="n">hdrinfo</span><span class="o">=</span><span class="n">hdrinfo</span><span class="p">)</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="smooth_downsample_cube"><a class="viewcode-back" href="../../astroutils.html#astroutils.cosmotile.smooth_downsample_cube">[docs]</a><span class="k">def</span> <span class="nf">smooth_downsample_cube</span><span class="p">(</span><span class="n">inpdict</span><span class="p">):</span>
+    
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Smooth a cube and optionally downsample</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    inpdict     [dictionary] contains info for smoothing and downsampling. It has</span>
+<span class="sd">                the following keys and values:</span>
+<span class="sd">                &#39;indata&#39;    [numpy array] Coeval cube. Usually it is in 3D</span>
+<span class="sd">                &#39;smooth_axes&#39;</span>
+<span class="sd">                            [int or list/array of ints] Axes to be smoothed as a</span>
+<span class="sd">                            list. Value under &#39;indata&#39; must contain these axes</span>
+<span class="sd">                &#39;smooth_scale&#39;</span>
+<span class="sd">                            [int, float or list] Smoothing scales (in units of </span>
+<span class="sd">                            pixels). If it is a scalar, it will be applied to all</span>
+<span class="sd">                            axes specified in &#39;smooth_axes&#39; otherwise if given as</span>
+<span class="sd">                            a list, its length must match the number of elements </span>
+<span class="sd">                            in &#39;smooth_axes&#39;. If set to None, no smoothing is </span>
+<span class="sd">                            done.</span>
+<span class="sd">                &#39;downsample_axes&#39;</span>
+<span class="sd">                            [int or list/array of ints] Axes to be downsampled </span>
+<span class="sd">                            as a list. Value under &#39;indata&#39; must contain these </span>
+<span class="sd">                            axes</span>
+<span class="sd">                &#39;downsample_factor&#39;</span>
+<span class="sd">                            [int, float or list] Downsampling factor. If it is a </span>
+<span class="sd">                            scalar, it will be applied to all axes specified in </span>
+<span class="sd">                            &#39;downsample_axes&#39; otherwise if given as</span>
+<span class="sd">                            a list, its length must match the number of elements </span>
+<span class="sd">                            in &#39;downsample_axes&#39;. If set to None, no downsampling </span>
+<span class="sd">                            is done.</span>
+
+<span class="sd">    Output:</span>
+
+<span class="sd">    Numpy array containing the smoothed (and optionally downsampled) cube</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">inpdict</span><span class="p">[</span><span class="s1">&#39;indata&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Value in key &quot;indata&quot; must be a numpy array&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="s1">&#39;smooth_axes&#39;</span> <span class="ow">in</span> <span class="n">inpdict</span><span class="p">:</span>
+        <span class="n">smooth_axes</span> <span class="o">=</span> <span class="n">inpdict</span><span class="p">[</span><span class="s1">&#39;smooth_axes&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">smooth_axes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">smooth_axes</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                <span class="n">smooth_axes</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">smooth_axes</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">smooth_axes</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+                <span class="n">smooth_axes</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">smooth_axes</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Value under key &quot;smooth_axes&quot; must be an integer or numpy array&#39;</span><span class="p">)</span>
+    
+            <span class="n">smooth_axes</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">smooth_axes</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">NP</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">smooth_axes</span> <span class="o">&gt;=</span> <span class="n">data</span><span class="o">.</span><span class="n">ndim</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;One or more of smoothing axis not found in input array&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">smooth_axes</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">if</span> <span class="s1">&#39;downsample_axes&#39;</span> <span class="ow">in</span> <span class="n">inpdict</span><span class="p">:</span>
+        <span class="n">downsample_axes</span> <span class="o">=</span> <span class="n">inpdict</span><span class="p">[</span><span class="s1">&#39;downsample_axes&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">downsample_axes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">downsample_axes</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                <span class="n">downsample_axes</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">downsample_axes</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">downsample_axes</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+                <span class="n">downsample_axes</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">downsample_axes</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Value under key &quot;downsample_axes&quot; must be an integer or numpy array&#39;</span><span class="p">)</span>
+        
+            <span class="n">downsample_axes</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">downsample_axes</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">NP</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">downsample_axes</span> <span class="o">&gt;=</span> <span class="n">data</span><span class="o">.</span><span class="n">ndim</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;One or more of downsample axis not found in input array&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">downsample_axes</span> <span class="o">=</span> <span class="bp">None</span>
+    
+    <span class="k">if</span> <span class="s1">&#39;smooth_scale&#39;</span> <span class="ow">in</span> <span class="n">inpdict</span><span class="p">:</span>
+        <span class="n">smooth_scale</span> <span class="o">=</span> <span class="n">inpdict</span><span class="p">[</span><span class="s1">&#39;smooth_scale&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">smooth_scale</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">smooth_scale</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span><span class="nb">float</span><span class="p">,</span><span class="nb">list</span><span class="p">,</span><span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+                <span class="n">smooth_scale</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">smooth_scale</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Value under key &quot;smooth_scale&quot; is not of the correct type&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">smooth_axes</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">smooth_axes</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">ndim</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">smooth_scale</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">smooth_scale</span> <span class="o">=</span> <span class="n">smooth_scale</span> <span class="o">+</span> <span class="n">NP</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">smooth_axes</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">smooth_scale</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">smooth_axes</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Smooth scales and axes not compatible&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">smooth_scale</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">if</span> <span class="s1">&#39;downsample_factor&#39;</span> <span class="ow">in</span> <span class="n">inpdict</span><span class="p">:</span>
+        <span class="n">downsample_factor</span> <span class="o">=</span> <span class="n">inpdict</span><span class="p">[</span><span class="s1">&#39;downsample_factor&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">downsample_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">downsample_factor</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span><span class="nb">float</span><span class="p">,</span><span class="nb">list</span><span class="p">,</span><span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+                <span class="n">downsample_factor</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">downsample_factor</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Value under key &quot;downsample_factor&quot; is not of the correct type&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">downsample_axes</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">downsample_axes</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">ndim</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">downsample_factor</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">downsample_factor</span> <span class="o">=</span> <span class="n">downsample_factor</span> <span class="o">+</span> <span class="n">NP</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">downsample_axes</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">downsample_factor</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">downsample_axes</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Downsample factors and axes not compatible&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">downsample_factor</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">if</span> <span class="n">smooth_scale</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">smooth_scale</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="n">data</span><span class="o">.</span><span class="n">ndim</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">SP</span><span class="o">.</span><span class="n">ndimage</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">gaussian_filter</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">smooth_scale</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">si</span><span class="p">,</span> <span class="n">smax</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">smooth_axes</span><span class="p">):</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">SP</span><span class="o">.</span><span class="n">ndimage</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">gaussian_filter1d</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">smooth_scale</span><span class="p">[</span><span class="n">si</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="n">smax</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">downsample_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">di</span><span class="p">,</span> <span class="n">dsax</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">downsample_axes</span><span class="p">):</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">DSP</span><span class="o">.</span><span class="n">downsampler</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">downsample_factor</span><span class="p">[</span><span class="n">di</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="n">dsax</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">data</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="interp_coevalcubes_arg_splitter"><a class="viewcode-back" href="../../astroutils.html#astroutils.cosmotile.interp_coevalcubes_arg_splitter">[docs]</a><span class="k">def</span> <span class="nf">interp_coevalcubes_arg_splitter</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">interp_coevalcubes</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="interp_coevalcubes_inpdict"><a class="viewcode-back" href="../../astroutils.html#astroutils.cosmotile.interp_coevalcubes_inpdict">[docs]</a><span class="k">def</span> <span class="nf">interp_coevalcubes_inpdict</span><span class="p">(</span><span class="n">inpdict</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Interpolate between coeval cosmological cubes at specified parameter values</span>
+<span class="sd">    (usually redshift or frequency) to get the coeval cubes at required parameter</span>
+<span class="sd">    values. Wrapper for interp_coevalcubes()</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    inpdict     [dictionary] Dictionary of interpolation parameters for coeval</span>
+<span class="sd">                cosmological cubes. It consists of the following keys and </span>
+<span class="sd">                values:</span>
+<span class="sd">                invals      [list or numpy array] Locations using which the </span>
+<span class="sd">                            interpolation function is determined. It must be of </span>
+<span class="sd">                            size equal to the dimension of input array along </span>
+<span class="sd">                            which interpolation is to be determined specified </span>
+<span class="sd">                            by axis keyword input. It must be a list or numpy </span>
+<span class="sd">                            array. This key is mandatory</span>
+<span class="sd">                outvals     [list or numpy array] Locations at which </span>
+<span class="sd">                            interpolated array is to be determined along the </span>
+<span class="sd">                            specified axis. It must be a scalar, list or numpy </span>
+<span class="sd">                            array. If any of outloc is outside the range of </span>
+<span class="sd">                            inploc, the first and the last cubes from the </span>
+<span class="sd">                            inparray will be used as boundary values. This key </span>
+<span class="sd">                            is mandatory</span>
+<span class="sd">                inpcubes    [list of numpy arrays] List of cosmological coeval </span>
+<span class="sd">                            cubes in which each element has is a 3D numpy array </span>
+<span class="sd">                            with three dimensions of comoving distance. If set </span>
+<span class="sd">                            to None (default), cubefiles which contain the input </span>
+<span class="sd">                            cubes must be specified. If set to not None, length </span>
+<span class="sd">                            of the list must match the number of elements in </span>
+<span class="sd">                            invals. Only one of inpcubes or cubefiles can be set</span>
+<span class="sd">                cubefiles   [list of strings] Filenames for reading in the input </span>
+<span class="sd">                            coeval cubes. If set to None (default), inpcubes </span>
+<span class="sd">                            must be specified. If set to not None, it must </span>
+<span class="sd">                            contain a list of filenames and length of list must </span>
+<span class="sd">                            match the number of elements in invals. Only one of </span>
+<span class="sd">                            inpcubes or cubefiles can be set</span>
+<span class="sd">                cubedims    [integer, list, tuple or numpy array] Dimensions of </span>
+<span class="sd">                            the input cubes, will be used when input cubes are </span>
+<span class="sd">                            read from cubefiles especially when these are binary </span>
+<span class="sd">                            files such as from 21cmfast simulations. If </span>
+<span class="sd">                            specified as integer, it will be applied to all </span>
+<span class="sd">                            input cubes read from cubefiles, otherwise if </span>
+<span class="sd">                            specified as a list, tuple or numpy array, it must </span>
+<span class="sd">                            contain three elements one along each axis and this </span>
+<span class="sd">                            will be applied to all input cubes read from </span>
+<span class="sd">                            cubefiles. It is not applicable when input cubes are </span>
+<span class="sd">                            given directly in inpcubes</span>
+<span class="sd">                cube_source [string] Source of input cubes. At the moment, the </span>
+<span class="sd">                            accepted values are &#39;21cmfast&#39;</span>
+<span class="sd">                method      [string] Method of interpolation across coeval cubes </span>
+<span class="sd">                            along axis for which invals are provided. Usually it </span>
+<span class="sd">                            is the spectral, redshift or line of sight distance. </span>
+<span class="sd">                            Accepted values are &#39;linear&#39;, &#39;nearest&#39;, &#39;zero&#39;, </span>
+<span class="sd">                            &#39;slinear&#39;, &#39;quadratic&#39;, &#39;cubic&#39; where &#39;slinear&#39;, </span>
+<span class="sd">                            &#39;quadratic&#39; and &#39;cubic&#39; refer to a spline </span>
+<span class="sd">                            interpolation of first, second or third order or as </span>
+<span class="sd">                            an integer specifying the order of the spline </span>
+<span class="sd">                            interpolator to use. Default=&#39;linear&#39;.</span>
+<span class="sd">                outfiles    [list of strings] Filenames for writing interpolated </span>
+<span class="sd">                            coeval cubes. If set to None (default), interpolated </span>
+<span class="sd">                            coeval cubes are not written out. If set to not </span>
+<span class="sd">                            None, it must be a list of strings where each </span>
+<span class="sd">                            element in the list corresponds to filename of an </span>
+<span class="sd">                            interpolated coeval cubes. The number of elements in </span>
+<span class="sd">                            this  list must match the number of elements in </span>
+<span class="sd">                            outvals. </span>
+<span class="sd">                returncubes [boolean] If set to True (default), the interpolated </span>
+<span class="sd">                            coeval cubes are returned as a list of coeval cubes. </span>
+<span class="sd">                            Thus each element in the list is a coeval cube and </span>
+<span class="sd">                            corresponds to the value in outvals. If set to </span>
+<span class="sd">                            False, the interpolated coeval cubes are not </span>
+<span class="sd">                            returned.</span>
+
+<span class="sd">    Output:</span>
+
+<span class="sd">    If input returncubes is set to True, the interpolated coeval cubes are </span>
+<span class="sd">    returned as a list of coeval cubes. Thus each element in the list is a </span>
+<span class="sd">    coeval cube and corresponds to the value in outvals. </span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">inpdict</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;Input inpdict must be specified&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inpdict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input inpdict must be a dictionary&#39;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">val</span> <span class="ow">in</span> <span class="n">inpdict</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+        <span class="k">exec</span><span class="p">(</span><span class="n">key</span> <span class="o">+</span> <span class="s1">&#39;=val&#39;</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">invals</span><span class="p">,</span> <span class="n">outvals</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;Inputs invals and outvals must be specified&#39;</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">inpcubes</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="n">inpcubes</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">cubefiles</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="n">cubefiles</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">cubedims</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="n">cubedims</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">cube_source</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="n">cube_source</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">process_stage</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="n">process_stage</span> <span class="o">=</span> <span class="s1">&#39;raw&#39;</span>
+        
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">interp_method</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="n">interp_method</span> <span class="o">=</span> <span class="s1">&#39;linear&#39;</span>
+        
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">outfiles</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="n">outfiles</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">returncubes</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="n">returncubes</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">return</span> <span class="n">interp_coevalcubes</span><span class="p">(</span><span class="n">invals</span><span class="p">,</span> <span class="n">outvals</span><span class="p">,</span> <span class="n">inpcubes</span><span class="o">=</span><span class="n">inpcubes</span><span class="p">,</span> <span class="n">cubefiles</span><span class="o">=</span><span class="n">cubefiles</span><span class="p">,</span> <span class="n">cubedims</span><span class="o">=</span><span class="n">cubedims</span><span class="p">,</span> <span class="n">cube_source</span><span class="o">=</span><span class="n">cube_source</span><span class="p">,</span> <span class="n">process_stage</span><span class="o">=</span><span class="n">process_stage</span><span class="p">,</span> <span class="n">interp_method</span><span class="o">=</span><span class="n">interp_method</span><span class="p">,</span> <span class="n">outfiles</span><span class="o">=</span><span class="n">outfiles</span><span class="p">,</span> <span class="n">returncubes</span><span class="o">=</span><span class="n">returncubes</span><span class="p">)</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="interp_coevalcubes"><a class="viewcode-back" href="../../astroutils.html#astroutils.cosmotile.interp_coevalcubes">[docs]</a><span class="k">def</span> <span class="nf">interp_coevalcubes</span><span class="p">(</span><span class="n">invals</span><span class="p">,</span> <span class="n">outvals</span><span class="p">,</span> <span class="n">inpcubes</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">cubefiles</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                       <span class="n">cubedims</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">cube_source</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">process_stage</span><span class="o">=</span><span class="s1">&#39;raw&#39;</span><span class="p">,</span> 
+                       <span class="n">interp_method</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="n">outfiles</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">returncubes</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Interpolate between coeval cosmological cubes at specified parameter values</span>
+<span class="sd">    (usually redshift or frequency) to get the coeval cubes at required parameter</span>
+<span class="sd">    values</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    invals      [list or numpy array] Locations using which the interpolation </span>
+<span class="sd">                function is determined. It must be of size equal to the </span>
+<span class="sd">                dimension of input array along which interpolation is to be </span>
+<span class="sd">                determined specified by axis keyword input. It must be a list or </span>
+<span class="sd">                numpy array</span>
+
+<span class="sd">    outvals     [list or numpy array] Locations at which interpolated array is</span>
+<span class="sd">                to be determined along the specified axis. It must be a scalar, </span>
+<span class="sd">                list or numpy array. If any of outloc is outside the range of</span>
+<span class="sd">                inploc, the first and the last cubes from the inparray will</span>
+<span class="sd">                be used as boundary values</span>
+
+<span class="sd">    inpcubes    [list of numpy arrays] List of cosmological coeval cubes in </span>
+<span class="sd">                which each element has is a 3D numpy array with three dimensions </span>
+<span class="sd">                of comoving distance. If set to None (default), cubefiles which </span>
+<span class="sd">                contain the input cubes must be specified. If set to not None, </span>
+<span class="sd">                length of the list must match the number of elements in invals. </span>
+<span class="sd">                Only one of inpcubes or cubefiles can be set</span>
+
+<span class="sd">    cubefiles   [list of strings] Filenames for reading in the input coeval </span>
+<span class="sd">                cubes. If set to None (default), inpcubes must be specified. If</span>
+<span class="sd">                set to not None, it must contain a list of filenames and length </span>
+<span class="sd">                of list must match the number of elements in invals. Only one of </span>
+<span class="sd">                inpcubes or cubefiles can be set</span>
+
+<span class="sd">    cubedims    [integer, list, tuple or numpy array] Dimensions of the input</span>
+<span class="sd">                cubes, will be used when input cubes are read from cubefiles</span>
+<span class="sd">                especially when these are binary files such as from 21cmfast </span>
+<span class="sd">                simulations. If specified as integer, it will be applied to all</span>
+<span class="sd">                input cubes read from cubefiles, otherwise if specified as a </span>
+<span class="sd">                list, tuple or numpy array, it must contain three elements one</span>
+<span class="sd">                along each axis and this will be applied to all input cubes read</span>
+<span class="sd">                from cubefiles. It is not applicable when input cubes are given</span>
+<span class="sd">                directly in inpcubes</span>
+
+<span class="sd">    cube_source [string] Source of input cubes. At the moment, the accepted </span>
+<span class="sd">                values are &#39;21cmfast&#39;</span>
+
+<span class="sd">    process_stage</span>
+<span class="sd">                [string] Indicates whether the input file is &#39;raw&#39; (default) or </span>
+<span class="sd">                &#39;processed&#39; </span>
+
+<span class="sd">    method      [string] Method of interpolation across coeval cubes along axis</span>
+<span class="sd">                for which invals are provided. Usually it is the spectral, </span>
+<span class="sd">                redshift or line of sight distance. Accepted values are </span>
+<span class="sd">                &#39;linear&#39;, &#39;nearest&#39;, &#39;zero&#39;, &#39;slinear&#39;, &#39;quadratic&#39;, &#39;cubic&#39; </span>
+<span class="sd">                where &#39;slinear&#39;, &#39;quadratic&#39; and &#39;cubic&#39; refer to a spline </span>
+<span class="sd">                interpolation of first, second or third order or as an integer </span>
+<span class="sd">                specifying the order of the spline interpolator to use. </span>
+<span class="sd">                Default=&#39;linear&#39;.</span>
+
+<span class="sd">    outfiles    [list of strings] Filenames for writing interpolated coeval </span>
+<span class="sd">                cubes. If set to None (default), interpolated coeval cubes are </span>
+<span class="sd">                not written out. If set to not None, it must be a list of </span>
+<span class="sd">                strings where each element in the list corresponds to filename </span>
+<span class="sd">                of an interpolated coeval cubes. The number of elements in this </span>
+<span class="sd">                list must match the number of elements in outvals. </span>
+
+<span class="sd">    returncubes [boolean] If set to True (default), the interpolated coeval</span>
+<span class="sd">                cubes are returned as a list of coeval cubes. Thus each element</span>
+<span class="sd">                in the list is a coeval cube and corresponds to the value in</span>
+<span class="sd">                outvals. If set to False, the interpolated coeval cubes are not</span>
+<span class="sd">                returned.</span>
+
+<span class="sd">    Output:</span>
+
+<span class="sd">    If input returncubes is set to True, the interpolated coeval cubes are </span>
+<span class="sd">    returned as a list of coeval cubes. Thus each element in the list is a </span>
+<span class="sd">    coeval cube and corresponds to the value in outvals. </span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">invals</span><span class="p">,</span> <span class="n">outvals</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;Inputs invals and outvals must be specified&#39;</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">invals</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)),</span> <span class="s1">&#39;Input values of interpolated variable must be a scalar, list or numpy array&#39;</span>
+    <span class="n">invals</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">invals</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">outvals</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)),</span> <span class="s1">&#39;Output values of interpolated variable must be a scalar, list or numpy array&#39;</span>
+    <span class="n">outvals</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">outvals</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">outfiles</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">outfiles</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">outvals</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Number of outfiles must match the number of output interpolated values&#39;</span><span class="p">)</span>
+            <span class="n">outfiles</span> <span class="o">=</span> <span class="p">[</span><span class="n">outfiles</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">outfiles</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">outfiles</span><span class="p">)</span> <span class="o">!=</span> <span class="n">outvals</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Number of outfiles must match the number of output interpolated values&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;outfiles must be a string or list of strings&#39;</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">process_stage</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span> <span class="s1">&#39;Input process_stage must be a string&#39;</span>
+    <span class="k">if</span> <span class="n">process_stage</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;raw&#39;</span><span class="p">,</span> <span class="s1">&#39;processed&#39;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input process_stage must be set to &quot;raw&quot; or &quot;processed&quot;&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">cubefiles</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">inpcubes</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;One of the inputs cubefiles and inpcubes must be specified&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="p">(</span><span class="n">cubefiles</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">inpcubes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;One and only one of the inputs cubefiles and inpcubes must be specified&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">cubefiles</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cube_source</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input cube_source must be a string&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cube_source</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;21cmfast&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Processing of {0} cubes not supported currently&#39;</span><span class="p">,</span><span class="n">format</span><span class="p">(</span><span class="n">cube_source</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">cube_source</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;21cmfast&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">cubedims</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cubedims</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span><span class="nb">list</span><span class="p">,</span><span class="nb">tuple</span><span class="p">,</span><span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input cubedims must be specified as an integer, list, tuple or numpy array&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cubedims</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                    <span class="n">cubedims</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">cubedims</span><span class="p">,</span> <span class="n">cubedims</span><span class="p">,</span> <span class="n">cubedims</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">cubedims</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">cubedims</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">cubedims</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input cubedims must be a three element iterable&#39;</span><span class="p">)</span>
+            
+            <span class="k">print</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Reading in 21cmfast cubes...&#39;</span>
+            <span class="n">ts</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">process_stage</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;raw&#39;</span><span class="p">:</span>
+                <span class="n">inpcubes</span> <span class="o">=</span> <span class="p">[</span><span class="n">fastread_21cmfast_cube</span><span class="p">(</span><span class="n">cubefile</span><span class="p">)</span> <span class="k">for</span> <span class="n">cubefile</span> <span class="ow">in</span> <span class="n">cubefiles</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">inpcubes</span> <span class="o">=</span> <span class="p">[</span><span class="n">read_coeval_cube</span><span class="p">(</span><span class="n">cubefile</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">cubefile</span> <span class="ow">in</span> <span class="n">cubefiles</span><span class="p">]</span>
+
+            <span class="n">te</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+            <span class="k">print</span> <span class="s1">&#39;Reading 21cmfast cubes took {0:.1f} seconds&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">te</span><span class="o">-</span><span class="n">ts</span><span class="p">)</span>
+
+    <span class="n">interp_required</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="k">if</span> <span class="n">invals</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="n">outvals</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">NP</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">invals</span><span class="p">,</span> <span class="n">outvals</span><span class="p">):</span> <span class="c1"># no interpolation required, just return outcube=inpcubes</span>
+            <span class="n">outcubes</span> <span class="o">=</span> <span class="n">inpcubes</span>
+            <span class="n">interp_required</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="k">if</span> <span class="n">interp_required</span><span class="p">:</span>
+        <span class="n">inpcubes</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">inpcubes</span><span class="p">)</span>
+        <span class="k">print</span> <span class="s1">&#39;Interpolating 21cmfast cube at desired parameter value(s)...&#39;</span>
+        <span class="n">ts</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        
+        <span class="n">outcubes</span> <span class="o">=</span> <span class="n">OPS</span><span class="o">.</span><span class="n">interpolate_array</span><span class="p">(</span><span class="n">inpcubes</span><span class="p">,</span> <span class="n">invals</span><span class="p">,</span> <span class="n">outvals</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="n">interp_method</span><span class="p">)</span>
+
+        <span class="n">te</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="k">print</span> <span class="s1">&#39;Interpolating 21cmfast cube at desired parameter value(s) took {0:.1f} seconds&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">te</span><span class="o">-</span><span class="n">ts</span><span class="p">)</span>
+
+        <span class="n">outcubes</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">array_split</span><span class="p">(</span><span class="n">outcubes</span><span class="p">,</span> <span class="n">outcubes</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">outcubes</span> <span class="o">=</span> <span class="p">[</span><span class="n">NP</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">ocube</span><span class="p">)</span> <span class="k">for</span> <span class="n">ocube</span> <span class="ow">in</span> <span class="n">outcubes</span><span class="p">]</span>
+        <span class="c1"># outcubes = [NP.take(outcubes, i, axis=0) for i in range(outvals.size)]</span>
+
+    <span class="k">if</span> <span class="n">outfiles</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">fi</span><span class="p">,</span><span class="n">outfile</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">outfiles</span><span class="p">):</span>
+            <span class="n">write_coeval_cube</span><span class="p">(</span><span class="n">outcubes</span><span class="p">[</span><span class="n">fi</span><span class="p">],</span> <span class="n">outfile</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">returncubes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">outcubes</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="convert_coevalcube_to_sphere_surface_arg_splitter"><a class="viewcode-back" href="../../astroutils.html#astroutils.cosmotile.convert_coevalcube_to_sphere_surface_arg_splitter">[docs]</a><span class="k">def</span> <span class="nf">convert_coevalcube_to_sphere_surface_arg_splitter</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">convert_coevalcube_to_sphere_surface</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="convert_coevalcube_to_sphere_surface_inpdict"><a class="viewcode-back" href="../../astroutils.html#astroutils.cosmotile.convert_coevalcube_to_sphere_surface_inpdict">[docs]</a><span class="k">def</span> <span class="nf">convert_coevalcube_to_sphere_surface_inpdict</span><span class="p">(</span><span class="n">inpdict</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Covert a cosmological coeval cube at a given resolution (in physical comoving </span>
+<span class="sd">    distance) to HEALPIX coordinates of a specified nside covering the whole sky</span>
+<span class="sd">    or coordinates covering a spherical patch. Wrapper for </span>
+<span class="sd">    convert_coevalcube_to_sphere_surface() </span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    inpdict     [dictionary] Dictionary of parameters for tiling cosmological </span>
+<span class="sd">                coeval cubes to healpix lightcone cubes. It consists of the </span>
+<span class="sd">                following keys and values:</span>
+<span class="sd">                inpcube     [numpy array] Cosmological cube in three dimensions </span>
+<span class="sd">                            of comoving distance </span>
+<span class="sd">                inpres      [scalar or tuple or list or numpy array] Input cube </span>
+<span class="sd">                            pixel resolution (in comoving Mpc). If specified as </span>
+<span class="sd">                            scalar, it is applied to all three dimensions. </span>
+<span class="sd">                            Otherwise a three-element tuple, list or numpy array </span>
+<span class="sd">                            must be specified one for each dimension</span>
+<span class="sd">                nside       [scalar] HEALPIX nside parameter for output HEALPIX </span>
+<span class="sd">                            map. If set theta_phi will be ignored. </span>
+<span class="sd">                theta_phi   [numpy array] nsrc x 2 numpy array of theta and phi </span>
+<span class="sd">                            (in degrees) at which the lightcone surface should </span>
+<span class="sd">                            be evaluated. One and only one of nside or theta_phi </span>
+<span class="sd">                            must be specified.</span>
+<span class="sd">                freq        [scalar] Frequency (in Hz) to be processed. One and </span>
+<span class="sd">                            only one of inputs freq or z (see below) must be set </span>
+<span class="sd">                            in order to determined the redshift at which this </span>
+<span class="sd">                            processing is to take place. Redshift is necessary </span>
+<span class="sd">                            to determine the cosmology. If set to None, redshift </span>
+<span class="sd">                            must be specified (see below)</span>
+<span class="sd">                redshift    [scalar] Redshift to be processed. One and only one </span>
+<span class="sd">                            of inputs freq (see above) or redshift must be </span>
+<span class="sd">                            specified. If set to None, freq must be specified </span>
+<span class="sd">                            (see above)</span>
+<span class="sd">                method      [string] Method of interpolation from cube to </span>
+<span class="sd">                            spherical surface pixels. Accepted values are </span>
+<span class="sd">                            &#39;nearest_rounded&#39; (fastest but not accurate), and </span>
+<span class="sd">                            those accepted by the input keyword method in </span>
+<span class="sd">                            scipy.interpolate.interpn(), namely, &#39;linear&#39; and </span>
+<span class="sd">                            &#39;nearest&#39;, and &#39;splinef2d&#39;. &#39;splinef2d&#39; is only </span>
+<span class="sd">                            supported for 2-dimensional data. Default=&#39;linear&#39;</span>
+<span class="sd">                rest_freq   [scalar] Rest frame frequency (in Hz) to be used in </span>
+<span class="sd">                            determination of redshift. Will be used only if </span>
+<span class="sd">                            freq is set and redshift is set to None. </span>
+<span class="sd">                            Default=1420405751.77 Hz (the rest frame frequency </span>
+<span class="sd">                            of neutral Hydrogen spin flip transition)</span>
+<span class="sd">                cosmo       [instance of class astropy.cosmology] Instance of </span>
+<span class="sd">                            class astropy.cosmology to determine comoving </span>
+<span class="sd">                            distance for a given redshift. By default (None) it </span>
+<span class="sd">                            is set to WMAP9</span>
+
+<span class="sd">    Output:</span>
+
+<span class="sd">    Stacked lightcone surfaces covering spherical patch (whole sky using HEALPIX</span>
+<span class="sd">    if nside is specified) or just at specified theta and phi coordinates. It is </span>
+<span class="sd">    of shape npix</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">inpdict</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;Input inpdict must be provided&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inpdict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input inpdict must be a dictionary&#39;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">val</span> <span class="ow">in</span> <span class="n">inpdict</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+        <span class="k">exec</span><span class="p">(</span><span class="n">key</span> <span class="o">+</span> <span class="s1">&#39;=val&#39;</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">inpcube</span><span class="p">,</span> <span class="n">inpres</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;Inputs inpcube and inpres must be specified in inpdict&#39;</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">nside</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="n">nside</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">theta_phi</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="n">theta_phi</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">freq</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="n">freq</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">redshift</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="n">redshift</span> <span class="o">=</span> <span class="bp">None</span>
+    
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">cosmo</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="n">cosmo</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">method</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;linear&#39;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">rest_freq</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="n">rest_freq</span> <span class="o">=</span> <span class="n">CNST</span><span class="o">.</span><span class="n">rest_freq_HI</span>
+
+    <span class="k">return</span> <span class="n">convert_coevalcube_to_sphere_surface</span><span class="p">(</span><span class="n">inpcube</span><span class="p">,</span> <span class="n">inpres</span><span class="p">,</span> <span class="n">nside</span><span class="o">=</span><span class="n">nside</span><span class="p">,</span> <span class="n">theta_phi</span><span class="o">=</span><span class="n">theta_phi</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">redshift</span><span class="o">=</span><span class="n">redshift</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">rest_freq</span><span class="o">=</span><span class="n">rest_freq</span><span class="p">,</span> <span class="n">cosmo</span><span class="o">=</span><span class="n">cosmo</span><span class="p">)</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="convert_coevalcube_to_sphere_surface"><a class="viewcode-back" href="../../astroutils.html#astroutils.cosmotile.convert_coevalcube_to_sphere_surface">[docs]</a><span class="k">def</span> <span class="nf">convert_coevalcube_to_sphere_surface</span><span class="p">(</span><span class="n">inpcube</span><span class="p">,</span> <span class="n">inpres</span><span class="p">,</span> <span class="n">nside</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> 
+                                         <span class="n">theta_phi</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> 
+                                         <span class="n">redshift</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span>
+                                         <span class="n">rest_freq</span><span class="o">=</span><span class="n">CNST</span><span class="o">.</span><span class="n">rest_freq_HI</span><span class="p">,</span> <span class="n">cosmo</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Covert a cosmological coeval cube at a given resolution (in physical comoving </span>
+<span class="sd">    distance) to specified coordinates on sphereical surface or whole sphere in </span>
+<span class="sd">    HEALPIX coordinates </span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    inpcube     [numpy array] Cosmological cube in three dimensions of comoving</span>
+<span class="sd">                distance </span>
+
+<span class="sd">    inpres      [scalar or tuple or list or numpy array] Input cube pixel </span>
+<span class="sd">                resolution (in comoving Mpc). If specified as scalar, it is </span>
+<span class="sd">                applied to all three dimensions. Otherwise a three-element tuple, </span>
+<span class="sd">                list or numpy array must be specified one for each dimension</span>
+
+<span class="sd">    nside       [scalar] HEALPIX nside parameter for output HEALPIX map. If set</span>
+<span class="sd">                theta_phi will be ignored. </span>
+
+<span class="sd">    theta_phi   [numpy array] nsrc x 2 numpy array of theta and phi (in degrees)</span>
+<span class="sd">                at which the lightcone surface should be evaluated. One and only</span>
+<span class="sd">                one of nside or theta_phi must be specified.</span>
+
+<span class="sd">    freq        [scalar] Frequency (in Hz) to be processed. One and only one of</span>
+<span class="sd">                inputs freq or z (see below) must be set in order to determined</span>
+<span class="sd">                the redshift at which this processing is to take place. Redshift</span>
+<span class="sd">                is necessary to determine the cosmology. If set to None, </span>
+<span class="sd">                redshift must be specified (see below)</span>
+
+<span class="sd">    redshift    [scalar] Redshift to be processed. One and only one of inputs</span>
+<span class="sd">                freq (see above) or redshift must be specified. If set to None, </span>
+<span class="sd">                freq must be specified (see above)</span>
+
+<span class="sd">    method      [string] Method of interpolation from cube to sphere pixels. </span>
+<span class="sd">                Accepted values are &#39;nearest_rounded&#39; (fastest but not </span>
+<span class="sd">                accurate), and those accepted by the input keyword method in </span>
+<span class="sd">                scipy.interpolate.interpn(), namely, &#39;linear&#39; and &#39;nearest&#39;, and </span>
+<span class="sd">                &#39;splinef2d&#39;. &#39;splinef2d&#39; is only supported for 2-dimensional </span>
+<span class="sd">                data. Default=&#39;linear&#39;</span>
+
+<span class="sd">    rest_freq   [scalar] Rest frame frequency (in Hz) to be used in </span>
+<span class="sd">                determination of redshift. Will be used only if freq is set and </span>
+<span class="sd">                redshift is set to None. Default=1420405751.77 Hz (the rest </span>
+<span class="sd">                frame frequency of neutral Hydrogen spin flip transition)</span>
+
+<span class="sd">    cosmo       [instance of class astropy.cosmology] Instance of class </span>
+<span class="sd">                astropy.cosmology to determine comoving distance for a given</span>
+<span class="sd">                redshift. By default (None) it is set to WMAP9</span>
+
+<span class="sd">    Output:</span>
+
+<span class="sd">    lightcone surface of specified patch on sphere or whole sphere in HEALPIX</span>
+<span class="sd">    coordinates. It is of shape nsrc</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">inpcube</span><span class="p">,</span> <span class="n">inpres</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;Inputs inpcube and inpres must be specified&#39;</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inpcube</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">),</span> <span class="s1">&#39;Input cube must be a numpy array&#39;</span>
+    <span class="k">assert</span> <span class="n">inpcube</span><span class="o">.</span><span class="n">ndim</span><span class="o">==</span><span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;Input cube must be a 3D numpy array&#39;</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">nside</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">theta_phi</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;One of the inputs nside or theta_phi must not be None&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="p">(</span><span class="n">nside</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">theta_phi</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;One and only one of the inputs nside or theta_phi must not be None&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">nside</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">nside</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span> <span class="s1">&#39;Parameter nside must be a scalar&#39;</span>
+        <span class="k">assert</span> <span class="n">HP</span><span class="o">.</span><span class="n">isnsideok</span><span class="p">(</span><span class="n">nside</span><span class="p">),</span> <span class="s1">&#39;Invalid nside parameter specified&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">theta_phi</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">),</span> <span class="s1">&#39;Input theta_phi must be a numpy array&#39;</span>
+        <span class="k">assert</span> <span class="n">theta_phi</span><span class="o">.</span><span class="n">ndim</span><span class="o">==</span><span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;Input theta_phi must be a 2D numpy array&#39;</span>
+        <span class="k">assert</span> <span class="n">theta_phi</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;Input theta_phi must be a nsrc x 2 array&#39;</span>
+
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span> <span class="s1">&#39;Method of interpolation must be a string&#39;</span>
+
+    <span class="k">if</span> <span class="n">cosmo</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">cosmo</span> <span class="o">=</span> <span class="n">cosmology</span><span class="o">.</span><span class="n">WMAP9</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cosmo</span><span class="p">,</span> <span class="n">cosmology</span><span class="o">.</span><span class="n">FLRW</span><span class="p">),</span> <span class="s1">&#39;Input cosmology must be an instance of class astropy.cosmology.FLRW&#39;</span> 
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inpres</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span><span class="nb">float</span><span class="p">)):</span>
+        <span class="n">inpres</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="o">+</span> <span class="n">inpres</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inpres</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span><span class="nb">list</span><span class="p">,</span><span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+        <span class="n">inpres</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">inpres</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="n">inpres</span><span class="o">.</span><span class="n">size</span><span class="o">==</span><span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;Input resolution must be a 3-element tuple, list or array&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input resolution must be a scalar, list or numpy array&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">freq</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">redshift</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;One and only one of redshift or freq must be specified&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="p">(</span><span class="n">freq</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">redshift</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;One and only one of redshift or freq must be specified&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">freq</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span><span class="nb">float</span><span class="p">)),</span> <span class="s1">&#39;Input freq must be a scalar&#39;</span>
+
+            <span class="n">redshift</span> <span class="o">=</span> <span class="n">rest_freq</span> <span class="o">/</span> <span class="n">freq</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">redshift</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span><span class="nb">float</span><span class="p">)),</span> <span class="s1">&#39;Redshift must be a scalar&#39;</span>
+        <span class="k">if</span> <span class="n">redshift</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Redshift must be positive&#39;</span><span class="p">)</span>
+
+    <span class="n">comoving_distance</span> <span class="o">=</span> <span class="n">cosmo</span><span class="o">.</span><span class="n">comoving_distance</span><span class="p">(</span><span class="n">redshift</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+    <span class="k">if</span> <span class="n">nside</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">HP</span><span class="o">.</span><span class="n">pix2vec</span><span class="p">(</span><span class="n">nside</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">HP</span><span class="o">.</span><span class="n">nside2npix</span><span class="p">(</span><span class="n">nside</span><span class="p">)))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">theta_phi</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">theta_phi</span><span class="p">)</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta_phi</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta_phi</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="n">NP</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta_phi</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta_phi</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="n">NP</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta_phi</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">xmod</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">x</span><span class="o">*</span><span class="n">comoving_distance</span><span class="p">,</span> <span class="n">inpres</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">inpcube</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">ymod</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">y</span><span class="o">*</span><span class="n">comoving_distance</span><span class="p">,</span> <span class="n">inpres</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">inpcube</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">zmod</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">z</span><span class="o">*</span><span class="n">comoving_distance</span><span class="p">,</span> <span class="n">inpres</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">inpcube</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+
+    <span class="k">print</span> <span class="s1">&#39;Interpolating to spherical surface...&#39;</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;nearest_rounded&#39;</span><span class="p">:</span>
+        <span class="n">xi</span> <span class="o">=</span> <span class="n">xmod</span> <span class="o">/</span> <span class="n">inpres</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">yi</span> <span class="o">=</span> <span class="n">ymod</span> <span class="o">/</span> <span class="n">inpres</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">zi</span> <span class="o">=</span> <span class="n">zmod</span> <span class="o">/</span> <span class="n">inpres</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">patch</span> <span class="o">=</span> <span class="n">inpcube</span><span class="p">[</span><span class="n">xi</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">),</span> <span class="n">yi</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">),</span> <span class="n">zi</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">xyz_mod</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">xmod</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">ymod</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">zmod</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+        <span class="n">patch</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">interpn</span><span class="p">((</span><span class="n">inpres</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">NP</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">inpcube</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">inpres</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">NP</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">inpcube</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">inpres</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">NP</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">inpcube</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">])),</span> <span class="n">inpcube</span><span class="p">,</span> <span class="n">xyz_mod</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">bounds_error</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s1">&#39;Interpolated to spherical surface&#39;</span>
+
+    <span class="k">return</span> <span class="n">patch</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="convert_coevalcubes_to_sphere_surfaces"><a class="viewcode-back" href="../../astroutils.html#astroutils.cosmotile.convert_coevalcubes_to_sphere_surfaces">[docs]</a><span class="k">def</span> <span class="nf">convert_coevalcubes_to_sphere_surfaces</span><span class="p">(</span><span class="n">inpcubes</span><span class="p">,</span> <span class="n">inpres</span><span class="p">,</span> <span class="n">nside</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                                           <span class="n">theta_phi</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">redshifts</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                                           <span class="n">freqs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">los_axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span>
+                                           <span class="n">rest_freq</span><span class="o">=</span><span class="n">CNST</span><span class="o">.</span><span class="n">rest_freq_HI</span><span class="p">,</span> <span class="n">cosmo</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                                           <span class="n">parallel</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">nproc</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Convert array of comoving coeval cosmological cubes at a given resolution </span>
+<span class="sd">    (in physical comoving distance) to HEALPIX coordinates of a specified nside </span>
+<span class="sd">    covering the whole sky or just a spherical patch using given theta and phi </span>
+<span class="sd">    coordinates with output as stacked lightcone surfaces</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    inpcubes    [numpy array] Array of cosmological coeval cubes in which each </span>
+<span class="sd">                element has is a 3D numpy array with three dimensions of comoving </span>
+<span class="sd">                distance </span>
+
+<span class="sd">    inpres      [scalar or tuple or list or numpy array] Input cube pixel </span>
+<span class="sd">                resolution (in comoving Mpc). If specified as scalar, it is </span>
+<span class="sd">                applied to all three dimensions. Otherwise a three-element tuple, </span>
+<span class="sd">                list or numpy array must be specified one for each dimension</span>
+
+<span class="sd">    nside       [scalar] HEALPIX nside parameter for output HEALPIX map. If set </span>
+<span class="sd">                theta_phi will be ignored. </span>
+
+<span class="sd">    theta_phi   [numpy array] nsrc x 2 numpy array of theta and phi (in degrees) </span>
+<span class="sd">                at which the lightcone surface should be evaluated. One and only </span>
+<span class="sd">                one of nside or theta_phi must be specified.</span>
+
+<span class="sd">    freqs       [scalar] Frequency (in Hz) to be processed. One and only one of</span>
+<span class="sd">                inputs freq or z (see below) must be set in order to determined</span>
+<span class="sd">                the redshift at which this processing is to take place. Redshift</span>
+<span class="sd">                is necessary to determine the cosmology. If set to None, </span>
+<span class="sd">                redshifts must be specified (see below)</span>
+
+<span class="sd">    redshifts   [scalar] Redshift to be processed. One and only one of inputs</span>
+<span class="sd">                freqs (see above) or redshifts must be specified. If set to </span>
+<span class="sd">                None, freqs must be specified (see above)</span>
+
+<span class="sd">    los_axis    [integer] Denotes the axis that is along the line of sight.</span>
+<span class="sd">                Default=-1 (last axis)</span>
+
+<span class="sd">    method      [string] Method of interpolation from cube to spherical surface </span>
+<span class="sd">                pixels. Accepted values are &#39;nearest_rounded&#39; (fastest but not </span>
+<span class="sd">                accurate), and those accepted by the input keyword method in </span>
+<span class="sd">                scipy.interpolate.interpn(), namely, &#39;linear&#39; and &#39;nearest&#39;, and </span>
+<span class="sd">                &#39;splinef2d&#39;. &#39;splinef2d&#39; is only supported for 2-dimensional </span>
+<span class="sd">                data. Default=&#39;linear&#39;</span>
+
+<span class="sd">    rest_freq   [scalar] Rest frame frequency (in Hz) to be used in </span>
+<span class="sd">                determination of redshift. Will be used only if freq is set and </span>
+<span class="sd">                redshifts is set to None. Default=1420405751.77 Hz (the rest </span>
+<span class="sd">                frame frequency of neutral Hydrogen spin flip transition)</span>
+
+<span class="sd">    cosmo       [instance of class astropy.cosmology] Instance of class </span>
+<span class="sd">                astropy.cosmology to determine comoving distance for a given</span>
+<span class="sd">                redshift. When set to None (default) it is set to WMAP9. </span>
+
+<span class="sd">    parallel    [boolean] If set to False (default), do serial processing. If</span>
+<span class="sd">                set to True, do parallel processing with number of threads as</span>
+<span class="sd">                specified in nproc</span>
+
+<span class="sd">    nproc       [scalar] Number of parallel threads to use. Default=None means</span>
+<span class="sd">                it will be set to the number of cores in the system.</span>
+
+<span class="sd">    Output:</span>
+
+<span class="sd">    Stacked spherical surfaces either covering whole sky (using nside and </span>
+<span class="sd">    HEALPIX) or a patch at specified theta and phi for each of the redshifts or </span>
+<span class="sd">    frequencies. It will be a numpy array of shape nchan x npix</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">inpcubes</span><span class="p">,</span> <span class="n">inpres</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;Inputs inpcubes and inpres must be specified&#39;</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inpcubes</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">),</span> <span class="s1">&#39;Input cube must be a numpy array&#39;</span>
+    <span class="k">assert</span> <span class="n">inpcubes</span><span class="o">.</span><span class="n">ndim</span><span class="o">==</span><span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;Input cubes must be specified as a 4D numpy array (3 spatial and 1 spectral/redshift)&#39;</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">nside</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">theta_phi</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;One of the inputs nside or theta_phi must not be None&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="p">(</span><span class="n">nside</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">theta_phi</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;One and only one of the inputs nside or theta_phi must not be None&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">nside</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">nside</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span> <span class="s1">&#39;Parameter nside must be a scalar&#39;</span>
+        <span class="k">assert</span> <span class="n">HP</span><span class="o">.</span><span class="n">isnsideok</span><span class="p">(</span><span class="n">nside</span><span class="p">),</span> <span class="s1">&#39;Invalid nside parameter specified&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">theta_phi</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">),</span> <span class="s1">&#39;Input theta_phi must be a numpy array&#39;</span>
+        <span class="k">assert</span> <span class="n">theta_phi</span><span class="o">.</span><span class="n">ndim</span><span class="o">==</span><span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;Input theta_phi must be a 2D numpy array&#39;</span>
+        <span class="k">assert</span> <span class="n">theta_phi</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;Input theta_phi must be a nsrc x 2 array&#39;</span>
+
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span> <span class="s1">&#39;Method of interpolation must be a string&#39;</span>
+
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">los_axis</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span> <span class="s1">&#39;Input los_axis must be an integer&#39;</span>
+    <span class="k">assert</span> <span class="n">inpcubes</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="n">los_axis</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;Input los_axis exceeds the dimensions of the input cubes&#39;</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">freqs</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">redshifts</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;One and only one of redshifts or freqs must be specified&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="p">(</span><span class="n">freqs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">redshifts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;One and only one of redshifts or freqs must be specified&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">freqs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">freqs</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span><span class="nb">float</span><span class="p">,</span><span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)),</span> <span class="s1">&#39;Input freqs must be a scalar or a numpy array&#39;</span>
+            <span class="n">freqs</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">freqs</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">redshifts</span> <span class="o">=</span> <span class="n">rest_freq</span> <span class="o">/</span> <span class="n">freqs</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="n">list_redshifts</span> <span class="o">=</span> <span class="p">[</span><span class="bp">None</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">redshifts</span><span class="o">.</span><span class="n">size</span><span class="p">)]</span>
+            <span class="n">list_freqs</span> <span class="o">=</span> <span class="n">freqs</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">redshifts</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">redshifts</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">list_redshifts</span> <span class="o">=</span> <span class="n">redshifts</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="n">freqs</span> <span class="o">=</span> <span class="n">rest_freq</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">redshifts</span><span class="p">)</span>
+            <span class="n">list_freqs</span> <span class="o">=</span> <span class="p">[</span><span class="bp">None</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">freqs</span><span class="o">.</span><span class="n">size</span><span class="p">)]</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">redshifts</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span><span class="nb">float</span><span class="p">,</span><span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)),</span> <span class="s1">&#39;Redshifts must be a scalar or a numpy array&#39;</span>
+        <span class="k">if</span> <span class="n">NP</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">redshifts</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Redshift must be positive&#39;</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="n">inpcubes</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span><span class="o">==</span><span class="n">redshift</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="s1">&#39;Dimension along los_axis of inpcubes is mismatched with number of redshifts&#39;</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inpres</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span><span class="nb">float</span><span class="p">)):</span>
+        <span class="n">inpres</span> <span class="o">=</span> <span class="n">inpres</span> <span class="o">+</span> <span class="n">NP</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">redshifts</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="n">inpres</span> <span class="o">=</span> <span class="n">inpres</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inpres</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">inpres</span><span class="p">)</span><span class="o">==</span><span class="n">redshifts</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="s1">&#39;Number of elements in inpres must match the number of redshifts&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input resolution must be a scalar or a list&#39;</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parallel</span><span class="p">,</span> <span class="nb">bool</span><span class="p">),</span> <span class="s1">&#39;Input parallel must be a boolean&#39;</span>
+    
+    <span class="n">sphsurfaces</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">parallel</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">list_inpcubes</span> <span class="o">=</span> <span class="p">[</span><span class="n">NP</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="n">inpcubes</span><span class="p">,</span> <span class="n">ind</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">los_axis</span><span class="p">)</span> <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">redshifts</span><span class="o">.</span><span class="n">size</span><span class="p">)]</span>
+            <span class="n">list_nsides</span> <span class="o">=</span> <span class="p">[</span><span class="n">nside</span><span class="p">]</span> <span class="o">*</span> <span class="n">redshifts</span><span class="o">.</span><span class="n">size</span>
+            <span class="n">list_theta_phi</span> <span class="o">=</span> <span class="p">[</span><span class="n">theta_phi</span><span class="p">]</span> <span class="o">*</span> <span class="n">redshifts</span><span class="o">.</span><span class="n">size</span>
+            <span class="n">list_methods</span> <span class="o">=</span> <span class="p">[</span><span class="n">method</span><span class="p">]</span> <span class="o">*</span> <span class="n">redshifts</span><span class="o">.</span><span class="n">size</span>
+            <span class="n">list_rest_freqs</span> <span class="o">=</span> <span class="p">[</span><span class="n">rest_freq</span><span class="p">]</span> <span class="o">*</span> <span class="n">redshifts</span><span class="o">.</span><span class="n">size</span>
+            <span class="n">list_cosmo</span> <span class="o">=</span> <span class="p">[</span><span class="n">cosmo</span><span class="p">]</span> <span class="o">*</span> <span class="n">redshifts</span><span class="o">.</span><span class="n">size</span>
+        
+            <span class="k">if</span> <span class="n">nproc</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">nproc</span> <span class="o">=</span> <span class="n">MP</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">nproc</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span> <span class="s1">&#39;Number of parallel processes must be an integer&#39;</span>
+            <span class="n">nproc</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="n">nproc</span><span class="p">,</span> <span class="n">redshifts</span><span class="o">.</span><span class="n">size</span><span class="p">])</span>
+            <span class="n">pool</span> <span class="o">=</span> <span class="n">MP</span><span class="o">.</span><span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="n">nproc</span><span class="p">)</span>
+            <span class="n">sphsurfaces</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">convert_coevalcube_to_sphere_surface_arg_splitter</span><span class="p">,</span> <span class="n">IT</span><span class="o">.</span><span class="n">izip</span><span class="p">(</span><span class="n">list_inpcubes</span><span class="p">,</span> <span class="n">inpres</span><span class="p">,</span> <span class="n">list_nsides</span><span class="p">,</span> <span class="n">list_theta_phi</span><span class="p">,</span> <span class="n">list_freqs</span><span class="p">,</span> <span class="n">list_redshifts</span><span class="p">,</span> <span class="n">list_methods</span><span class="p">,</span> <span class="n">list_rest_freqs</span><span class="p">,</span> <span class="n">list_cosmo</span><span class="p">))</span>
+            <span class="n">pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="n">pool</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">MemoryError</span><span class="p">:</span>
+            <span class="n">parallel</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">del</span> <span class="n">list_inpcubes</span>
+            <span class="k">del</span> <span class="n">pool</span>
+            <span class="n">sphsurfaces</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Memory requirements too high. Downgrading to serial processing.&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">parallel</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">redshifts</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+            <span class="n">sphsurfaces</span> <span class="o">+=</span> <span class="p">[</span><span class="n">convert_coevalcube_to_sphere_surface</span><span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="n">inpcubes</span><span class="p">,</span> <span class="n">ind</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">los_axis</span><span class="p">),</span> <span class="n">inpres</span><span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="n">nside</span><span class="o">=</span><span class="n">nside</span><span class="p">,</span> <span class="n">theta_phi</span><span class="o">=</span><span class="n">theta_phi</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">list_freqs</span><span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="n">redshift</span><span class="o">=</span><span class="n">list_redshifts</span><span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">rest_freq</span><span class="o">=</span><span class="n">rest_freq</span><span class="p">,</span> <span class="n">cosmo</span><span class="o">=</span><span class="n">cosmo</span><span class="p">)]</span>
+
+    <span class="n">sphsurfaces</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">sphsurfaces</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sphsurfaces</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="coeval_interp_cube_to_sphere_surface_wrapper_arg_splitter"><a class="viewcode-back" href="../../astroutils.html#astroutils.cosmotile.coeval_interp_cube_to_sphere_surface_wrapper_arg_splitter">[docs]</a><span class="k">def</span> <span class="nf">coeval_interp_cube_to_sphere_surface_wrapper_arg_splitter</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">coeval_interp_cube_to_sphere_surface_wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="coeval_interp_cube_to_sphere_surface_wrapper"><a class="viewcode-back" href="../../astroutils.html#astroutils.cosmotile.coeval_interp_cube_to_sphere_surface_wrapper">[docs]</a><span class="k">def</span> <span class="nf">coeval_interp_cube_to_sphere_surface_wrapper</span><span class="p">(</span><span class="n">interpdict</span><span class="p">,</span> <span class="n">tiledict</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Interpolate cosmological coeval cubes and transform to produce healpix </span>
+<span class="sd">    lightcone cube</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    interpdict  [dictionary] See docstring of interp_coevalcubes_inpdict()</span>
+<span class="sd">                input, namely, inpdict</span>
+
+<span class="sd">    tiledict    [dictionary] See docstring of </span>
+<span class="sd">                convert_coevalcube_to_sphere_surface_inpdict() input, namely, </span>
+<span class="sd">                inpdict</span>
+
+<span class="sd">    Output:</span>
+
+<span class="sd">    Stacked lightcone surfaces of specified sphereical patch (whole sphere if </span>
+<span class="sd">    nside parameter given). It is of shape npix</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">interpdict</span><span class="p">,</span> <span class="n">tiledict</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;Inputs interpdict and tiledict must be specified&#39;</span><span class="p">)</span>
+
+    <span class="n">interpcube</span> <span class="o">=</span> <span class="n">interp_coevalcubes_inpdict</span><span class="p">(</span><span class="n">interpdict</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># List should contain only one element</span>
+    <span class="n">tiledict</span><span class="p">[</span><span class="s1">&#39;inpcube&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">interpcube</span>
+    <span class="k">return</span> <span class="n">convert_coevalcube_to_sphere_surface_inpdict</span><span class="p">(</span><span class="n">tiledict</span><span class="p">)</span></div>
+    
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="write_lightcone_surfaces"><a class="viewcode-back" href="../../astroutils.html#astroutils.cosmotile.write_lightcone_surfaces">[docs]</a><span class="k">def</span> <span class="nf">write_lightcone_surfaces</span><span class="p">(</span><span class="n">light_cone_surfaces</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">outfile</span><span class="p">,</span> <span class="n">freqs</span><span class="p">,</span>
+                             <span class="n">cosmo</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">is_healpix</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Write light cone surfaces to HDF5 file</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    light_cone_surfaces</span>
+<span class="sd">                [numpy array] Light cone surfaces. Must be of shape nchan x npix</span>
+
+<span class="sd">    units       [string] Units of the values in light_cone_surfaces </span>
+
+<span class="sd">    outfile     [string] Filename to write the output to</span>
+
+<span class="sd">    freqs       [numpy array] The frequencies corresponding to the surfaces. </span>
+<span class="sd">                It is of size nchan and units in &#39;Hz&#39;</span>
+
+<span class="sd">    cosmo       [dictionary or instance of class astropy.cosmology.FLRW] </span>
+<span class="sd">                Cosmological parameters. If specified as dictionary, it must </span>
+<span class="sd">                contain the following keys and values (no defaults):</span>
+<span class="sd">                &#39;Om0&#39;   [float] Matter density parameter at z=0</span>
+<span class="sd">                &#39;Ode0&#39;  [float] Dark energy density parameter at z=0</span>
+<span class="sd">                &#39;Ob0&#39;   [float] Baryon energy density parameter at z=0</span>
+<span class="sd">                &#39;h&#39;     [float] Hubble constant factor in units of km/s/Mpc</span>
+<span class="sd">                &#39;w0&#39;    [float] Dark energy equation of state parameter at z=0</span>
+
+<span class="sd">    is_healpix  [boolean] The axis=1 of light_cone_surfaces represents a</span>
+<span class="sd">                HEALPIX surface if set to True. If False (default), it may not </span>
+<span class="sd">                denote a HEALPIX surface. </span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">light_cone_surfaces</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">outfile</span><span class="p">,</span> <span class="n">freqs</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;Inputs light_cone_surfaces, units, outfile, freqs must be provided&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">light_cone_surfaces</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input light_cone_surfaces must be a numpy array&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">light_cone_surfaces</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input light_cone_surfaces must be a two-dimensional numpy array&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">units</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input units must be specified&#39;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Output file must be specified as a string&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">freqs</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input freqs must be a numpy array&#39;</span><span class="p">)</span>
+    <span class="n">freqs</span> <span class="o">=</span> <span class="n">freqs</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">freqs</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">light_cone_surfaces</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Size of input freqs must be same as that in light_cone_surfaces&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">NP</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">freqs</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input freqs must be negative&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">is_healpix</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input is_healpix must be a boolean&#39;</span><span class="p">)</span>
+
+    <span class="n">cosmoinfo</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Om0&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span> <span class="s1">&#39;Ode0&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span> <span class="s1">&#39;h&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span> <span class="s1">&#39;Ob0&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span> <span class="s1">&#39;w0&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">}</span>
+    <span class="n">req_keys</span> <span class="o">=</span> <span class="n">cosmoinfo</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">cosmo</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">cosmo</span> <span class="o">=</span> <span class="n">cosmology</span><span class="o">.</span><span class="n">WMAP9</span>
+        <span class="n">cosmoinfo</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Om0&#39;</span><span class="p">:</span> <span class="n">cosmo</span><span class="o">.</span><span class="n">Om0</span><span class="p">,</span> <span class="s1">&#39;Ode0&#39;</span><span class="p">:</span> <span class="n">cosmo</span><span class="o">.</span><span class="n">Ode0</span><span class="p">,</span> <span class="s1">&#39;h&#39;</span><span class="p">:</span> <span class="n">cosmo</span><span class="o">.</span><span class="n">h</span><span class="p">,</span> <span class="s1">&#39;Ob0&#39;</span><span class="p">:</span> <span class="n">cosmo</span><span class="o">.</span><span class="n">Ob0</span><span class="p">,</span> <span class="s1">&#39;w0&#39;</span><span class="p">:</span> <span class="n">cosmo</span><span class="o">.</span><span class="n">w</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)}</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cosmo</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">cosmoinfo</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cosmo</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">&#39;Input cosmo is missing &quot;{0}&quot; value&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">cosmo</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Cosmological parameter values cannot be set to None. No defaults can be assumed&#39;</span><span class="p">)</span>
+            <span class="n">cosmoinfo</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">cosmo</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cosmo</span><span class="p">,</span> <span class="n">cosmology</span><span class="o">.</span><span class="n">FLRW</span><span class="p">):</span>
+        <span class="n">cosmoinfo</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Om0&#39;</span><span class="p">:</span> <span class="n">cosmo</span><span class="o">.</span><span class="n">Om0</span><span class="p">,</span> <span class="s1">&#39;Ode0&#39;</span><span class="p">:</span> <span class="n">cosmo</span><span class="o">.</span><span class="n">Ode0</span><span class="p">,</span> <span class="s1">&#39;h&#39;</span><span class="p">:</span> <span class="n">cosmo</span><span class="o">.</span><span class="n">h</span><span class="p">,</span> <span class="s1">&#39;Ob0&#39;</span><span class="p">:</span> <span class="n">cosmo</span><span class="o">.</span><span class="n">Ob0</span><span class="p">,</span> <span class="s1">&#39;w0&#39;</span><span class="p">:</span> <span class="n">cosmo</span><span class="o">.</span><span class="n">w</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input cosmology must be an instance of class astropy.cosmology.FLRW&#39;</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fileobj</span><span class="p">:</span>
+        <span class="n">hdr_grp</span> <span class="o">=</span> <span class="n">fileobj</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s1">&#39;header&#39;</span><span class="p">)</span>
+        <span class="n">hdr_grp</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">units</span>
+        <span class="n">hdr_grp</span><span class="p">[</span><span class="s1">&#39;is_healpix&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">is_healpix</span><span class="p">)</span>
+        <span class="n">spec_grp</span> <span class="o">=</span> <span class="n">fileobj</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s1">&#39;specinfo&#39;</span><span class="p">)</span>
+        <span class="n">spec_grp</span><span class="p">[</span><span class="s1">&#39;freqs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">freqs</span>
+        <span class="n">spec_grp</span><span class="p">[</span><span class="s1">&#39;freqs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Hz&#39;</span>
+        <span class="n">cosmo_grp</span> <span class="o">=</span> <span class="n">fileobj</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s1">&#39;cosmology&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">cosmoinfo</span><span class="p">:</span>
+            <span class="n">cosmo_grp</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">cosmoinfo</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="n">surfaces_grp</span> <span class="o">=</span> <span class="n">fileobj</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s1">&#39;skyinfo&#39;</span><span class="p">)</span>
+        <span class="n">dset</span> <span class="o">=</span> <span class="n">surfaces_grp</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s1">&#39;surfaces&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">light_cone_surfaces</span><span class="p">,</span> <span class="n">chunks</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">light_cone_surfaces</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">compression</span><span class="o">=</span><span class="s1">&#39;gzip&#39;</span><span class="p">,</span> <span class="n">compression_opts</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="write_lightcone_catalog"><a class="viewcode-back" href="../../astroutils.html#astroutils.cosmotile.write_lightcone_catalog">[docs]</a><span class="k">def</span> <span class="nf">write_lightcone_catalog</span><span class="p">(</span><span class="n">init_parms</span><span class="p">,</span> <span class="n">outfile</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;return&#39;</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Write light cone surfaces to HDF5 file that can be read in as an instance of</span>
+<span class="sd">    class SkyModel</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    init_parms  [dictionary] Dictionary containing parameters used to create</span>
+<span class="sd">                an instance of class SkyModel. Sky model Initialization </span>
+<span class="sd">                parameters are specified using the following keys and values</span>
+<span class="sd">                (identical to those used in initializing an instance of class</span>
+<span class="sd">                SkyModel):</span>
+<span class="sd">                &#39;name&#39;      [scalar or vector] Name of the catalog. If </span>
+<span class="sd">                            scalar, will be used for all sources in the sky </span>
+<span class="sd">                            model. If vector, will be used for corresponding </span>
+<span class="sd">                            object. If vector, size must equal the number of </span>
+<span class="sd">                            objects.</span>
+<span class="sd">                &#39;frequency&#39; [scalar or vector] Frequency range for which sky </span>
+<span class="sd">                            model is applicable. Units in Hz.</span>
+<span class="sd">                &#39;location&#39;  [numpy array or list of lists] Positions of the </span>
+<span class="sd">                            sources in sky model. Each position is specified </span>
+<span class="sd">                            as a row (numpy array) or a 2-element list which </span>
+<span class="sd">                            is input as a list of lists for all the sources </span>
+<span class="sd">                            in the sky model</span>
+<span class="sd">                &#39;spec_type&#39; [string] specifies the flux variation along the </span>
+<span class="sd">                            spectral axis. Allowed values are &#39;func&#39; and </span>
+<span class="sd">                            &#39;spectrum&#39;. It must be set to &#39;spectrum&#39; and values</span>
+<span class="sd">                            for key &#39;spectrum&#39; (see below) must be specified.</span>
+<span class="sd">                &#39;spectrum&#39;  [numpy array] Spectrum of the catalog. Will be </span>
+<span class="sd">                            applicable if attribute spec_type is set to </span>
+<span class="sd">                            &#39;spectrum&#39;. It must be of shape nsrc x nchan</span>
+<span class="sd">                &#39;src_shape&#39; [3-column numpy array or list of 3-element </span>
+<span class="sd">                            lists] source shape specified by major axis </span>
+<span class="sd">                            FWHM (first column), minor axis FWHM (second </span>
+<span class="sd">                            column), and position angle (third column). The </span>
+<span class="sd">                            major and minor axes and position angle are </span>
+<span class="sd">                            stored in degrees. The number of rows must match </span>
+<span class="sd">                            the number of sources. Position angle is in </span>
+<span class="sd">                            degrees east of north (same convention as local </span>
+<span class="sd">                            azimuth)</span>
+<span class="sd">                &#39;epoch&#39;     [string] Epoch appropriate for the coordinate </span>
+<span class="sd">                            system. Default is &#39;J2000&#39;</span>
+<span class="sd">                &#39;coords&#39;    [string] Coordinate system used for the source </span>
+<span class="sd">                            positions in the sky model. Currently accepted </span>
+<span class="sd">                            values are &#39;radec&#39; (RA-Dec)</span>
+<span class="sd">                &#39;src_shape_units&#39; </span>
+<span class="sd">                            [3-element list or tuple of strings] Specifies </span>
+<span class="sd">                            the units of major axis FWHM, minor axis FWHM, </span>
+<span class="sd">                            and position angle. Accepted values for major </span>
+<span class="sd">                            and minor axes units are &#39;arcsec&#39;, &#39;arcmin&#39;, </span>
+<span class="sd">                            &#39;degree&#39;, or &#39;radian&#39;. Accepted values for </span>
+<span class="sd">                            position angle units are &#39;degree&#39; or &#39;radian&#39;</span>
+
+<span class="sd">    outfile     [string] Output filename including full path omitting the</span>
+<span class="sd">                extension (.hdf5) which will be appended automatically. This will</span>
+<span class="sd">                occur only if action is set to &#39;store&#39;</span>
+
+<span class="sd">    action      [string] Specifies if the instance of class SkyModel is to be </span>
+<span class="sd">                returned if action=&#39;return&#39; (default) or save to file specified </span>
+<span class="sd">                in outfile if action=&#39;store&#39;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input action must be a string&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">action</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;store&#39;</span><span class="p">,</span> <span class="s1">&#39;return&#39;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input action must be set to &quot;store&quot; or &quot;return&quot;&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">action</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;store&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Output filename must be a string&#39;</span><span class="p">)</span>
+
+    <span class="n">skymod</span> <span class="o">=</span> <span class="n">SM</span><span class="o">.</span><span class="n">SkyModel</span><span class="p">(</span><span class="n">init_file</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">init_parms</span><span class="o">=</span><span class="n">init_parms</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">skymod</span><span class="o">.</span><span class="n">spec_type</span> <span class="o">!=</span> <span class="s1">&#39;spectrum&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">skymod</span><span class="o">.</span><span class="n">spectrum</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input data must be specified in the form of a spectrum&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">action</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;store&#39;</span><span class="p">:</span>
+        <span class="n">skymod</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span> <span class="n">fileformat</span><span class="o">=</span><span class="s1">&#39;hdf5&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">skymod</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="write_coeval_cube"><a class="viewcode-back" href="../../astroutils.html#astroutils.cosmotile.write_coeval_cube">[docs]</a><span class="k">def</span> <span class="nf">write_coeval_cube</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">outfile</span><span class="p">,</span> <span class="n">hdrinfo</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Write cosmological coeval cubes to HDF5 file</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    cube        [numpy array] Coeval cube. Usually 3D.</span>
+
+<span class="sd">    outfile     [string] Filename including full path where the data is to be</span>
+<span class="sd">                saved in HDF5 format. It should not include the extension as it</span>
+<span class="sd">                will be determined internally</span>
+
+<span class="sd">    hdrinfo     [dictionary] Any header information in the form of a dictionary</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input data must be a numpy array&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;outfile must be a string&#39;</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fileobj</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">hdrinfo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hdrinfo</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input hdrinfo must be a dictionary&#39;</span><span class="p">)</span>
+            <span class="n">hdr_grp</span> <span class="o">=</span> <span class="n">fileobj</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s1">&#39;header&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">hdrinfo</span><span class="p">:</span>
+                <span class="n">hdr_grp</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">hdrinfo</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+        <span class="n">dset</span> <span class="o">=</span> <span class="n">fileobj</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="s1">&#39;gzip&#39;</span><span class="p">,</span> <span class="n">compression_opts</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span></div>
+        
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="read_coeval_cube"><a class="viewcode-back" href="../../astroutils.html#astroutils.cosmotile.read_coeval_cube">[docs]</a><span class="k">def</span> <span class="nf">read_coeval_cube</span><span class="p">(</span><span class="n">infile</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Read processed cosmological coeval cubes from HDF5 file</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    infile      [string] Filename including full path where the processed data </span>
+<span class="sd">                is to be read in HDF5 format. It should not include the extension </span>
+<span class="sd">                as it will be determined internally</span>
+
+<span class="sd">    Output:</span>
+
+<span class="sd">    Tuple containing processed 21cmfast coeval cube as a 3D numpy array and a </span>
+<span class="sd">    dictionary that contains header information (set to None if no header info </span>
+<span class="sd">    found)</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">infile</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;infile must be a string&#39;</span><span class="p">)</span>
+
+    <span class="n">hdrinfo</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">infile</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fileobj</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s1">&#39;header&#39;</span> <span class="ow">in</span> <span class="n">fileobj</span><span class="p">:</span>
+            <span class="n">hdrinfo</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">fileobj</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">fileobj</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">]}</span>
+        <span class="k">if</span> <span class="s1">&#39;data&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">fileobj</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">&#39;Input HDF5 file does not contain data&#39;</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">fileobj</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">hdrinfo</span><span class="p">)</span></div>
+
+<span class="c1">#################################################################################</span>
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Nithyanandan Thyagarajan.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

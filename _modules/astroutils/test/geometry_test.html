@@ -1,0 +1,193 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>astroutils.test.geometry_test &mdash; AstroUtils 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="AstroUtils 0.1.0 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for astroutils.test.geometry_test</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">astroutils</span> <span class="kn">import</span> <span class="n">geometry</span> <span class="k">as</span> <span class="n">GEOM</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">NP</span>
+
+<div class="viewcode-block" id="test_altaz2dircos"><a class="viewcode-back" href="../../../astroutils.test.html#astroutils.test.geometry_test.test_altaz2dircos">[docs]</a><span class="k">def</span> <span class="nf">test_altaz2dircos</span><span class="p">():</span>
+    <span class="n">altaz</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([[</span><span class="mf">90.0</span><span class="p">,</span> <span class="mf">270.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">90.0</span><span class="p">]])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">dircos</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">expected_dircos</span> <span class="o">=</span> <span class="n">GEOM</span><span class="o">.</span><span class="n">altaz2dircos</span><span class="p">(</span><span class="n">altaz</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s1">&#39;degrees&#39;</span><span class="p">)</span>
+    <span class="n">NP</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">dircos</span><span class="p">,</span> <span class="n">expected_dircos</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="test_dircos2altaz"><a class="viewcode-back" href="../../../astroutils.test.html#astroutils.test.geometry_test.test_dircos2altaz">[docs]</a><span class="k">def</span> <span class="nf">test_dircos2altaz</span><span class="p">():</span>
+    <span class="n">dircos</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([[</span><span class="n">NP</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="mf">60.0</span><span class="p">)),</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="mf">30.0</span><span class="p">))],[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">altaz</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([[</span><span class="mf">60.0</span><span class="p">,</span> <span class="mf">90.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">90.0</span><span class="p">]])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">expected_altaz</span> <span class="o">=</span> <span class="n">GEOM</span><span class="o">.</span><span class="n">dircos2altaz</span><span class="p">(</span><span class="n">dircos</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s1">&#39;degrees&#39;</span><span class="p">)</span>
+    <span class="n">NP</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">altaz</span><span class="p">,</span> <span class="n">expected_altaz</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="test_hadec2altaz"><a class="viewcode-back" href="../../../astroutils.test.html#astroutils.test.geometry_test.test_hadec2altaz">[docs]</a><span class="k">def</span> <span class="nf">test_hadec2altaz</span><span class="p">():</span>
+    <span class="n">hadec</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([[</span><span class="mf">30.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mf">90.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">latitude</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">expected_altaz</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([[</span><span class="mf">60.0</span><span class="p">,</span> <span class="mf">270.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">90.0</span><span class="p">]])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">altaz</span> <span class="o">=</span> <span class="n">GEOM</span><span class="o">.</span><span class="n">hadec2altaz</span><span class="p">(</span><span class="n">hadec</span><span class="p">,</span> <span class="n">latitude</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s1">&#39;degrees&#39;</span><span class="p">)</span>
+    <span class="n">NP</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">altaz</span><span class="p">,</span> <span class="n">expected_altaz</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="test_altaz2hadec"><a class="viewcode-back" href="../../../astroutils.test.html#astroutils.test.geometry_test.test_altaz2hadec">[docs]</a><span class="k">def</span> <span class="nf">test_altaz2hadec</span><span class="p">():</span>
+    <span class="n">altaz</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([[</span><span class="mf">60.0</span><span class="p">,</span> <span class="mf">270.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">90.0</span><span class="p">]])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">expected_hadec</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([[</span><span class="mf">30.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">270.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">latitude</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">hadec</span> <span class="o">=</span> <span class="n">GEOM</span><span class="o">.</span><span class="n">altaz2hadec</span><span class="p">(</span><span class="n">altaz</span><span class="p">,</span> <span class="n">latitude</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s1">&#39;degrees&#39;</span><span class="p">)</span>
+    <span class="n">NP</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">hadec</span><span class="p">,</span> <span class="n">expected_hadec</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="test_enu2xyz"><a class="viewcode-back" href="../../../astroutils.test.html#astroutils.test.geometry_test.test_enu2xyz">[docs]</a><span class="k">def</span> <span class="nf">test_enu2xyz</span><span class="p">():</span>
+    <span class="n">enu</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+                      <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+                      <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">latitude</span> <span class="o">=</span> <span class="mf">45.0</span>
+    <span class="n">expected_xyz</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+                               <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="n">NP</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.0</span><span class="p">),</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mi">1</span><span class="o">/</span><span class="n">NP</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)],</span>
+                               <span class="p">[</span><span class="mi">1</span><span class="o">/</span><span class="n">NP</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.0</span><span class="p">),</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mi">1</span><span class="o">/</span><span class="n">NP</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)]])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">xyz</span> <span class="o">=</span> <span class="n">GEOM</span><span class="o">.</span><span class="n">enu2xyz</span><span class="p">(</span><span class="n">enu</span><span class="p">,</span> <span class="n">latitude</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s1">&#39;degrees&#39;</span><span class="p">)</span>
+    <span class="n">NP</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">xyz</span><span class="p">,</span> <span class="n">expected_xyz</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="test_xyz2enu"><a class="viewcode-back" href="../../../astroutils.test.html#astroutils.test.geometry_test.test_xyz2enu">[docs]</a><span class="k">def</span> <span class="nf">test_xyz2enu</span><span class="p">():</span>
+    <span class="n">xyz</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+                      <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+                      <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">latitude</span> <span class="o">=</span> <span class="mf">45.0</span>
+    <span class="n">expected_enu</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([[</span><span class="mf">0.0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="n">NP</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.0</span><span class="p">),</span> <span class="mi">1</span><span class="o">/</span><span class="n">NP</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)],</span>
+                               <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+                               <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mi">1</span><span class="o">/</span><span class="n">NP</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.0</span><span class="p">),</span> <span class="mi">1</span><span class="o">/</span><span class="n">NP</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)]])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">enu</span> <span class="o">=</span> <span class="n">GEOM</span><span class="o">.</span><span class="n">xyz2enu</span><span class="p">(</span><span class="n">xyz</span><span class="p">,</span> <span class="n">latitude</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s1">&#39;degrees&#39;</span><span class="p">)</span>
+    <span class="n">NP</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">enu</span><span class="p">,</span> <span class="n">expected_enu</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="test_sph2xyz"><a class="viewcode-back" href="../../../astroutils.test.html#astroutils.test.geometry_test.test_sph2xyz">[docs]</a><span class="k">def</span> <span class="nf">test_sph2xyz</span><span class="p">():</span>
+    <span class="n">lon</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">45.0</span><span class="p">])</span>
+    <span class="n">lat</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mf">30.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
+    <span class="n">expected_x</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">lat</span><span class="p">))</span> <span class="o">*</span> <span class="n">NP</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">lon</span><span class="p">))</span>
+    <span class="n">expected_y</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">lat</span><span class="p">))</span> <span class="o">*</span> <span class="n">NP</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">lon</span><span class="p">))</span>
+    <span class="n">expected_z</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">lat</span><span class="p">))</span>
+    <span class="n">expected_xyz</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">expected_x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">expected_y</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">expected_z</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">GEOM</span><span class="o">.</span><span class="n">sph2xyz</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">)</span>
+    <span class="n">xyz</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">y</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">z</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+    <span class="n">NP</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">xyz</span><span class="p">,</span> <span class="n">expected_xyz</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="test_sphdist"><a class="viewcode-back" href="../../../astroutils.test.html#astroutils.test.geometry_test.test_sphdist">[docs]</a><span class="k">def</span> <span class="nf">test_sphdist</span><span class="p">():</span>
+    <span class="n">lon1</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">45.0</span><span class="p">])</span>
+    <span class="n">lat1</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mf">30.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
+    <span class="n">lon2</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mf">90.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
+    <span class="n">lat2</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mf">90.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
+    <span class="n">expected_dist</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mf">60.0</span><span class="p">,</span> <span class="mf">45.0</span><span class="p">])</span>
+    <span class="n">dist</span> <span class="o">=</span> <span class="n">GEOM</span><span class="o">.</span><span class="n">sphdist</span><span class="p">(</span><span class="n">lon1</span><span class="p">,</span> <span class="n">lat1</span><span class="p">,</span> <span class="n">lon2</span><span class="p">,</span> <span class="n">lat2</span><span class="p">)</span>
+    <span class="n">NP</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">expected_dist</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="test_spherematch_1match"><a class="viewcode-back" href="../../../astroutils.test.html#astroutils.test.geometry_test.test_spherematch_1match">[docs]</a><span class="k">def</span> <span class="nf">test_spherematch_1match</span><span class="p">():</span>
+    <span class="n">lon1</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">45.0</span><span class="p">])</span>
+    <span class="n">lat1</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mf">30.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
+    <span class="n">lon2</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">40.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
+    <span class="n">lat2</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mf">35.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">,</span> <span class="mf">21.0</span><span class="p">])</span>
+    <span class="n">matchrad</span> <span class="o">=</span> <span class="mf">10.0</span>
+    <span class="n">maxmatches</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">expected_m1</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="n">expected_m2</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="n">expected_d12</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mf">6.53868718</span><span class="p">,</span> <span class="mf">7.06657439</span><span class="p">])</span>
+    <span class="n">m1</span><span class="p">,</span> <span class="n">m2</span><span class="p">,</span> <span class="n">d12</span> <span class="o">=</span> <span class="n">GEOM</span><span class="o">.</span><span class="n">spherematch</span><span class="p">(</span><span class="n">lon1</span><span class="p">,</span> <span class="n">lat1</span><span class="p">,</span> <span class="n">lon2</span><span class="p">,</span> <span class="n">lat2</span><span class="p">,</span> <span class="n">matchrad</span><span class="o">=</span><span class="n">matchrad</span><span class="p">,</span> <span class="n">maxmatches</span><span class="o">=</span><span class="n">maxmatches</span><span class="p">)</span>
+    <span class="n">m1</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">m1</span><span class="p">)</span>
+    <span class="n">m2</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">m2</span><span class="p">)</span>
+    <span class="n">d12</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">d12</span><span class="p">)</span>
+    <span class="n">NP</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">m1</span><span class="p">,</span> <span class="n">expected_m1</span><span class="p">)</span>
+    <span class="n">NP</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">m2</span><span class="p">,</span> <span class="n">expected_m2</span><span class="p">)</span>
+    <span class="n">NP</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">d12</span><span class="p">,</span> <span class="n">expected_d12</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="test_spherematch_allmatch"><a class="viewcode-back" href="../../../astroutils.test.html#astroutils.test.geometry_test.test_spherematch_allmatch">[docs]</a><span class="k">def</span> <span class="nf">test_spherematch_allmatch</span><span class="p">():</span>
+    <span class="n">lon1</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">45.0</span><span class="p">])</span>
+    <span class="n">lat1</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mf">30.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
+    <span class="n">lon2</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">40.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
+    <span class="n">lat2</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mf">35.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">,</span> <span class="mf">21.0</span><span class="p">])</span>
+    <span class="n">matchrad</span> <span class="o">=</span> <span class="mf">10.0</span>
+    <span class="n">maxmatches</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">expected_m1</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="n">expected_m2</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="n">expected_d12</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mf">6.53868718</span><span class="p">,</span> <span class="mf">9.0</span><span class="p">,</span> <span class="mf">7.06657439</span><span class="p">])</span>
+    <span class="n">m1</span><span class="p">,</span> <span class="n">m2</span><span class="p">,</span> <span class="n">d12</span> <span class="o">=</span> <span class="n">GEOM</span><span class="o">.</span><span class="n">spherematch</span><span class="p">(</span><span class="n">lon1</span><span class="p">,</span> <span class="n">lat1</span><span class="p">,</span> <span class="n">lon2</span><span class="p">,</span> <span class="n">lat2</span><span class="p">,</span> <span class="n">matchrad</span><span class="o">=</span><span class="n">matchrad</span><span class="p">,</span> <span class="n">maxmatches</span><span class="o">=</span><span class="n">maxmatches</span><span class="p">)</span>
+    <span class="n">m1</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">m1</span><span class="p">)</span>
+    <span class="n">m2</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">m2</span><span class="p">)</span>
+    <span class="n">d12</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">d12</span><span class="p">)</span>
+    <span class="n">NP</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">m1</span><span class="p">,</span> <span class="n">expected_m1</span><span class="p">)</span>
+    <span class="n">NP</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">m2</span><span class="p">,</span> <span class="n">expected_m2</span><span class="p">)</span>
+    <span class="n">NP</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">d12</span><span class="p">,</span> <span class="n">expected_d12</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">)</span></div>
+
+    
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Nithyanandan Thyagarajan.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

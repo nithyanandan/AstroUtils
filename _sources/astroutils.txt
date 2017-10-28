@@ -1,0 +1,133 @@
+astroutils package
+==================
+
+Subpackages
+-----------
+
+.. toctree::
+
+    astroutils.test
+
+Submodules
+----------
+
+astroutils.DSP_modules module
+-----------------------------
+
+.. automodule:: astroutils.DSP_modules
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+astroutils.MPI_modules module
+-----------------------------
+
+.. automodule:: astroutils.MPI_modules
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+astroutils.catalog module
+-------------------------
+
+.. automodule:: astroutils.catalog
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+astroutils.constants module
+---------------------------
+
+.. automodule:: astroutils.constants
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+astroutils.cosmotile module
+---------------------------
+
+.. automodule:: astroutils.cosmotile
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+astroutils.ephemeris_timing module
+----------------------------------
+
+.. automodule:: astroutils.ephemeris_timing
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+astroutils.foregrounds module
+-----------------------------
+
+.. automodule:: astroutils.foregrounds
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+astroutils.geometry module
+--------------------------
+
+.. automodule:: astroutils.geometry
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+astroutils.gridding_modules module
+----------------------------------
+
+.. automodule:: astroutils.gridding_modules
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+astroutils.kernel_density_estimator module
+------------------------------------------
+
+.. automodule:: astroutils.kernel_density_estimator
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+astroutils.lookup_operations module
+-----------------------------------
+
+.. automodule:: astroutils.lookup_operations
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+astroutils.mathops module
+-------------------------
+
+.. automodule:: astroutils.mathops
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+astroutils.nonmathops module
+----------------------------
+
+.. automodule:: astroutils.nonmathops
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+astroutils.writer_module module
+-------------------------------
+
+.. automodule:: astroutils.writer_module
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: astroutils
+    :members:
+    :undoc-members:
+    :show-inheritance:

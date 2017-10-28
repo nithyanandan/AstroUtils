@@ -1,0 +1,1240 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>astroutils.lookup_operations &mdash; AstroUtils 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="AstroUtils 0.1.0 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for astroutils.lookup_operations</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">NP</span>
+<span class="kn">from</span> <span class="nn">astropy.io</span> <span class="kn">import</span> <span class="n">ascii</span>
+<span class="kn">import</span> <span class="nn">multiprocessing</span> <span class="kn">as</span> <span class="nn">MP</span>
+<span class="kn">import</span> <span class="nn">itertools</span> <span class="kn">as</span> <span class="nn">IT</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">scipy.spatial</span> <span class="kn">import</span> <span class="n">cKDTree</span> <span class="k">as</span> <span class="n">KDT</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">scipy.spatial</span> <span class="kn">import</span> <span class="n">KDTree</span> <span class="k">as</span> <span class="n">KDT</span>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="find_NN_arg_splitter"><a class="viewcode-back" href="../../astroutils.html#astroutils.lookup_operations.find_NN_arg_splitter">[docs]</a><span class="k">def</span> <span class="nf">find_NN_arg_splitter</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">find_NN_pp</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="find_NN_pp"><a class="viewcode-back" href="../../astroutils.html#astroutils.lookup_operations.find_NN_pp">[docs]</a><span class="k">def</span> <span class="nf">find_NN_pp</span><span class="p">(</span><span class="n">ngbrof</span><span class="p">,</span> <span class="n">ngbrin</span><span class="p">,</span> <span class="n">distance_ULIM</span><span class="p">):</span>
+    <span class="n">kdtself</span> <span class="o">=</span> <span class="n">KDT</span><span class="p">(</span><span class="n">ngbrof</span><span class="p">)</span>
+    <span class="n">kdtother</span> <span class="o">=</span> <span class="n">KDT</span><span class="p">(</span><span class="n">ngbrin</span><span class="p">)</span>
+    <span class="n">indNN_list</span> <span class="o">=</span> <span class="n">kdtself</span><span class="o">.</span><span class="n">query_ball_tree</span><span class="p">(</span><span class="n">kdtother</span><span class="p">,</span> <span class="n">distance_ULIM</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">indNN_list</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="gen_lookup"><a class="viewcode-back" href="../../astroutils.html#astroutils.lookup_operations.gen_lookup">[docs]</a><span class="k">def</span> <span class="nf">gen_lookup</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">outfile</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Generate a lookup table given two-dimensional coordinates and values at these</span>
+<span class="sd">    coordinates.</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    x          [numpy vector] x-coordinates for the lookup values.</span>
+
+<span class="sd">    y          [numpy vector] y-coordinates for the lookup values</span>
+
+<span class="sd">    data       [numpy vector] data values at the coordinates given by x and y. x,</span>
+<span class="sd">               y, and data must all have the same size</span>
+
+<span class="sd">    outfile    [string] Name of the output file to write the lookup table to. It </span>
+<span class="sd">               will be created as an ascii table with &#39;x&#39;, &#39;y&#39;, &#39;real_value&#39; and </span>
+<span class="sd">               &#39;imag_value&#39; (if imagianry value present) being the column headers</span>
+
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">outfile</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;To generate a lookup table, input parameters x, y, data, and outfile should be specified.&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">y</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">data</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;x, y, and data must be of same size.&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input parameter outfile must be of string data type&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">NP</span><span class="o">.</span><span class="n">iscomplexobj</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ascii</span><span class="o">.</span><span class="n">write</span><span class="p">([</span><span class="n">x</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">y</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">data</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span><span class="o">.</span><span class="n">real</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span><span class="o">.</span><span class="n">imag</span><span class="p">],</span> <span class="n">outfile</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;real_value&#39;</span><span class="p">,</span> <span class="s1">&#39;imag_value&#39;</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;Could not write to specified file: &#39;</span><span class="o">+</span><span class="n">outfile</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ascii</span><span class="o">.</span><span class="n">write</span><span class="p">([</span><span class="n">x</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">y</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">data</span><span class="o">.</span><span class="n">ravel</span><span class="p">()],</span> <span class="n">outfile</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;real_value&#39;</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;Could not write to specified file: &#39;</span><span class="o">+</span><span class="n">outfile</span><span class="p">)</span></div>
+    
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="read_lookup"><a class="viewcode-back" href="../../astroutils.html#astroutils.lookup_operations.read_lookup">[docs]</a><span class="k">def</span> <span class="nf">read_lookup</span><span class="p">(</span><span class="n">infile</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Read data from a lookup database.</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    infile  [string] Input file containing the lookup data base.</span>
+
+<span class="sd">    Outputs:</span>
+
+<span class="sd">    [tuple] each element of the tuple is a numpy array. The elements in order are</span>
+<span class="sd">            x-coordinates, y-coordinates, data value at those coordiantes. The</span>
+<span class="sd">            data values are real or complex depending on whether the lookup table</span>
+<span class="sd">            has an &#39;imag_value&#39; column</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">infile</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input parameter infile must be of string data type&#39;</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="n">ascii</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">infile</span><span class="p">,</span> <span class="n">data_start</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">comment</span><span class="o">=</span><span class="s1">&#39;#&#39;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;Could not read the specified file: &#39;</span><span class="o">+</span><span class="n">infile</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="s1">&#39;imag_value&#39;</span> <span class="ow">in</span> <span class="n">cols</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">cols</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">cols</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">cols</span><span class="p">[</span><span class="s1">&#39;real_value&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">+</span><span class="mi">1j</span><span class="o">*</span><span class="n">cols</span><span class="p">[</span><span class="s1">&#39;imag_value&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">cols</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">cols</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">cols</span><span class="p">[</span><span class="s1">&#39;real_value&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="lookup"><a class="viewcode-back" href="../../astroutils.html#astroutils.lookup_operations.lookup">[docs]</a><span class="k">def</span> <span class="nf">lookup</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">xin</span><span class="p">,</span> <span class="n">yin</span><span class="p">,</span> <span class="n">distance_ULIM</span><span class="o">=</span><span class="n">NP</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">oob_value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+           <span class="n">remove_oob</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">maxmatch</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Perform a lookup operation based on nearest neighbour algorithm using</span>
+<span class="sd">    KD-Trees when the lookup database and required coordinate locations are</span>
+<span class="sd">    specified.</span>
+
+<span class="sd">    Inputs:</span>
+<span class="sd">    </span>
+<span class="sd">    x       [numpy array] x-coordinates in the lookup table</span>
+
+<span class="sd">    y       [numpy array] y-coordinates in the lookup table</span>
+
+<span class="sd">    val     [numpy array] values at the x and y locations. x, y, and val must be</span>
+<span class="sd">            of same size</span>
+
+<span class="sd">    xin     [numpy array] x-coordinates at which values are required</span>
+
+<span class="sd">    yin     [numpy array] y-coordinates at which values are required. xin and yin</span>
+<span class="sd">            must be of same size</span>
+
+<span class="sd">    distance_ULIM</span>
+<span class="sd">            [scalar] A positive number for the upper bound on distance while</span>
+<span class="sd">            searching for nearest neighbours. Neighbours outside of this upper</span>
+<span class="sd">            bound are not searched for. Default = NP.inf (infinite distance upper </span>
+<span class="sd">            bound means nearest neighbours will be searched all the way out to </span>
+<span class="sd">            infinite distance). Should be in the same units as x, y, xin and yin</span>
+
+<span class="sd">    oob_value</span>
+<span class="sd">            [scalar] Value to be returned at the location if the nearest</span>
+<span class="sd">            neighbour for the location is not found inside distance_ULIM.</span>
+<span class="sd">            Default = 0</span>
+
+<span class="sd">    remove_oob</span>
+<span class="sd">            [boolean] If set to True, results of nearest neighbour search and </span>
+<span class="sd">            lookup are returned only for those input locations which have a </span>
+<span class="sd">            neighbour within the distance upper bound. Locations with no </span>
+<span class="sd">            neighbours inside the distance upper bound will not be in the </span>
+<span class="sd">            returned results. Default = True. If set to False, even if no </span>
+<span class="sd">            nearest neighbours are found within the distance upper bound, an</span>
+<span class="sd">            infinite distance and out of bound index from the lookup table are</span>
+<span class="sd">            returned.</span>
+
+<span class="sd">    maxmatch</span>
+<span class="sd">            [scalar] A positive value indicating maximum number of input </span>
+<span class="sd">            locations (xin, yin) to be assigned. Default = None. If set to None, </span>
+<span class="sd">            all the input locations specified are assigned values. For instance,</span>
+<span class="sd">            to have only one nearest neighbour from the lookup locations to be </span>
+<span class="sd">            determined per input location, use maxmatch=1. </span>
+
+<span class="sd">    tol     [scalar] If set, only lookup data with abs(val) &gt; tol will be </span>
+<span class="sd">            considered for nearest neighbour lookup. Default = None implies all</span>
+<span class="sd">            lookup values will be considered for nearest neighbour determination.</span>
+<span class="sd">            tol is to be interpreted as a minimum value considered as significant</span>
+<span class="sd">            in the lookup table.</span>
+
+<span class="sd">    Outputs: </span>
+
+<span class="sd">    Returns a tuple of nearest neighbour lookup value, the index of input</span>
+<span class="sd">    location and nearest neighbour distance in the lookup table. The tuple</span>
+<span class="sd">    consists of the following elements in this order. The number of pairs</span>
+<span class="sd">    matched will be the lesser of those determined by distNN and maxmatch</span>
+
+<span class="sd">    ibind   [numpy vector] indices of the input locations for which nearest </span>
+<span class="sd">            neighbours were found from the lookup table. If remove_oob is </span>
+<span class="sd">            not set to True, size of ibind is equal to size of xin or yin, </span>
+<span class="sd">            otherwise size of ibind is less than or equal to size of xin or yin. </span>
+<span class="sd">            Values of ibind equal to size of lookup table values indicates the </span>
+<span class="sd">            nearest neighbours for the corresponding input location could not be </span>
+<span class="sd">            found within the distance upper bound from the lookup table. The</span>
+<span class="sd">            corresponding values in distNN are returned as inf or NP.inf</span>
+
+<span class="sd">    nnval   [numpy vector] nearest neighbour lookup values for the given input</span>
+<span class="sd">            locations. If remove_oob is not set to True, size of nnval is equal</span>
+<span class="sd">            to size of xin or yin, otherwise size of nnval is less than or equal</span>
+<span class="sd">            to size of xin or yin. In such a case, out of bound locations are</span>
+<span class="sd">            filled with oob_value. Corresponding values in distNN are returned as</span>
+<span class="sd">            inf or NP.inf</span>
+
+<span class="sd">    distNN  [numpy vector] distance to the nearest neighbour in the lookup table</span>
+<span class="sd">            for the given input locations. If remove_oob is not set to True, size </span>
+<span class="sd">            of distNN is equal to size of xin or yin, otherwise size of distNN is </span>
+<span class="sd">            less than or equal to size of xin or yin. In such a case, out of </span>
+<span class="sd">            bound locations are filled with inf or NP.inf. </span>
+<span class="sd">    </span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">xin</span><span class="p">,</span> <span class="n">yin</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;x, y, val, xin, and yin must be specified for lookup operation.&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">y</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">val</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;x, y, and val must be of same size.&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">xin</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">yin</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input parameters xin and yin must have same size.&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">tol</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tol</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">tol</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;tol value must be non-negative&#39;</span><span class="p">)</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">NP</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">tol</span><span class="p">]</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">NP</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">tol</span><span class="p">]</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="n">NP</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">tol</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;tol must be a scalar integer or float&#39;</span><span class="p">)</span>
+
+    <span class="n">kdt</span> <span class="o">=</span> <span class="n">KDT</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">))</span>
+    <span class="n">dist</span><span class="p">,</span> <span class="n">ind</span> <span class="o">=</span> <span class="n">kdt</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">xin</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">yin</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">))),</span> <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">distance_upper_bound</span><span class="o">=</span><span class="n">distance_ULIM</span><span class="p">)</span>
+    <span class="n">nnval</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">ind</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">val</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">nnval</span><span class="p">[</span><span class="n">dist</span> <span class="o">&lt;</span> <span class="n">distance_ULIM</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="n">ind</span><span class="p">[</span><span class="n">dist</span> <span class="o">&lt;</span> <span class="n">distance_ULIM</span><span class="p">]]</span>
+    <span class="n">nnval</span><span class="p">[</span><span class="n">dist</span> <span class="o">&gt;=</span> <span class="n">distance_ULIM</span><span class="p">]</span> <span class="o">=</span> <span class="n">oob_value</span>
+    <span class="n">ibind</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ind</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="c1"># in-bound indices</span>
+    <span class="n">distNN</span> <span class="o">=</span> <span class="n">dist</span>
+    <span class="k">if</span> <span class="n">remove_oob</span><span class="p">:</span>
+        <span class="n">nnval</span> <span class="o">=</span> <span class="n">nnval</span><span class="p">[</span><span class="n">dist</span> <span class="o">&lt;=</span> <span class="n">distance_ULIM</span><span class="p">]</span>
+        <span class="n">ibind</span> <span class="o">=</span> <span class="n">ibind</span><span class="p">[</span><span class="n">dist</span> <span class="o">&lt;=</span> <span class="n">distance_ULIM</span><span class="p">]</span>
+        <span class="n">distNN</span> <span class="o">=</span> <span class="n">dist</span><span class="p">[</span><span class="n">dist</span> <span class="o">&lt;=</span> <span class="n">distance_ULIM</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">maxmatch</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">maxmatch</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;maxmatch must be an integer.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">maxmatch</span> <span class="o">&lt;</span> <span class="n">distNN</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">maxmatch</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">sortind</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">distNN</span><span class="p">)[:</span><span class="n">maxmatch</span><span class="p">]</span> <span class="c1"># Indices of maxmatch nearest matches</span>
+                <span class="n">nnval</span> <span class="o">=</span> <span class="n">nnval</span><span class="p">[</span><span class="n">sortind</span><span class="p">]</span>
+                <span class="n">ibind</span> <span class="o">=</span> <span class="n">ibind</span><span class="p">[</span><span class="n">sortind</span><span class="p">]</span>
+                <span class="n">distNN</span> <span class="o">=</span> <span class="n">distNN</span><span class="p">[</span><span class="n">sortind</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Maximum number of nearest neighbours must be positive.&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ibind</span><span class="p">,</span> <span class="n">nnval</span><span class="p">,</span> <span class="n">distNN</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="lookup_new"><a class="viewcode-back" href="../../astroutils.html#astroutils.lookup_operations.lookup_new">[docs]</a><span class="k">def</span> <span class="nf">lookup_new</span><span class="p">(</span><span class="n">ngbrin</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">ngbrof</span><span class="p">,</span> <span class="n">distance_ULIM</span><span class="o">=</span><span class="n">NP</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">oob_value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+               <span class="n">remove_oob</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">maxmatch</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    NEEDS SERIOUS DEVELOPMENT AND TESTING!!!</span>
+
+<span class="sd">    Perform a lookup operation based on nearest neighbour algorithm using</span>
+<span class="sd">    KD-Trees when the lookup database and required coordinate locations are</span>
+<span class="sd">    specified. </span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    ngbrin [numpy array] locations of neighbours from which neighbours of </span>
+<span class="sd">           locations in ngbrof must be found. MxK numpy array corresponding</span>
+<span class="sd">           to M locations specified in K coordinates </span>
+<span class="sd">    </span>
+<span class="sd">    val    [numpy array] array of M values at the ngbrin locations</span>
+
+<span class="sd">    ngbrof [numpy array] locations for which neighbours in locations specified</span>
+<span class="sd">           by ngbrin must be found. NxK array corresponding to N locations </span>
+<span class="sd">           specified in K coordinates</span>
+
+<span class="sd">    distance_ULIM</span>
+<span class="sd">            [scalar] A positive number for the upper bound on distance while</span>
+<span class="sd">            searching for nearest neighbours. Neighbours outside of this upper</span>
+<span class="sd">            bound are not searched for. Default = NP.inf (infinite distance upper </span>
+<span class="sd">            bound means nearest neighbours will be searched all the way out to </span>
+<span class="sd">            infinite distance). Should be in the same units as x, y, xin and yin</span>
+
+<span class="sd">    oob_value</span>
+<span class="sd">            [scalar] Value to be returned at the location if the nearest</span>
+<span class="sd">            neighbour for the location is not found inside distance_ULIM.</span>
+<span class="sd">            Default = 0</span>
+
+<span class="sd">    remove_oob</span>
+<span class="sd">            [boolean] If set to True, results of nearest neighbour search and </span>
+<span class="sd">            lookup are returned only for those input locations which have a </span>
+<span class="sd">            neighbour within the distance upper bound. Locations with no </span>
+<span class="sd">            neighbours inside the distance upper bound will not be in the </span>
+<span class="sd">            returned results. Default = True. If set to False, even if no </span>
+<span class="sd">            nearest neighbours are found within the distance upper bound, an</span>
+<span class="sd">            infinite distance and out of bound index from the lookup table are</span>
+<span class="sd">            returned.</span>
+
+<span class="sd">    maxmatch</span>
+<span class="sd">            [scalar] A positive value indicating maximum number of input </span>
+<span class="sd">            locations (in ngbrof) to be assigned. Default = None. If set to </span>
+<span class="sd">            None, only the first nrearest neighbour is searched for and the </span>
+<span class="sd">            correspoding value assigned. all the input locations specified are </span>
+<span class="sd">            assigned values. For instance, to have only one nearest neighbour </span>
+<span class="sd">            from the lookup locations to be determined per input location, use </span>
+<span class="sd">            maxmatch=1 or maxmatch=None. </span>
+
+<span class="sd">    tol     [scalar] If set, only lookup data with abs(val) &gt; tol will be </span>
+<span class="sd">            considered for nearest neighbour lookup. Default = None implies all</span>
+<span class="sd">            lookup values will be considered for nearest neighbour determination.</span>
+<span class="sd">            tol is to be interpreted as a minimum value considered as significant</span>
+<span class="sd">            in the lookup table. Changing tol from default may result in</span>
+<span class="sd">            unpredictable indices especially to the lookup (ngbrin) indices</span>
+
+<span class="sd">    Outputs: </span>
+
+<span class="sd">    Returns a tuple of nearest neighbour lookup value, the index of input</span>
+<span class="sd">    location and nearest neighbour distance in the lookup table. The tuple</span>
+<span class="sd">    consists of the following elements in this order. The number of pairs</span>
+<span class="sd">    matched will be the lesser of those determined by distNN and maxmatch</span>
+
+<span class="sd">    ibind   [numpy vector] indices of the input locations (ngbrof) for which </span>
+<span class="sd">            nearest neighbours were found from the lookup table. If remove_oob is </span>
+<span class="sd">            not set to True, size of ibind is equal to N (the number of </span>
+<span class="sd">            locations in ngbrof, otherwise size of ibind is less than or equal </span>
+<span class="sd">            to N. Values of ibind equal to size of lookup table values indicates </span>
+<span class="sd">            the nearest neighbours for the corresponding input location could </span>
+<span class="sd">            not be found within the distance upper bound from the lookup table. </span>
+<span class="sd">            The corresponding values in distNN are returned as inf or NP.inf</span>
+
+<span class="sd">    nnval   [numpy vector] nearest neighbour lookup values for the given input</span>
+<span class="sd">            locations. If remove_oob is not set to True, size of nnval is equal</span>
+<span class="sd">            to N, otherwise size of nnval is less than or equal</span>
+<span class="sd">            to N. In such a case, out of bound locations are</span>
+<span class="sd">            filled with oob_value. Corresponding values in distNN are returned </span>
+<span class="sd">            as inf or NP.inf</span>
+
+<span class="sd">    distNN  [numpy vector] distance to the nearest neighbour in the lookup table</span>
+<span class="sd">            for the given input locations. If remove_oob is not set to True, size </span>
+<span class="sd">            of distNN is equal to N (number of locations in ngbrof), otherwise </span>
+<span class="sd">            size of distNN is less than or equal to N. In such </span>
+<span class="sd">            a case, out of bound locations are filled with inf or NP.inf. </span>
+<span class="sd">    ----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ngbrin</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">ngbrin</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;ngbrin, val, and ngbrin must be specified for lookup operation.&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ngbrin</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;ngbrin must be a numpy array&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ngbrof</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;ngbrof must be a numpy array&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;val must be a numpy array&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">ngbrin</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">val</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Number of locations (number of rows) in ngbrin must be the same as the number of elements in val&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">ngbrin</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">ngbrof</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Number of coordinate axes of ngbrin and ngbrof must be equal&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">distance_ULIM</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span><span class="nb">float</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Search distance upper limit must be a scalar&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">distance_ULIM</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Search distance upper limit must be positive&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">distance_ULIM</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">distance_ULIM</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">tol</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tol</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">tol</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;tol value must be non-negative&#39;</span><span class="p">)</span>
+            
+            <span class="n">ngbrin</span> <span class="o">=</span> <span class="n">ngbrin</span><span class="p">[</span><span class="n">NP</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">tol</span><span class="p">,:]</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="n">NP</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">tol</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;tol must be a scalar integer or float&#39;</span><span class="p">)</span>
+
+    <span class="n">kdt</span> <span class="o">=</span> <span class="n">KDT</span><span class="p">(</span><span class="n">ngbrin</span><span class="p">)</span>
+    <span class="n">dist</span><span class="p">,</span> <span class="n">ind</span> <span class="o">=</span> <span class="n">kdt</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">ngbrof</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">maxmatch</span><span class="p">,</span> <span class="n">distance_upper_bound</span><span class="o">=</span><span class="n">distance_ULIM</span><span class="p">)</span>
+    <span class="n">nnval</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">ind</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">val</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">nnval</span><span class="p">[</span><span class="n">dist</span> <span class="o">&lt;</span> <span class="n">distance_ULIM</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="n">ind</span><span class="p">[</span><span class="n">dist</span> <span class="o">&lt;</span> <span class="n">distance_ULIM</span><span class="p">]]</span>
+    <span class="n">nnval</span><span class="p">[</span><span class="n">dist</span> <span class="o">&gt;=</span> <span class="n">distance_ULIM</span><span class="p">]</span> <span class="o">=</span> <span class="n">oob_value</span>
+    <span class="n">ibind</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ind</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="c1"># in-bound indices</span>
+    <span class="n">distNN</span> <span class="o">=</span> <span class="n">dist</span>
+    <span class="k">if</span> <span class="n">remove_oob</span><span class="p">:</span>
+        <span class="n">nnval</span> <span class="o">=</span> <span class="n">nnval</span><span class="p">[</span><span class="n">dist</span> <span class="o">&lt;=</span> <span class="n">distance_ULIM</span><span class="p">]</span>
+        <span class="n">ibind</span> <span class="o">=</span> <span class="n">ibind</span><span class="p">[</span><span class="n">dist</span> <span class="o">&lt;=</span> <span class="n">distance_ULIM</span><span class="p">]</span>
+        <span class="n">distNN</span> <span class="o">=</span> <span class="n">dist</span><span class="p">[</span><span class="n">dist</span> <span class="o">&lt;=</span> <span class="n">distance_ULIM</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">maxmatch</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">maxmatch</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;maxmatch must be an integer.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">maxmatch</span> <span class="o">&lt;</span> <span class="n">distNN</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">maxmatch</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">sortind</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">distNN</span><span class="p">)[:</span><span class="n">maxmatch</span><span class="p">]</span> <span class="c1"># Indices of maxmatch nearest matches</span>
+                <span class="n">nnval</span> <span class="o">=</span> <span class="n">nnval</span><span class="p">[</span><span class="n">sortind</span><span class="p">]</span>
+                <span class="n">ibind</span> <span class="o">=</span> <span class="n">ibind</span><span class="p">[</span><span class="n">sortind</span><span class="p">]</span>
+                <span class="n">distNN</span> <span class="o">=</span> <span class="n">distNN</span><span class="p">[</span><span class="n">sortind</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Maximum number of nearest neighbours must be positive.&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ibind</span><span class="p">,</span> <span class="n">nnval</span><span class="p">,</span> <span class="n">distNN</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="lookup_1NN_old"><a class="viewcode-back" href="../../astroutils.html#astroutils.lookup_operations.lookup_1NN_old">[docs]</a><span class="k">def</span> <span class="nf">lookup_1NN_old</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">inp</span><span class="p">,</span> <span class="n">distance_ULIM</span><span class="o">=</span><span class="n">NP</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">oob_value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                   <span class="n">remove_oob</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">maxmatch</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Perform a lookup operation based on the first nearest neighbour algorithm </span>
+<span class="sd">    using KD-Trees when the lookup database and required coordinate locations are</span>
+<span class="sd">    specified.</span>
+
+<span class="sd">    Inputs:</span>
+<span class="sd">    </span>
+<span class="sd">    ref     [numpy array] Reference locations to be looked up to. NxK numpy </span>
+<span class="sd">            array which represents N points in K-dimensional coordinates</span>
+
+<span class="sd">    val     [numpy array] values at the x and y locations. x, y, and val must be</span>
+<span class="sd">            of same size</span>
+
+<span class="sd">    inp     [numpy array] Input locations for which nearest neighbours will be</span>
+<span class="sd">            searched in reference locations specified in ref. MxK numpy array</span>
+<span class="sd">            representing M points in K-dimensional coordinates. Must have same</span>
+<span class="sd">            number of columns as input parameter ref.</span>
+
+<span class="sd">    distance_ULIM</span>
+<span class="sd">            [scalar] A positive number for the upper bound on distance while</span>
+<span class="sd">            searching for nearest neighbours. Neighbours outside of this upper</span>
+<span class="sd">            bound are not searched for. Default = NP.inf (infinite distance upper </span>
+<span class="sd">            bound means nearest neighbours will be searched all the way out to </span>
+<span class="sd">            infinite distance). Should be in the same units as x, y, xin and yin</span>
+
+<span class="sd">    maxmatch</span>
+<span class="sd">            [scalar] A positive value indicating maximum number of input </span>
+<span class="sd">            locations (xin, yin) to be assigned. Default = None. If set to None, </span>
+<span class="sd">            all the input locations specified are assigned values. For instance,</span>
+<span class="sd">            to have only one input location to be populated per antenna, use</span>
+<span class="sd">            maxmatch=1. </span>
+
+<span class="sd">    tol     [scalar] If set, only lookup data with abs(val) &gt; tol will be </span>
+<span class="sd">            considered for nearest neighbour lookup. Default = None implies all</span>
+<span class="sd">            lookup values will be considered for nearest neighbour determination.</span>
+<span class="sd">            tol is to be interpreted as a minimum value considered as significant</span>
+<span class="sd">            in the lookup table.</span>
+
+<span class="sd">    oob_value</span>
+<span class="sd">            [scalar] Value to be returned at the location if the nearest</span>
+<span class="sd">            neighbour for the location is not found inside distance_ULIM.</span>
+<span class="sd">            Default = 0</span>
+
+<span class="sd">    remove_oob</span>
+<span class="sd">            [boolean] If set to True, results of nearest neighbour search and </span>
+<span class="sd">            lookup are returned only for those input locations which have a </span>
+<span class="sd">            neighbour within the distance upper bound. Locations with no </span>
+<span class="sd">            neighbours inside the distance upper bound will not be in the </span>
+<span class="sd">            returned results. Default = True. If set to False, even if no </span>
+<span class="sd">            nearest neighbours are found within the distance upper bound, an</span>
+<span class="sd">            infinite distance and out of bound index from the lookup table are</span>
+<span class="sd">            returned.</span>
+
+<span class="sd">    Outputs: </span>
+
+<span class="sd">    Returns a tuple in the following order:</span>
+<span class="sd">    index of input location, nearest neighbour lookup</span>
+<span class="sd">    value, nearest neighbour distance from the lookup table, and the index of the</span>
+<span class="sd">    nearest neighbour in the lookup table. </span>
+<span class="sd">    The number of pairs matched will be the lesser of those determined by distNN</span>
+<span class="sd">    and maxmatch</span>
+
+<span class="sd">    ibind   [numpy vector] indices of the input locations for which nearest </span>
+<span class="sd">            neighbours were found from the lookup table. If remove_oob is </span>
+<span class="sd">            not set to True, size of ibind is equal to size of xin or yin, </span>
+<span class="sd">            otherwise size of ibind is less than or equal to size of xin or yin. </span>
+<span class="sd">            Values of ibind equal to size of lookup table values indicates the </span>
+<span class="sd">            nearest neighbours for the corresponding input location could not be </span>
+<span class="sd">            found within the distance upper bound from the lookup table. The</span>
+<span class="sd">            corresponding values in distNN are returned as inf or NP.inf</span>
+
+<span class="sd">    nnval   [numpy vector] nearest neighbour lookup values for the given input</span>
+<span class="sd">            locations. If remove_oob is not set to True, size of nnval is equal</span>
+<span class="sd">            to size of xin or yin, otherwise size of nnval is less than or equal</span>
+<span class="sd">            to size of xin or yin. In such a case, out of bound locations are</span>
+<span class="sd">            filled with oob_value. Corresponding values in distNN are returned as</span>
+<span class="sd">            inf or NP.inf</span>
+
+<span class="sd">    distNN  [numpy vector] distance to the nearest neighbour in the lookup table</span>
+<span class="sd">            for the given input locations. If remove_oob is not set to True, size </span>
+<span class="sd">            of distNN is equal to size of xin or yin, otherwise size of distNN is </span>
+<span class="sd">            less than or equal to size of xin or yin. In such a case, out of </span>
+<span class="sd">            bound locations are filled with inf or NP.inf. </span>
+<span class="sd">    </span>
+<span class="sd">    refind  [numpy vector] indices of the nearest neighbours in the reference </span>
+<span class="sd">            lookup table. i.e., ref[refind,:] are the nearest neighbours of </span>
+<span class="sd">            inp[inpind] with distances distNN.</span>
+
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ref</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">inp</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;ref, val, and inp must be specified for lookup operation.&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">val</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;ref and val must contain same number of entries&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">tol</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tol</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">tol</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;tol value must be non-negative&#39;</span><span class="p">)</span>
+            <span class="n">ref</span> <span class="o">=</span> <span class="n">ref</span><span class="p">[</span><span class="n">NP</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">tol</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="n">NP</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">tol</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;tol must be a scalar integer or float&#39;</span><span class="p">)</span>
+
+    <span class="n">inpind</span><span class="p">,</span> <span class="n">distNN</span><span class="p">,</span> <span class="n">refind</span> <span class="o">=</span> <span class="n">find_1NN_old</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">inp</span><span class="p">,</span> <span class="n">distance_ULIM</span><span class="o">=</span><span class="n">distance_ULIM</span><span class="p">,</span> <span class="n">remove_oob</span><span class="o">=</span><span class="n">remove_oob</span><span class="p">,</span> <span class="n">maxmatch</span><span class="o">=</span><span class="n">maxmatch</span><span class="p">)</span>
+    <span class="n">nnval</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">refind</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">val</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">nnval</span><span class="p">[</span><span class="n">distNN</span> <span class="o">&lt;</span> <span class="n">distance_ULIM</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="n">refind</span><span class="p">[</span><span class="n">distNN</span> <span class="o">&lt;</span> <span class="n">distance_ULIM</span><span class="p">]]</span>
+    <span class="n">nnval</span><span class="p">[</span><span class="n">distNN</span> <span class="o">&gt;=</span> <span class="n">distance_ULIM</span><span class="p">]</span> <span class="o">=</span> <span class="n">oob_value</span>
+
+    <span class="k">if</span> <span class="n">maxmatch</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">maxmatch</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;maxmatch must be an integer.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">maxmatch</span> <span class="o">&lt;</span> <span class="n">distNN</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">maxmatch</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">sortind</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">distNN</span><span class="p">)[:</span><span class="n">maxmatch</span><span class="p">]</span> <span class="c1"># Indices of maxmatch nearest matches</span>
+                <span class="n">nnval</span> <span class="o">=</span> <span class="n">nnval</span><span class="p">[</span><span class="n">sortind</span><span class="p">]</span>
+                <span class="n">inpind</span> <span class="o">=</span> <span class="n">inpind</span><span class="p">[</span><span class="n">sortind</span><span class="p">]</span>
+                <span class="n">distNN</span> <span class="o">=</span> <span class="n">distNN</span><span class="p">[</span><span class="n">sortind</span><span class="p">]</span>
+                <span class="n">refind</span> <span class="o">=</span> <span class="n">refind</span><span class="p">[</span><span class="n">sortind</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Maximum number of nearest neighbours must be positive.&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">inpind</span><span class="p">,</span> <span class="n">nnval</span><span class="p">,</span> <span class="n">distNN</span><span class="p">,</span> <span class="n">refind</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="find_1NN_old"><a class="viewcode-back" href="../../astroutils.html#astroutils.lookup_operations.find_1NN_old">[docs]</a><span class="k">def</span> <span class="nf">find_1NN_old</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">inp</span><span class="p">,</span> <span class="n">distance_ULIM</span><span class="o">=</span><span class="n">NP</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">remove_oob</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">maxmatch</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Find the first nearest neighbour of input locations to a set of reference </span>
+<span class="sd">    locations using KD-Trees nearest neighbour algorithm.</span>
+
+<span class="sd">    Inputs:</span>
+<span class="sd">    </span>
+<span class="sd">    ref     [numpy array] Reference locations to be looked up to. NxK numpy </span>
+<span class="sd">            array which represents N points in K-dimensional coordinates</span>
+
+<span class="sd">    inp     [numpy array] Input locations for which nearest neighbours will be</span>
+<span class="sd">            searched in reference locations specified in ref. MxK numpy array</span>
+<span class="sd">            representing M points in K-dimensional coordinates. Must have same</span>
+<span class="sd">            number of columns as input parameter ref.</span>
+
+<span class="sd">    distance_ULIM</span>
+<span class="sd">            [scalar] A positive number for the upper bound on distance while</span>
+<span class="sd">            searching for nearest neighbours. Neighbours outside of this upper</span>
+<span class="sd">            bound are not searched for. Default = NP.inf (infinite distance upper </span>
+<span class="sd">            bound means nearest neighbours will be searched all the way out to </span>
+<span class="sd">            infinite distance). Should be in the same units as x, y, xin and yin</span>
+
+<span class="sd">    remove_oob</span>
+<span class="sd">            [boolean] If set to True, results of nearest neighbour search and </span>
+<span class="sd">            lookup are returned only for those input locations which have a </span>
+<span class="sd">            neighbour within the distance upper bound. Locations with no </span>
+<span class="sd">            neighbours inside the distance upper bound will not be in the </span>
+<span class="sd">            returned results. Default = True. If set to False, even if no </span>
+<span class="sd">            nearest neighbours are found within the distance upper bound, an</span>
+<span class="sd">            infinite distance and out of bound index from the lookup table are</span>
+<span class="sd">            returned.</span>
+
+<span class="sd">    Outputs: </span>
+
+<span class="sd">    Returns a tuple in the following order:</span>
+<span class="sd">    index of input location (inpind), nearest neighbour distance in the lookup </span>
+<span class="sd">    table (distNN), and the index of the nearest neighbour in the lookup table </span>
+<span class="sd">    (refind).</span>
+<span class="sd">    The number of pairs matched will be the lesser of those determined by distNN</span>
+<span class="sd">    and maxmatch</span>
+
+<span class="sd">    inpind  [numpy vector] indices of the input locations for which nearest </span>
+<span class="sd">            neighbours were found from the lookup table. If remove_oob is </span>
+<span class="sd">            not set to True, size of inpind is equal to size of xin or yin, </span>
+<span class="sd">            otherwise size of inpind is less than or equal to size of xin or yin. </span>
+<span class="sd">            Values of inpind equal to size of lookup table values indicates the </span>
+<span class="sd">            nearest neighbours for the corresponding input location could not be </span>
+<span class="sd">            found within the distance upper bound from the lookup table. The</span>
+<span class="sd">            corresponding values in distNN are returned as inf or NP.inf</span>
+
+<span class="sd">    distNN  [numpy vector] distance to the nearest neighbour in the lookup table</span>
+<span class="sd">            for the given input locations. If remove_oob is not set to True, size </span>
+<span class="sd">            of distNN is equal to size of xin or yin, otherwise size of distNN is </span>
+<span class="sd">            less than or equal to size of xin or yin. In such a case, out of </span>
+<span class="sd">            bound locations are filled with inf or NP.inf. </span>
+
+<span class="sd">    refind  [numpy vector] indices of the nearest neighbours in the reference </span>
+<span class="sd">            lookup table. i.e., ref[refind,:] are the nearest neighbours of </span>
+<span class="sd">            inp[inpind] with distances distNN.</span>
+
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ref</span><span class="p">,</span> <span class="n">inp</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;ref and inp must be specified for lookup operation.&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">inp</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;ref and inp must contain same number of columns&#39;</span><span class="p">)</span>
+
+    <span class="n">kdt</span> <span class="o">=</span> <span class="n">KDT</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
+    <span class="n">distNN</span><span class="p">,</span> <span class="n">refind</span> <span class="o">=</span> <span class="n">kdt</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">distance_upper_bound</span><span class="o">=</span><span class="n">distance_ULIM</span><span class="p">)</span>
+    <span class="n">inpind</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">refind</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="c1"># in-bound indices</span>
+    <span class="k">if</span> <span class="n">remove_oob</span><span class="p">:</span>
+        <span class="n">inpind</span> <span class="o">=</span> <span class="n">inpind</span><span class="p">[</span><span class="n">distNN</span> <span class="o">&lt;=</span> <span class="n">distance_ULIM</span><span class="p">]</span>
+        <span class="n">refind</span> <span class="o">=</span> <span class="n">refind</span><span class="p">[</span><span class="n">distNN</span> <span class="o">&lt;=</span> <span class="n">distance_ULIM</span><span class="p">]</span>
+        <span class="n">distNN</span> <span class="o">=</span> <span class="n">distNN</span><span class="p">[</span><span class="n">distNN</span> <span class="o">&lt;=</span> <span class="n">distance_ULIM</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">inpind</span><span class="p">,</span> <span class="n">distNN</span><span class="p">,</span> <span class="n">refind</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="lookup_1NN"><a class="viewcode-back" href="../../astroutils.html#astroutils.lookup_operations.lookup_1NN">[docs]</a><span class="k">def</span> <span class="nf">lookup_1NN</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">inp</span><span class="p">,</span> <span class="n">distance_ULIM</span><span class="o">=</span><span class="n">NP</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">oob_value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                   <span class="n">remove_oob</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">maxmatch</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Perform a lookup operation based on the first nearest neighbour algorithm </span>
+<span class="sd">    using KD-Trees when the lookup database and required coordinate locations are</span>
+<span class="sd">    specified.</span>
+
+<span class="sd">    Inputs:</span>
+<span class="sd">    </span>
+<span class="sd">    ref     [numpy array] Reference locations to be looked up to. NxK numpy </span>
+<span class="sd">            array which represents N points in K-dimensional coordinates</span>
+
+<span class="sd">    val     [numpy array] values at the x and y locations. x, y, and val must be</span>
+<span class="sd">            of same size</span>
+
+<span class="sd">    inp     [numpy array] Input locations for which nearest neighbours will be</span>
+<span class="sd">            searched in reference locations specified in ref. MxK numpy array</span>
+<span class="sd">            representing M points in K-dimensional coordinates. Must have same</span>
+<span class="sd">            number of columns as input parameter ref.</span>
+
+<span class="sd">    distance_ULIM</span>
+<span class="sd">            [scalar] A positive number for the upper bound on distance while</span>
+<span class="sd">            searching for nearest neighbours. Neighbours outside of this upper</span>
+<span class="sd">            bound are not searched for. Default = NP.inf (infinite distance upper </span>
+<span class="sd">            bound means nearest neighbours will be searched all the way out to </span>
+<span class="sd">            infinite distance). Should be in the same units as x, y, xin and yin</span>
+
+<span class="sd">    maxmatch</span>
+<span class="sd">            [scalar] A positive value indicating maximum number of input </span>
+<span class="sd">            locations (xin, yin) to be assigned. Default = None. If set to None, </span>
+<span class="sd">            all the input locations specified are assigned values. For instance,</span>
+<span class="sd">            to have only one nearest neighbour from the lookup locations to be </span>
+<span class="sd">            determined per input location, use maxmatch=1. </span>
+
+<span class="sd">    tol     [scalar] If set, only lookup data with abs(val) &gt; tol will be </span>
+<span class="sd">            considered for nearest neighbour lookup. Default = None implies all</span>
+<span class="sd">            lookup values will be considered for nearest neighbour determination.</span>
+<span class="sd">            tol is to be interpreted as a minimum value considered as significant</span>
+<span class="sd">            in the lookup table.</span>
+
+<span class="sd">    oob_value</span>
+<span class="sd">            [scalar] Value to be returned at the location if the nearest</span>
+<span class="sd">            neighbour for the location is not found inside distance_ULIM.</span>
+<span class="sd">            Default = 0</span>
+
+<span class="sd">    remove_oob</span>
+<span class="sd">            [boolean] If set to True, results of nearest neighbour search and </span>
+<span class="sd">            lookup are returned only for those input locations which have a </span>
+<span class="sd">            neighbour within the distance upper bound. Locations with no </span>
+<span class="sd">            neighbours inside the distance upper bound will not be in the </span>
+<span class="sd">            returned results. Default = True. If set to False, even if no </span>
+<span class="sd">            nearest neighbours are found within the distance upper bound, an</span>
+<span class="sd">            infinite distance and out of bound index from the lookup table are</span>
+<span class="sd">            returned.</span>
+
+<span class="sd">    Outputs: </span>
+
+<span class="sd">    Returns a tuple in the following order:</span>
+<span class="sd">    index of input location, nearest neighbour lookup</span>
+<span class="sd">    value, nearest neighbour distance from the lookup table, and the index of the</span>
+<span class="sd">    nearest neighbour in the lookup table. </span>
+<span class="sd">    The number of pairs matched will be the lesser of those determined by distNN</span>
+<span class="sd">    and maxmatch</span>
+
+<span class="sd">    ibind   [numpy vector] indices of the input locations for which nearest </span>
+<span class="sd">            neighbours were found from the lookup table. If remove_oob is </span>
+<span class="sd">            not set to True, size of ibind is equal to size of xin or yin, </span>
+<span class="sd">            otherwise size of ibind is less than or equal to size of xin or yin. </span>
+<span class="sd">            Values of ibind equal to size of lookup table values indicates the </span>
+<span class="sd">            nearest neighbours for the corresponding input location could not be </span>
+<span class="sd">            found within the distance upper bound from the lookup table. The</span>
+<span class="sd">            corresponding values in distNN are returned as inf or NP.inf</span>
+
+<span class="sd">    nnval   [numpy vector] nearest neighbour lookup values for the given input</span>
+<span class="sd">            locations. If remove_oob is not set to True, size of nnval is equal</span>
+<span class="sd">            to size of xin or yin, otherwise size of nnval is less than or equal</span>
+<span class="sd">            to size of xin or yin. In such a case, out of bound locations are</span>
+<span class="sd">            filled with oob_value. Corresponding values in distNN are returned as</span>
+<span class="sd">            inf or NP.inf</span>
+
+<span class="sd">    distNN  [numpy vector] distance to the nearest neighbour in the lookup table</span>
+<span class="sd">            for the given input locations. If remove_oob is not set to True, size </span>
+<span class="sd">            of distNN is equal to size of xin or yin, otherwise size of distNN is </span>
+<span class="sd">            less than or equal to size of xin or yin. In such a case, out of </span>
+<span class="sd">            bound locations are filled with inf or NP.inf. </span>
+<span class="sd">    </span>
+<span class="sd">    refind  [numpy vector] indices of the nearest neighbours in the reference </span>
+<span class="sd">            lookup table. i.e., ref[refind,:] are the nearest neighbours of </span>
+<span class="sd">            inp[inpind] with distances distNN.</span>
+
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ref</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">inp</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;ref, val, and inp must be specified for lookup operation.&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">val</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;ref and val must contain same number of entries&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">tol</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tol</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">tol</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;tol value must be non-negative&#39;</span><span class="p">)</span>
+            <span class="n">ref</span> <span class="o">=</span> <span class="n">ref</span><span class="p">[</span><span class="n">NP</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">tol</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="n">NP</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">tol</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;tol must be a scalar integer or float&#39;</span><span class="p">)</span>
+
+    <span class="n">inpind</span><span class="p">,</span> <span class="n">distNN</span><span class="p">,</span> <span class="n">refind</span> <span class="o">=</span> <span class="n">find_1NN</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">inp</span><span class="p">,</span> <span class="n">distance_ULIM</span><span class="o">=</span><span class="n">distance_ULIM</span><span class="p">,</span> <span class="n">remove_oob</span><span class="o">=</span><span class="n">remove_oob</span><span class="p">,</span> <span class="n">maxmatch</span><span class="o">=</span><span class="n">maxmatch</span><span class="p">)</span>
+    <span class="n">nnval</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">refind</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">val</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">nnval</span><span class="p">[</span><span class="n">distNN</span> <span class="o">&lt;</span> <span class="n">distance_ULIM</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="n">refind</span><span class="p">[</span><span class="n">distNN</span> <span class="o">&lt;</span> <span class="n">distance_ULIM</span><span class="p">]]</span>
+    <span class="n">nnval</span><span class="p">[</span><span class="n">distNN</span> <span class="o">&gt;=</span> <span class="n">distance_ULIM</span><span class="p">]</span> <span class="o">=</span> <span class="n">oob_value</span>
+
+    <span class="k">if</span> <span class="n">maxmatch</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">maxmatch</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;maxmatch must be an integer.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">maxmatch</span> <span class="o">&lt;</span> <span class="n">distNN</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">maxmatch</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">sortind</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">distNN</span><span class="p">)[:</span><span class="n">maxmatch</span><span class="p">]</span> <span class="c1"># Indices of maxmatch nearest matches</span>
+                <span class="n">nnval</span> <span class="o">=</span> <span class="n">nnval</span><span class="p">[</span><span class="n">sortind</span><span class="p">]</span>
+                <span class="n">inpind</span> <span class="o">=</span> <span class="n">inpind</span><span class="p">[</span><span class="n">sortind</span><span class="p">]</span>
+                <span class="n">distNN</span> <span class="o">=</span> <span class="n">distNN</span><span class="p">[</span><span class="n">sortind</span><span class="p">]</span>
+                <span class="n">refind</span> <span class="o">=</span> <span class="n">refind</span><span class="p">[</span><span class="n">sortind</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Maximum number of nearest neighbours must be positive.&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">inpind</span><span class="p">,</span> <span class="n">nnval</span><span class="p">,</span> <span class="n">distNN</span><span class="p">,</span> <span class="n">refind</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="find_1NN"><a class="viewcode-back" href="../../astroutils.html#astroutils.lookup_operations.find_1NN">[docs]</a><span class="k">def</span> <span class="nf">find_1NN</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">inp</span><span class="p">,</span> <span class="n">distance_ULIM</span><span class="o">=</span><span class="n">NP</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">remove_oob</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Find the first nearest neighbour of input locations from a set of reference </span>
+<span class="sd">    locations using KD-Trees nearest neighbour algorithm.</span>
+
+<span class="sd">    Inputs:</span>
+<span class="sd">    </span>
+<span class="sd">    ref     [numpy array] Reference locations to be looked up to. NxK numpy </span>
+<span class="sd">            array which represents N points in K-dimensional coordinates</span>
+
+<span class="sd">    inp     [numpy array] Input locations for which nearest neighbours will be</span>
+<span class="sd">            searched in reference locations specified in ref. MxK numpy array</span>
+<span class="sd">            representing M points in K-dimensional coordinates. Must have same</span>
+<span class="sd">            number of columns as input parameter ref.</span>
+
+<span class="sd">    distance_ULIM</span>
+<span class="sd">            [scalar] A positive number for the upper bound on distance while</span>
+<span class="sd">            searching for nearest neighbours. Neighbours outside of this upper</span>
+<span class="sd">            bound are not searched for. Default = NP.inf (infinite distance upper </span>
+<span class="sd">            bound means nearest neighbours will be searched all the way out to </span>
+<span class="sd">            infinite distance). Should be in the same units as x, y, xin and yin</span>
+
+<span class="sd">    remove_oob</span>
+<span class="sd">            [boolean] If set to True, results of nearest neighbour search and </span>
+<span class="sd">            lookup are returned only for those input locations which have a </span>
+<span class="sd">            neighbour within the distance upper bound. Locations with no </span>
+<span class="sd">            neighbours inside the distance upper bound will not be in the </span>
+<span class="sd">            returned results. Default = True. If set to False, even if no </span>
+<span class="sd">            nearest neighbours are found within the distance upper bound, an</span>
+<span class="sd">            infinite distance and out of bound index from the lookup table are</span>
+<span class="sd">            returned.</span>
+
+<span class="sd">    Outputs: </span>
+
+<span class="sd">    Returns a tuple in the following order:</span>
+<span class="sd">    index of input location (inpind), nearest neighbour distance in the lookup </span>
+<span class="sd">    table (distNN), and the index of the nearest neighbour in the lookup table </span>
+<span class="sd">    (refind).</span>
+<span class="sd">    The number of pairs matched will be the lesser of those determined by distNN</span>
+<span class="sd">    and maxmatch</span>
+
+<span class="sd">    inpind  [numpy vector] indices of the input locations for which nearest </span>
+<span class="sd">            neighbours were found from the lookup table. If remove_oob is </span>
+<span class="sd">            not set to True, size of inpind is equal to size of xin or yin, </span>
+<span class="sd">            otherwise size of inpind is less than or equal to size of xin or yin. </span>
+<span class="sd">            Values of inpind equal to size of lookup table values indicates the </span>
+<span class="sd">            nearest neighbours for the corresponding input location could not be </span>
+<span class="sd">            found within the distance upper bound from the lookup table. The</span>
+<span class="sd">            corresponding values in distNN are returned as inf or NP.inf</span>
+
+<span class="sd">    distNN  [numpy vector] distance to the nearest neighbour in the lookup table</span>
+<span class="sd">            for the given input locations. If remove_oob is not set to True, size </span>
+<span class="sd">            of distNN is equal to size of xin or yin, otherwise size of distNN is </span>
+<span class="sd">            less than or equal to size of xin or yin. In such a case, out of </span>
+<span class="sd">            bound locations are filled with inf or NP.inf. </span>
+
+<span class="sd">    refind  [numpy vector] indices of the nearest neighbours in the reference </span>
+<span class="sd">            lookup table. i.e., ref[refind,:] are the nearest neighbours of </span>
+<span class="sd">            inp[inpind] with distances distNN.</span>
+
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ref</span><span class="p">,</span> <span class="n">inp</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;ref and inp must be specified for lookup operation.&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">inp</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;ref and inp must contain same number of columns&#39;</span><span class="p">)</span>
+
+    <span class="n">kdt</span> <span class="o">=</span> <span class="n">KDT</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
+    <span class="n">distNN</span><span class="p">,</span> <span class="n">refind</span> <span class="o">=</span> <span class="n">kdt</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">distance_upper_bound</span><span class="o">=</span><span class="n">distance_ULIM</span><span class="p">)</span>
+    <span class="n">inpind</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">refind</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="c1"># in-bound indices of input locations</span>
+    <span class="k">if</span> <span class="n">remove_oob</span><span class="p">:</span>
+        <span class="n">inpind</span> <span class="o">=</span> <span class="n">inpind</span><span class="p">[</span><span class="n">distNN</span> <span class="o">&lt;=</span> <span class="n">distance_ULIM</span><span class="p">]</span>
+        <span class="n">refind</span> <span class="o">=</span> <span class="n">refind</span><span class="p">[</span><span class="n">distNN</span> <span class="o">&lt;=</span> <span class="n">distance_ULIM</span><span class="p">]</span>
+        <span class="n">distNN</span> <span class="o">=</span> <span class="n">distNN</span><span class="p">[</span><span class="n">distNN</span> <span class="o">&lt;=</span> <span class="n">distance_ULIM</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">inpind</span><span class="p">,</span> <span class="n">refind</span><span class="p">,</span> <span class="n">distNN</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="find_1NN_pp"><a class="viewcode-back" href="../../astroutils.html#astroutils.lookup_operations.find_1NN_pp">[docs]</a><span class="k">def</span> <span class="nf">find_1NN_pp</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">inp</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">outq</span><span class="p">,</span> <span class="n">distance_ULIM</span><span class="o">=</span><span class="n">NP</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">remove_oob</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Find the first nearest neighbour of input locations to a set of reference </span>
+<span class="sd">    locations using KD-Trees nearest neighbour algorithm. Identical to </span>
+<span class="sd">    find_1NN_pp() but should be used only in case of parallel programming</span>
+<span class="sd">    applications</span>
+
+<span class="sd">    Inputs:</span>
+<span class="sd">    </span>
+<span class="sd">    ref     [numpy array] Reference locations to be looked up to. NxK numpy </span>
+<span class="sd">            array which represents N points in K-dimensional coordinates</span>
+
+<span class="sd">    inp     [numpy array] Input locations for which nearest neighbours will be</span>
+<span class="sd">            searched in reference locations specified in ref. MxK numpy array</span>
+<span class="sd">            representing M points in K-dimensional coordinates. Must have same</span>
+<span class="sd">            number of columns as input parameter ref.</span>
+
+<span class="sd">    pid     [any scalar] process id which will be used as a key in the returned </span>
+<span class="sd">            dictionary</span>
+
+<span class="sd">    outq    [instance of multiprocessing.Queue] Output dictionary will be </span>
+<span class="sd">            returned in outq</span>
+
+<span class="sd">    distance_ULIM</span>
+<span class="sd">            [scalar] A positive number for the upper bound on distance while</span>
+<span class="sd">            searching for nearest neighbours. Neighbours outside of this upper</span>
+<span class="sd">            bound are not searched for. Default = NP.inf (infinite distance upper </span>
+<span class="sd">            bound means nearest neighbours will be searched all the way out to </span>
+<span class="sd">            infinite distance). Should be in the same units as x, y, xin and yin</span>
+
+<span class="sd">    remove_oob</span>
+<span class="sd">            [boolean] If set to True, results of nearest neighbour search and </span>
+<span class="sd">            lookup are returned only for those input locations which have a </span>
+<span class="sd">            neighbour within the distance upper bound. Locations with no </span>
+<span class="sd">            neighbours inside the distance upper bound will not be in the </span>
+<span class="sd">            returned results. Default = True. If set to False, even if no </span>
+<span class="sd">            nearest neighbours are found within the distance upper bound, an</span>
+<span class="sd">            infinite distance and out of bound index from the lookup table are</span>
+<span class="sd">            returned.</span>
+
+<span class="sd">    Outputs: </span>
+
+<span class="sd">    Returns a dictionary with key given by pid and contains a nested dictionary</span>
+<span class="sd">    with the following keys and values: </span>
+<span class="sd">    &#39;inpind&#39;  [numpy vector] indices of the input locations for which nearest </span>
+<span class="sd">              neighbours were found from the lookup table. If remove_oob is </span>
+<span class="sd">              not set to True, size of inpind is equal to size of xin or yin, </span>
+<span class="sd">              otherwise size of inpind is less than or equal to size of xin or </span>
+<span class="sd">              yin. Values of inpind equal to size of lookup table values </span>
+<span class="sd">              indicates the nearest neighbours for the corresponding input </span>
+<span class="sd">              location could not be found within the distance upper bound from </span>
+<span class="sd">              the lookup table. The corresponding values in distNN are returned </span>
+<span class="sd">              as inf or NP.inf</span>
+
+<span class="sd">    &#39;distNN&#39;  [numpy vector] distance to the nearest neighbour in the lookup </span>
+<span class="sd">              table for the given input locations. If remove_oob is not set to </span>
+<span class="sd">              True, size of distNN is equal to size of xin or yin, otherwise </span>
+<span class="sd">              size of distNN is less than or equal to size of xin or yin. In </span>
+<span class="sd">              such a case, out of bound locations are filled with inf or NP.inf. </span>
+
+<span class="sd">    &#39;refind&#39;  [numpy vector] indices of the nearest neighbours in the reference </span>
+<span class="sd">              lookup table. i.e., ref[refind,:] are the nearest neighbours of </span>
+<span class="sd">              inp[inpind] with distances distNN.</span>
+
+
+<span class="sd">    The number of pairs matched will be the lesser of those determined by distNN</span>
+<span class="sd">    and maxmatch</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ref</span><span class="p">,</span> <span class="n">inp</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;ref and inp must be specified for lookup operation.&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">inp</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;ref and inp must contain same number of columns&#39;</span><span class="p">)</span>
+
+    <span class="n">kdt</span> <span class="o">=</span> <span class="n">KDT</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
+    <span class="n">distNN</span><span class="p">,</span> <span class="n">refind</span> <span class="o">=</span> <span class="n">kdt</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">distance_upper_bound</span><span class="o">=</span><span class="n">distance_ULIM</span><span class="p">)</span>
+    <span class="n">inpind</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">refind</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="c1"># in-bound indices</span>
+    <span class="k">if</span> <span class="n">remove_oob</span><span class="p">:</span>
+        <span class="n">inpind</span> <span class="o">=</span> <span class="n">inpind</span><span class="p">[</span><span class="n">distNN</span> <span class="o">&lt;=</span> <span class="n">distance_ULIM</span><span class="p">]</span>
+        <span class="n">refind</span> <span class="o">=</span> <span class="n">refind</span><span class="p">[</span><span class="n">distNN</span> <span class="o">&lt;=</span> <span class="n">distance_ULIM</span><span class="p">]</span>
+        <span class="n">distNN</span> <span class="o">=</span> <span class="n">distNN</span><span class="p">[</span><span class="n">distNN</span> <span class="o">&lt;=</span> <span class="n">distance_ULIM</span><span class="p">]</span>
+
+    <span class="c1"># kdt = KDT(inp)</span>
+    <span class="c1"># distNN, inpind = kdt.query(ref, k=1, distance_upper_bound=distance_ULIM)</span>
+    <span class="c1"># refind = NP.arange(inpind.size) # in-bound indices</span>
+    <span class="c1"># if remove_oob:</span>
+    <span class="c1">#     inpind = inpind[distNN &lt;= distance_ULIM]</span>
+    <span class="c1">#     refind = refind[distNN &lt;= distance_ULIM]</span>
+    <span class="c1">#     distNN = distNN[distNN &lt;= distance_ULIM]</span>
+
+    <span class="n">outdict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">outdict</span><span class="p">[</span><span class="n">pid</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">outdict</span><span class="p">[</span><span class="n">pid</span><span class="p">][</span><span class="s1">&#39;inpind&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">inpind</span>
+    <span class="n">outdict</span><span class="p">[</span><span class="n">pid</span><span class="p">][</span><span class="s1">&#39;distNN&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">distNN</span>
+    <span class="n">outdict</span><span class="p">[</span><span class="n">pid</span><span class="p">][</span><span class="s1">&#39;refind&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">refind</span>
+
+    <span class="c1"># print MP.current_process().name</span>
+    <span class="n">outq</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">outdict</span><span class="p">)</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="lookup_1NN_new"><a class="viewcode-back" href="../../astroutils.html#astroutils.lookup_operations.lookup_1NN_new">[docs]</a><span class="k">def</span> <span class="nf">lookup_1NN_new</span><span class="p">(</span><span class="n">ngbrin</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">ngbrof</span><span class="p">,</span> <span class="n">distance_ULIM</span><span class="o">=</span><span class="n">NP</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">oob_value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                   <span class="n">remove_oob</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Perform a lookup operation based on nearest neighbour algorithm using</span>
+<span class="sd">    KD-Trees when the lookup database and required coordinate locations are</span>
+<span class="sd">    specified. </span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    ngbrin [numpy array] locations of neighbours from which first nearest </span>
+<span class="sd">           neighbours of locations in ngbrof must be found. MxK numpy array </span>
+<span class="sd">           corresponding to M locations specified in K coordinates </span>
+<span class="sd">    </span>
+<span class="sd">    val    [numpy array] array of M values at the ngbrin locations</span>
+
+<span class="sd">    ngbrof [numpy array] locations for which neighbours in locations specified</span>
+<span class="sd">           by ngbrin must be found. NxK array corresponding to N locations </span>
+<span class="sd">           specified in K coordinates</span>
+
+<span class="sd">    distance_ULIM</span>
+<span class="sd">            [scalar] A positive number for the upper bound on distance while</span>
+<span class="sd">            searching for nearest neighbours. Neighbours outside of this upper</span>
+<span class="sd">            bound are not searched for. Default = NP.inf (infinite distance upper </span>
+<span class="sd">            bound means nearest neighbours will be searched all the way out to </span>
+<span class="sd">            infinite distance). Should be in the same units as x, y, xin and yin</span>
+
+<span class="sd">    oob_value</span>
+<span class="sd">            [scalar] Value to be returned at the location if the nearest</span>
+<span class="sd">            neighbour for the location is not found inside distance_ULIM.</span>
+<span class="sd">            Default = 0</span>
+
+<span class="sd">    remove_oob</span>
+<span class="sd">            [boolean] If set to True, results of nearest neighbour search and </span>
+<span class="sd">            lookup are returned only for those input locations which have a </span>
+<span class="sd">            neighbour within the distance upper bound. Locations with no </span>
+<span class="sd">            neighbours inside the distance upper bound will not be in the </span>
+<span class="sd">            returned results. Default = True. If set to False, even if no </span>
+<span class="sd">            nearest neighbours are found within the distance upper bound, an</span>
+<span class="sd">            infinite distance and out of bound index from the lookup table are</span>
+<span class="sd">            returned.</span>
+
+<span class="sd">    Outputs: </span>
+
+<span class="sd">    Returns a tuple of nearest neighbour lookup value, the index of nearest</span>
+<span class="sd">    neighbour location in the lookup table and nearest neighbour distance in </span>
+<span class="sd">    the lookup table. The tuple consists of the following elements in this </span>
+<span class="sd">    order. The number of pairs matched will be the lesser of those determined </span>
+<span class="sd">    by distNN and the nearest match</span>
+
+<span class="sd">    ibind   [numpy vector] indices of the input locations (ngbrof) for which </span>
+<span class="sd">            nearest neighbours were found from the lookup table. If remove_oob is </span>
+<span class="sd">            not set to True, size of ibind is equal to N (the number of </span>
+<span class="sd">            locations in ngbrof, otherwise size of ibind is less than or equal </span>
+<span class="sd">            to N. Values of ibind equal to size of lookup table values indicates </span>
+<span class="sd">            the nearest neighbours for the corresponding input location could </span>
+<span class="sd">            not be found within the distance upper bound from the lookup table. </span>
+<span class="sd">            The corresponding values in distNN are returned as inf or NP.inf</span>
+
+<span class="sd">    nnval   [numpy vector] nearest neighbour lookup values for the given input</span>
+<span class="sd">            locations. If remove_oob is not set to True, size of nnval is equal</span>
+<span class="sd">            to N, otherwise size of nnval is less than or equal</span>
+<span class="sd">            to N. In such a case, out of bound locations are</span>
+<span class="sd">            filled with oob_value. Corresponding values in distNN are returned </span>
+<span class="sd">            as inf or NP.inf</span>
+
+<span class="sd">    distNN  [numpy vector] distance to the nearest neighbour in the lookup table</span>
+<span class="sd">            for the given input locations. If remove_oob is not set to True, size </span>
+<span class="sd">            of distNN is equal to N (number of locations in ngbrof), otherwise </span>
+<span class="sd">            size of distNN is less than or equal to N. In such </span>
+<span class="sd">            a case, out of bound locations are filled with inf or NP.inf. </span>
+<span class="sd">    ----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ngbrin</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">ngbrin</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;ngbrin, val, and ngbrin must be specified for lookup operation.&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ngbrin</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;ngbrin must be a numpy array&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ngbrof</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;ngbrof must be a numpy array&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;val must be a numpy array&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">ngbrin</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">val</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Number of locations (number of rows) in ngbrin must be the same as the number of elements in val&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">ngbrin</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">ngbrof</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Number of coordinate axes of ngbrin and ngbrof must be equal&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">distance_ULIM</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span><span class="nb">float</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Search distance upper limit must be a scalar&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">distance_ULIM</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Search distance upper limit must be positive&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">distance_ULIM</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">distance_ULIM</span><span class="p">)</span>
+
+    <span class="n">kdt</span> <span class="o">=</span> <span class="n">KDT</span><span class="p">(</span><span class="n">ngbrin</span><span class="p">)</span>
+    <span class="n">dist</span><span class="p">,</span> <span class="n">ind</span> <span class="o">=</span> <span class="n">kdt</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">ngbrof</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">distance_upper_bound</span><span class="o">=</span><span class="n">distance_ULIM</span><span class="p">)</span>
+    <span class="n">nnval</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">ind</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">val</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">nnval</span><span class="p">[</span><span class="n">dist</span> <span class="o">&lt;</span> <span class="n">distance_ULIM</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="n">ind</span><span class="p">[</span><span class="n">dist</span> <span class="o">&lt;</span> <span class="n">distance_ULIM</span><span class="p">]]</span>
+    <span class="n">nnval</span><span class="p">[</span><span class="n">dist</span> <span class="o">&gt;=</span> <span class="n">distance_ULIM</span><span class="p">]</span> <span class="o">=</span> <span class="n">oob_value</span>
+    <span class="n">ibind</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ind</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="c1"># in-bound indices of ngbrof</span>
+    <span class="n">distNN</span> <span class="o">=</span> <span class="n">dist</span>
+    <span class="k">if</span> <span class="n">remove_oob</span><span class="p">:</span>
+        <span class="n">nnval</span> <span class="o">=</span> <span class="n">nnval</span><span class="p">[</span><span class="n">dist</span> <span class="o">&lt;=</span> <span class="n">distance_ULIM</span><span class="p">]</span>
+        <span class="n">ibind</span> <span class="o">=</span> <span class="n">ibind</span><span class="p">[</span><span class="n">dist</span> <span class="o">&lt;=</span> <span class="n">distance_ULIM</span><span class="p">]</span>
+        <span class="n">distNN</span> <span class="o">=</span> <span class="n">dist</span><span class="p">[</span><span class="n">dist</span> <span class="o">&lt;=</span> <span class="n">distance_ULIM</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">ibind</span><span class="p">,</span> <span class="n">nnval</span><span class="p">,</span> <span class="n">distNN</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="find_NN"><a class="viewcode-back" href="../../astroutils.html#astroutils.lookup_operations.find_NN">[docs]</a><span class="k">def</span> <span class="nf">find_NN</span><span class="p">(</span><span class="n">ngbrof</span><span class="p">,</span> <span class="n">ngbrin</span><span class="p">,</span> <span class="n">distance_ULIM</span><span class="o">=</span><span class="n">NP</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">flatten</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">parallel</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+            <span class="n">nproc</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Find all nearest neighbours of one set of locations in another set of </span>
+<span class="sd">    locations within a specified distance. </span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    ngbrof    [numpy array] Locations for nearest neighbours are to be </span>
+<span class="sd">              determined. Has dimensions MxK where M is the number of locations.</span>
+
+<span class="sd">    ngbrin    [numpy array] Locations from which nearest neighbours are to be </span>
+<span class="sd">              chosen for the locations in ngbrof. Has dimensions NxK.</span>
+
+<span class="sd">    distance_ULIM</span>
+<span class="sd">              [scalar] Maximum search radius to look for neighbours. </span>
+<span class="sd">              Default=NP.inf</span>
+
+<span class="sd">    flatten   [boolean] If set to True, flattens the output of the nearest</span>
+<span class="sd">              neighbour search algorithm to yield two separate sets of matching</span>
+<span class="sd">              indices - one for ngbrof and the other for ngbrin. Default=False</span>
+
+<span class="sd">    parallel  [boolean] specifies if parallelization is to be invoked. False </span>
+<span class="sd">              (default) means only serial processing. Parallelization is done</span>
+<span class="sd">              over ngbrof</span>
+
+<span class="sd">    nproc     [scalar] specifies number of independent processes to spawn.</span>
+<span class="sd">              Default=None, means automatically determines the number of </span>
+<span class="sd">              process cores in the system and use one less than that to </span>
+<span class="sd">              avoid locking the system for other processes. Applies only </span>
+<span class="sd">              if input parameter &#39;parallel&#39; (see above) is set to True. </span>
+<span class="sd">              If nproc is set to a value more than the number of process</span>
+<span class="sd">              cores in the system, it will be reset to number of process </span>
+<span class="sd">              cores in the system minus one to avoid locking the system out </span>
+<span class="sd">              for other processes</span>
+
+<span class="sd">    Outputs:</span>
+
+<span class="sd">    List containing three items. The first item is a list of M lists where each </span>
+<span class="sd">    of the M inner lists corresponds to one entry in ngbrof and the elements in </span>
+<span class="sd">    the inner list contains indices to ngbrin that are the nearest neighbours of </span>
+<span class="sd">    that specific ngbrof (same as output of cKDTree.query_ball_tree()). The </span>
+<span class="sd">    second item in the output list is a numpy array of indices to ngbrof </span>
+<span class="sd">    (obtained from the first item if input keyword flatten is set to True) or </span>
+<span class="sd">    None (if input keyword flatten is set to False). The third item in the output </span>
+<span class="sd">    list is a numpy array of indices to ngbrin that is a valid neighbour of </span>
+<span class="sd">    ngbrof (obtained from the first item if input keyword flatten is set to </span>
+<span class="sd">    True) or None (if input keyword flatten is set to False). </span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ngbrof</span><span class="p">,</span> <span class="n">ngbrin</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;ngbrof and ngbrin must be specified for finding nearest neighbours.&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">ngbrof</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">ngbrin</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;ngbrof and ngbrin must contain same number of columns&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">parallel</span> <span class="ow">or</span> <span class="p">(</span><span class="n">nproc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">nproc</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">nproc</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">MP</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> 
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">nproc</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">nproc</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">MP</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+        <span class="n">split_ind</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ngbrof</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">nproc</span><span class="p">,</span> <span class="n">ngbrof</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ngbrof</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">nproc</span><span class="p">)</span>
+        <span class="n">split_ngbrof_list</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">ngbrof</span><span class="p">,</span> <span class="n">split_ind</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">ngbrin_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">ngbrin</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">split_ngbrof_list</span><span class="p">)</span>
+        <span class="n">distance_ULIM_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">distance_ULIM</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">split_ngbrof_list</span><span class="p">)</span>
+
+        <span class="n">pool</span> <span class="o">=</span> <span class="n">MP</span><span class="o">.</span><span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="n">nproc</span><span class="p">)</span>
+        <span class="n">lolol</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">find_NN_arg_splitter</span><span class="p">,</span> <span class="n">IT</span><span class="o">.</span><span class="n">izip</span><span class="p">(</span><span class="n">split_ngbrof_list</span><span class="p">,</span> <span class="n">ngbrin_list</span><span class="p">,</span> <span class="n">distance_ULIM_list</span><span class="p">))</span>
+        <span class="n">pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">pool</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+
+        <span class="n">indNN_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">subitem</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">lolol</span> <span class="k">for</span> <span class="n">subitem</span> <span class="ow">in</span> <span class="n">item</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">kdtself</span> <span class="o">=</span> <span class="n">KDT</span><span class="p">(</span><span class="n">ngbrof</span><span class="p">)</span>
+        <span class="n">kdtother</span> <span class="o">=</span> <span class="n">KDT</span><span class="p">(</span><span class="n">ngbrin</span><span class="p">)</span>
+        <span class="n">indNN_list</span> <span class="o">=</span> <span class="n">kdtself</span><span class="o">.</span><span class="n">query_ball_tree</span><span class="p">(</span><span class="n">kdtother</span><span class="p">,</span> <span class="n">distance_ULIM</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
+
+    <span class="n">ind_ngbrof</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">ind_ngbrin</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">if</span> <span class="n">flatten</span><span class="p">:</span>
+        <span class="n">list_of_ind_tuples</span> <span class="o">=</span> <span class="p">[(</span><span class="n">i</span><span class="p">,</span><span class="n">ind</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">indNN_list</span><span class="p">)</span> <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="n">item</span><span class="p">]</span>
+        <span class="n">ind_ngbrof</span><span class="p">,</span> <span class="n">ind_ngbrin</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">list_of_ind_tuples</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="n">indNN_list</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ind_ngbrof</span><span class="p">),</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ind_ngbrin</span><span class="p">)]</span></div>
+    
+<span class="c1">#################################################################################</span>
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Nithyanandan Thyagarajan.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

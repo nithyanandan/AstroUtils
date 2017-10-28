@@ -1,0 +1,7 @@
+astroutils
+==========
+
+.. toctree::
+   :maxdepth: 4
+
+   astroutils

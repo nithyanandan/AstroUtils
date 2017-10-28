@@ -1,0 +1,38 @@
+astroutils.test package
+=======================
+
+Submodules
+----------
+
+astroutils.test.geometry_test module
+------------------------------------
+
+.. automodule:: astroutils.test.geometry_test
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+astroutils.test.mathops_test module
+-----------------------------------
+
+.. automodule:: astroutils.test.mathops_test
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+astroutils.test.nonmathops_test module
+--------------------------------------
+
+.. automodule:: astroutils.test.nonmathops_test
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: astroutils.test
+    :members:
+    :undoc-members:
+    :show-inheritance:

@@ -1,4 +1,0 @@
-include *.txt
-recursive-include docs *.txt *.py
-recursive-include examples *.txt *.py
-prune examples/sample?/build

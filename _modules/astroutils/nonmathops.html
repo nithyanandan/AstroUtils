@@ -1,0 +1,448 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>astroutils.nonmathops &mdash; AstroUtils 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="AstroUtils 0.1.0 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for astroutils.nonmathops</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">NP</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">ast</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<div class="viewcode-block" id="recursive_find_notNone_in_dict"><a class="viewcode-back" href="../../astroutils.html#astroutils.nonmathops.recursive_find_notNone_in_dict">[docs]</a><span class="k">def</span> <span class="nf">recursive_find_notNone_in_dict</span><span class="p">(</span><span class="n">inpdict</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    ----------------------------------------------------------------------------</span>
+<span class="sd">    Recursively walk through a dictionary and reduce it to only non-None values.</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    inpdict     [dictionary] Input dictionary to reduced to non-None values</span>
+
+<span class="sd">    Outputs:</span>
+
+<span class="sd">    outdict is an output dictionary which only contains keys and values </span>
+<span class="sd">    corresponding to non-None values</span>
+<span class="sd">    ----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inpdict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;inpdict must be a dictionary&#39;</span><span class="p">)</span>
+
+    <span class="n">outdict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">inpdict</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="n">outdict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">temp</span> <span class="o">=</span> <span class="n">recursive_find_notNone_in_dict</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">temp</span><span class="p">:</span>
+                    <span class="n">outdict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp</span>
+    <span class="k">return</span> <span class="n">outdict</span></div>
+
+<span class="c1">################################################################################</span>
+
+<div class="viewcode-block" id="is_dict1_subset_of_dict2"><a class="viewcode-back" href="../../astroutils.html#astroutils.nonmathops.is_dict1_subset_of_dict2">[docs]</a><span class="k">def</span> <span class="nf">is_dict1_subset_of_dict2</span><span class="p">(</span><span class="n">dict1</span><span class="p">,</span> <span class="n">dict2</span><span class="p">,</span> <span class="n">ignoreNone</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    ----------------------------------------------------------------------------</span>
+<span class="sd">    Check if keys and values of the first dictionary are a subset of the second.</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    dict1       [dictionary] First dictionary. It will be checked if both its</span>
+<span class="sd">                keys and values are a subset of the second dictionary.</span>
+
+<span class="sd">    dict2       [dictionary] Second dictionary. The values and keys of the first</span>
+<span class="sd">                dictionary will be checked against this dictionary to check if</span>
+<span class="sd">                the first is a subset of the second. </span>
+
+<span class="sd">    ignoreNone  [boolean] If set to True (default), the subset checking happens</span>
+<span class="sd">                using the non-None values in both dictionaries. This is a </span>
+<span class="sd">                loose check. If set to False, a strict subset checking happens</span>
+<span class="sd">                not ignoring the None values, if any.</span>
+
+<span class="sd">    Output: </span>
+
+<span class="sd">    Boolean value True if dict1 is found to be a subset of dict2, False </span>
+<span class="sd">    otherwise</span>
+<span class="sd">    ----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dict1</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input dict1 must be a dictionary&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dict2</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input dict2 must be a dictionary&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">ignoreNone</span><span class="p">:</span>
+        <span class="n">dict1</span> <span class="o">=</span> <span class="n">recursive_find_notNone_in_dict</span><span class="p">(</span><span class="n">dict1</span><span class="p">)</span>
+        <span class="n">dict2</span> <span class="o">=</span> <span class="n">recursive_find_notNone_in_dict</span><span class="p">(</span><span class="n">dict2</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">cmp</span><span class="p">(</span><span class="n">dict1</span><span class="p">,</span> <span class="n">dict2</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">dict2sub</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">dict1</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">dict2</span><span class="p">:</span>
+                <span class="n">dict2sub</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">dict2</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">if</span> <span class="nb">cmp</span><span class="p">(</span><span class="n">dict1</span><span class="p">,</span> <span class="n">dict2sub</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span></div>
+
+<span class="c1">################################################################################</span>
+
+<div class="viewcode-block" id="find_list_in_list"><a class="viewcode-back" href="../../astroutils.html#astroutils.nonmathops.find_list_in_list">[docs]</a><span class="k">def</span> <span class="nf">find_list_in_list</span><span class="p">(</span><span class="n">reference_array</span><span class="p">,</span> <span class="n">inp</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    ---------------------------------------------------------------------------</span>
+<span class="sd">    Find occurrences of input list in a reference list and return indices </span>
+<span class="sd">    into the reference list</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    reference_array [list or numpy array] One-dimensional reference list or</span>
+<span class="sd">                    numpy array in which occurrences of elements in the input </span>
+<span class="sd">                    list or array will be found</span>
+
+<span class="sd">    inp             [list or numpy array] One-dimensional input list whose </span>
+<span class="sd">                    elements will be searched in the reference array and </span>
+<span class="sd">                    the indices into the reference array will be returned</span>
+
+<span class="sd">    Output:</span>
+
+<span class="sd">    ind             [numpy masked array] Indices of occurrences of elements </span>
+<span class="sd">                    of input array in the reference array. It will be of same </span>
+<span class="sd">                    size as input array. For example, </span>
+<span class="sd">                    inp = reference_array[ind]. Indices for elements which are </span>
+<span class="sd">                    not found in the reference array will be masked.</span>
+<span class="sd">    ---------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">reference_array</span><span class="p">,</span> <span class="n">inp</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;Inputs reference_array, inp must be specified&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">reference_array</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input reference_array must be a list or numpy array&#39;</span><span class="p">)</span>
+    <span class="n">reference_array</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">reference_array</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input inp must be a list or numpy array&#39;</span><span class="p">)</span>
+    <span class="n">inp</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">inp</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">reference_array</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;One or both inputs contain no elements&#39;</span><span class="p">)</span>
+
+    <span class="n">sortind_ref</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">reference_array</span><span class="p">)</span>
+    <span class="n">sorted_ref</span> <span class="o">=</span> <span class="n">reference_array</span><span class="p">[</span><span class="n">sortind_ref</span><span class="p">]</span>
+    <span class="n">ind_in_sorted_ref</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">sorted_ref</span><span class="p">,</span> <span class="n">inp</span><span class="p">)</span>
+    <span class="n">ii</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="n">sortind_ref</span><span class="p">,</span> <span class="n">ind_in_sorted_ref</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;clip&#39;</span><span class="p">)</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">reference_array</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> <span class="o">!=</span> <span class="n">inp</span>
+    <span class="n">ind</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ii</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ind</span></div>
+    
+<span class="c1">################################################################################</span>
+
+<div class="viewcode-block" id="find_all_occurrences_list1_in_list2"><a class="viewcode-back" href="../../astroutils.html#astroutils.nonmathops.find_all_occurrences_list1_in_list2">[docs]</a><span class="k">def</span> <span class="nf">find_all_occurrences_list1_in_list2</span><span class="p">(</span><span class="n">list1</span><span class="p">,</span> <span class="n">list2</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    ---------------------------------------------------------------------------</span>
+<span class="sd">    Find all occurrences of input list1 (a reference list) in input list2</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    list1   [list or numpy array] List of elements which need to be searched </span>
+<span class="sd">            for in list2. Must be a flattened list or numpy array</span>
+
+<span class="sd">    list2   [list or numpy array] List of elements in which elements in list1 </span>
+<span class="sd">            are searched for. Must be a flattened list or numpy array</span>
+
+<span class="sd">    Output:</span>
+
+<span class="sd">    ind     [list of lists] Indices of occurrences of elements </span>
+<span class="sd">            of input list1 indexed into list2. For each element in list1, </span>
+<span class="sd">            there is an output list which contains all the indices of this </span>
+<span class="sd">            element occurring in list2. Hence, the output is a list of lists</span>
+<span class="sd">            where the top level list contains equal number of items as list1.</span>
+<span class="sd">            Each i-th item in this list is another list containing indices of </span>
+<span class="sd">            the element list1[i] in list2</span>
+<span class="sd">    ---------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">list1</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input list1 must be a list or numpy array&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">list2</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input list2 must be a list or numpy array&#39;</span><span class="p">)</span>
+
+    <span class="n">list_of_list_of_inds</span> <span class="o">=</span> <span class="p">[[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">list2</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="n">e</span><span class="p">]</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">list1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">list_of_list_of_inds</span></div>
+
+<span class="c1">################################################################################</span>
+
+<div class="viewcode-block" id="save_dict_to_hdf5"><a class="viewcode-back" href="../../astroutils.html#astroutils.nonmathops.save_dict_to_hdf5">[docs]</a><span class="k">def</span> <span class="nf">save_dict_to_hdf5</span><span class="p">(</span><span class="n">dic</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">compressinfo</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    ---------------------------------------------------------------------------</span>
+<span class="sd">    Save a dictionary as a HDF5 structure under the given filename preserving </span>
+<span class="sd">    its structure</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    dic         [dictionary] Input dictionary which is to be stored in HDF5</span>
+<span class="sd">                format</span>
+
+<span class="sd">    filename    [string] string containing full path to the HDF5 file including </span>
+<span class="sd">                the file name</span>
+
+<span class="sd">    compressinfo</span>
+<span class="sd">                [dictionary] Dictionary containing compression options or </span>
+<span class="sd">                set as None (default) when no compression is to be applied. </span>
+<span class="sd">                When compression is to be applied, it contains keys of those </span>
+<span class="sd">                data that are to be compressed. Under each key is another </span>
+<span class="sd">                dictionary with the following keys and values:</span>
+<span class="sd">                &#39;compress_fmt&#39;  [string] Compression format. Accepted values</span>
+<span class="sd">                                are &#39;gzip&#39; and &#39;lzf&#39;</span>
+<span class="sd">                &#39;compress_opts&#39; [int] Integer denoting level of compression. </span>
+<span class="sd">                                Only applies if compress_fmt is set to &#39;gzip&#39;.</span>
+<span class="sd">                                It must be an integer between 0 and 9</span>
+<span class="sd">                &#39;chunkshape&#39;    [tuple] Shape of the chunks to be used in </span>
+<span class="sd">                                compression. It must be broadcastable to the</span>
+<span class="sd">                                data shape inside input dic</span>
+<span class="sd">                If at any point, any error is encountered, it will switch to </span>
+<span class="sd">                no compression</span>
+<span class="sd">    ---------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">h5file</span><span class="p">:</span>
+        <span class="n">recursively_save_dict_contents_to_group</span><span class="p">(</span><span class="n">h5file</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="n">dic</span><span class="p">,</span> <span class="n">compressinfo</span><span class="o">=</span><span class="n">compressinfo</span><span class="p">)</span></div>
+
+<span class="c1">################################################################################</span>
+
+<div class="viewcode-block" id="recursively_save_dict_contents_to_group"><a class="viewcode-back" href="../../astroutils.html#astroutils.nonmathops.recursively_save_dict_contents_to_group">[docs]</a><span class="k">def</span> <span class="nf">recursively_save_dict_contents_to_group</span><span class="p">(</span><span class="n">h5file</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">dic</span><span class="p">,</span> <span class="n">compressinfo</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    ---------------------------------------------------------------------------</span>
+<span class="sd">    Recursively store contents of a dictionary in HDF5 groups</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    h5file      [Python File Object] An open file object under which the HDF5</span>
+<span class="sd">                groups will be created</span>
+
+<span class="sd">    path        [string] String containing the root group under the python file</span>
+<span class="sd">                object h5file</span>
+
+<span class="sd">    dic         [dictionary] dictionary whose keys and items will be stored </span>
+<span class="sd">                under the root group specified by path under the python file</span>
+<span class="sd">                object h5file</span>
+<span class="sd">    </span>
+<span class="sd">    compressinfo</span>
+<span class="sd">                [dictionary] Dictionary containing compression options or </span>
+<span class="sd">                set as None (default) when no compression is to be applied. </span>
+<span class="sd">                When compression is to be applied, it contains keys of those </span>
+<span class="sd">                data that are to be compressed. Under each key is another </span>
+<span class="sd">                dictionary with the following keys and values:</span>
+<span class="sd">                &#39;compress_fmt&#39;  [string] Compression format. Accepted values</span>
+<span class="sd">                                are &#39;gzip&#39; and &#39;lzf&#39;</span>
+<span class="sd">                &#39;compress_opts&#39; [int] Integer denoting level of compression. </span>
+<span class="sd">                                Only applies if compress_fmt is set to &#39;gzip&#39;.</span>
+<span class="sd">                                It must be an integer between 0 and 9</span>
+<span class="sd">                &#39;chunkshape&#39;    [tuple] Shape of the chunks to be used in </span>
+<span class="sd">                                compression. It must be broadcastable to the</span>
+<span class="sd">                                data shape inside input dic</span>
+<span class="sd">                If at any point, any error is encountered, it will switch to </span>
+<span class="sd">                no compression</span>
+<span class="sd">    ---------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">dic</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Key found not to be a string. Converting the key to string and proceeding...&#39;</span><span class="p">)</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">int</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">complex</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">complex64</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">complex128</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">compressinfo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">compressinfo</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">compress_fmt</span> <span class="o">=</span> <span class="n">compressinfo</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="s1">&#39;compress_fmt&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                            <span class="n">compress_opts</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">compressinfo</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="s1">&#39;compress_opts&#39;</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">9</span><span class="p">)</span>
+                            <span class="n">chunkshape</span> <span class="o">=</span> <span class="n">compressinfo</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="s1">&#39;chunkshape&#39;</span><span class="p">]</span>
+                        <span class="k">except</span><span class="p">:</span>
+                            <span class="n">h5file</span><span class="p">[</span><span class="n">path</span> <span class="o">+</span> <span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">dset</span> <span class="o">=</span> <span class="n">h5file</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="n">path</span><span class="o">+</span><span class="n">key</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">item</span><span class="p">,</span> <span class="n">chunks</span><span class="o">=</span><span class="n">chunkshape</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="n">compress_fmt</span><span class="p">,</span> <span class="n">compression_opts</span><span class="o">=</span><span class="n">compress_opts</span><span class="p">)</span>
+                            
+                        <span class="c1"># if not isinstance(compressinfo[key][&#39;compress_fmt&#39;], str):</span>
+                        <span class="c1">#     raise TypeError(&#39;Input parameter compress_fmt must be a string&#39;)</span>
+                        <span class="c1"># compress_fmt = compressinfo[key][&#39;compress_fmt&#39;].lower()</span>
+                        <span class="c1"># if compress_fmt not in [&#39;gzip&#39;, &#39;lzf&#39;]:</span>
+                        <span class="c1">#     raise ValueError(&#39;Input parameter compress_fmt invalid&#39;)</span>
+                        <span class="c1"># if compress_fmt == &#39;gzip&#39;:</span>
+                        <span class="c1">#     if not isinstance(compressinfo[key][&#39;compress_opts&#39;], int):</span>
+                        <span class="c1">#         raise TypeError(&#39;Input parameter compress_opts must be an integer&#39;)</span>
+                        <span class="c1">#     compress_opts = NP.clip(compressinfo[key][&#39;compress_opts&#39;], 0, 9)</span>
+                        <span class="c1"># if &#39;chunkshape&#39; not in compressinfo[key]:</span>
+                        <span class="c1">#     raise KeyError(&#39;Key chunkshape not provided in cmagompressinfo parameter&#39;)</span>
+                        <span class="c1"># elif not isinstance(compressinfo[key][&#39;chunkshape&#39;], tuple):</span>
+                        <span class="c1">#     raise TypeError(&#39;Value under chunkshape key in compressinfo parameter must be a tuple&#39;)</span>
+                        <span class="c1"># else:</span>
+                        <span class="c1">#     dset = h5file.create_dataset(path+key, data=item, chunks=chunkshape, compression=compress_fmt, compression_opts=compress_opts)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Compression options not specified properly. Proceeding with no compression&#39;</span><span class="p">)</span>
+                        <span class="n">h5file</span><span class="p">[</span><span class="n">path</span> <span class="o">+</span> <span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">h5file</span><span class="p">[</span><span class="n">path</span> <span class="o">+</span> <span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">h5file</span><span class="p">[</span><span class="n">path</span> <span class="o">+</span> <span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+        <span class="k">elif</span> <span class="n">item</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">h5file</span><span class="p">[</span><span class="n">path</span> <span class="o">+</span> <span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;None&#39;</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">recursively_save_dict_contents_to_group</span><span class="p">(</span><span class="n">h5file</span><span class="p">,</span> <span class="n">path</span> <span class="o">+</span> <span class="n">key</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="n">item</span><span class="p">,</span> <span class="n">compressinfo</span><span class="o">=</span><span class="n">compressinfo</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Cannot save </span><span class="si">%s</span><span class="s1"> type&#39;</span><span class="o">%</span><span class="nb">type</span><span class="p">(</span><span class="n">item</span><span class="p">))</span></div>
+
+<span class="c1">################################################################################</span>
+
+<div class="viewcode-block" id="load_dict_from_hdf5"><a class="viewcode-back" href="../../astroutils.html#astroutils.nonmathops.load_dict_from_hdf5">[docs]</a><span class="k">def</span> <span class="nf">load_dict_from_hdf5</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    ---------------------------------------------------------------------------</span>
+<span class="sd">    Load HDF5 contents into a python dictionary preserving the structure</span>
+
+<span class="sd">    Input:</span>
+
+<span class="sd">    filename    [string] Full path to the HDF5 file</span>
+
+<span class="sd">    Output:</span>
+
+<span class="sd">    Python dictionary containing the contents of the HDF5 file</span>
+<span class="sd">    ---------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">h5file</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">recursively_load_dict_contents_from_group</span><span class="p">(</span><span class="n">h5file</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">)</span></div>
+
+<span class="c1">################################################################################</span>
+
+<div class="viewcode-block" id="recursively_load_dict_contents_from_group"><a class="viewcode-back" href="../../astroutils.html#astroutils.nonmathops.recursively_load_dict_contents_from_group">[docs]</a><span class="k">def</span> <span class="nf">recursively_load_dict_contents_from_group</span><span class="p">(</span><span class="n">h5file</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    ---------------------------------------------------------------------------</span>
+<span class="sd">    Recursively load HDF5 group contents into python dictionary structure</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    h5file      [Python File Object] An open file object under which the HDF5</span>
+<span class="sd">                groups will be created</span>
+
+<span class="sd">    path        [string] String containing the root group under the python file</span>
+<span class="sd">                object h5file</span>
+
+<span class="sd">    Output:</span>
+
+<span class="sd">    Python structure that is copied from the HDF5 content at the level </span>
+<span class="sd">    specified by the path in the python object h5file</span>
+<span class="sd">    ---------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">ans</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">h5file</span><span class="p">[</span><span class="n">path</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">_hl</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">ast</span><span class="o">.</span><span class="n">literal_eval</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                        <span class="n">ans</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="n">ans</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ans</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">_hl</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">Group</span><span class="p">):</span>
+            <span class="n">ans</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">recursively_load_dict_contents_from_group</span><span class="p">(</span><span class="n">h5file</span><span class="p">,</span> <span class="n">path</span> <span class="o">+</span> <span class="n">key</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ans</span></div>
+
+<span class="c1">################################################################################</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Nithyanandan Thyagarajan.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

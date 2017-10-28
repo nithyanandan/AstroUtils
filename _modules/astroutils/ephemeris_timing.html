@@ -1,0 +1,162 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>astroutils.ephemeris_timing &mdash; AstroUtils 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="AstroUtils 0.1.0 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for astroutils.ephemeris_timing</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">astropy.time</span> <span class="kn">import</span> <span class="n">Time</span><span class="p">,</span><span class="n">TimeDelta</span>
+<span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="kn">import</span> <span class="n">Longitude</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">NP</span>
+<span class="kn">from</span> <span class="nn">astropy</span> <span class="kn">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
+<span class="kn">import</span> <span class="nn">ephem</span> <span class="kn">as</span> <span class="nn">EP</span>
+
+<span class="c1">################################################################################</span>
+
+<div class="viewcode-block" id="gmst2gps"><a class="viewcode-back" href="../../astroutils.html#astroutils.ephemeris_timing.gmst2gps">[docs]</a><span class="k">def</span> <span class="nf">gmst2gps</span><span class="p">(</span><span class="n">day</span><span class="p">,</span> <span class="n">GMST</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;mean&#39;</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">precision</span><span class="o">=</span><span class="mf">1e-14</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    ----------------------------------------------------------------------------</span>
+<span class="sd">    gps=gmst2gps(day, GMST, type=&#39;mean&#39;, iterations=10, precision=1e-14)</span>
+<span class="sd">    returns the GPS time associated with the GMST/GAST on the given day</span>
+<span class="sd">    type can be &#39;mean&#39; or &#39;apparent&#39;</span>
+<span class="sd">    uses a root-find, so not super fast</span>
+<span class="sd">    ----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">assert</span> <span class="nb">type</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;mean&#39;</span><span class="p">,</span><span class="s1">&#39;apparent&#39;</span><span class="p">]</span>
+    <span class="n">gmst</span><span class="o">=</span><span class="n">Longitude</span><span class="p">(</span><span class="n">GMST</span><span class="p">,</span><span class="n">unit</span><span class="o">=</span><span class="s1">&#39;h&#39;</span><span class="p">)</span>
+    <span class="n">t</span><span class="o">=</span><span class="n">Time</span><span class="p">(</span><span class="n">day</span><span class="p">,</span><span class="n">scale</span><span class="o">=</span><span class="s1">&#39;utc&#39;</span><span class="p">)</span>
+    <span class="n">iteration</span><span class="o">=</span><span class="mi">0</span>
+ 
+    <span class="n">siderealday_to_solarday</span><span class="o">=</span><span class="mf">0.99726958</span>
+ 
+    <span class="k">while</span> <span class="n">iteration</span> <span class="o">&lt;</span> <span class="n">iterations</span><span class="p">:</span>
+        <span class="n">error</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">sidereal_time</span><span class="p">(</span><span class="nb">type</span><span class="p">,</span><span class="s1">&#39;greenwich&#39;</span><span class="p">)</span><span class="o">-</span><span class="n">gmst</span>
+        <span class="k">if</span> <span class="n">NP</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">error</span><span class="o">/</span><span class="n">gmst</span><span class="p">)</span><span class="o">.</span><span class="n">value</span> <span class="o">&lt;=</span> <span class="n">precision</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">t</span><span class="o">.</span><span class="n">gps</span>
+        <span class="n">t</span><span class="o">=</span><span class="n">t</span><span class="o">-</span><span class="n">TimeDelta</span><span class="p">((</span><span class="n">error</span><span class="p">)</span><span class="o">.</span><span class="n">hour</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">hour</span><span class="p">)</span><span class="o">*</span><span class="n">siderealday_to_solarday</span>
+        <span class="n">iteration</span><span class="o">+=</span><span class="mi">1</span>
+ 
+    <span class="k">return</span> <span class="bp">None</span></div>
+
+<span class="c1">################################################################################</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+
+    <span class="c1"># day=&#39;2013-08-23&#39;</span>
+    <span class="c1"># gmst=&#39;00:00:10&#39;</span>
+    <span class="c1"># t=gmst2gps(day, gmst)</span>
+    <span class="c1"># if t is not None:</span>
+    <span class="c1">#     print &#39;GMST {0} on {1} = {2} GPS seconds&#39;.format(gmst, day, t)</span>
+    <span class="c1"># else:</span>
+    <span class="c1">#     print &#39;Failure to converge in Ephemeris/Timing.&#39;</span>
+
+    <span class="n">obsdate</span> <span class="o">=</span> <span class="s1">&#39;2013/08/23&#39;</span>
+    <span class="n">LST_given</span> <span class="o">=</span> <span class="mf">21.18331</span>  <span class="c1"># in hours</span>
+    <span class="n">latitude</span> <span class="o">=</span> <span class="o">-</span><span class="mf">26.701</span>  <span class="c1"># in degrees</span>
+    <span class="n">longitude</span> <span class="o">=</span> <span class="mf">116.670815</span> <span class="c1"># in degrees East</span>
+    
+    <span class="n">lstobj</span> <span class="o">=</span> <span class="n">EP</span><span class="o">.</span><span class="n">FixedBody</span><span class="p">()</span>
+    <span class="n">lstobj</span><span class="o">.</span><span class="n">_ra</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">LST_given</span> <span class="o">*</span> <span class="mf">15.0</span><span class="p">)</span>
+    <span class="n">lstobj</span><span class="o">.</span><span class="n">_epoch</span> <span class="o">=</span> <span class="n">obsdate</span>
+    
+    <span class="n">obsrvr</span> <span class="o">=</span> <span class="n">EP</span><span class="o">.</span><span class="n">Observer</span><span class="p">()</span>
+    <span class="n">obsrvr</span><span class="o">.</span><span class="n">lat</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">latitude</span><span class="p">)</span>
+    <span class="n">obsrvr</span><span class="o">.</span><span class="n">lon</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">longitude</span><span class="p">)</span>
+    <span class="n">obsrvr</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="n">obsdate</span>
+    
+    <span class="n">lstobj</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">obsrvr</span><span class="p">)</span>
+    
+    <span class="n">transitJD</span> <span class="o">=</span> <span class="n">EP</span><span class="o">.</span><span class="n">julian_date</span><span class="p">(</span><span class="n">obsrvr</span><span class="o">.</span><span class="n">next_transit</span><span class="p">(</span><span class="n">lstobj</span><span class="p">))</span>
+    <span class="n">transitDT</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">obsrvr</span><span class="o">.</span><span class="n">next_transit</span><span class="p">(</span><span class="n">lstobj</span><span class="p">))</span>
+        
+    <span class="n">transit_instant</span> <span class="o">=</span> <span class="n">Time</span><span class="p">(</span><span class="n">transitDT</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">),</span> <span class="n">scale</span><span class="o">=</span><span class="s1">&#39;utc&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s1">&#39;iso&#39;</span><span class="p">)</span>
+    <span class="n">transit_day</span><span class="p">,</span> <span class="n">transit_time</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">transit_instant</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+
+    <span class="n">gmst</span> <span class="o">=</span> <span class="n">LST_given</span> <span class="o">-</span> <span class="n">longitude</span> <span class="o">/</span> <span class="mf">15.0</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">gmst2gps</span><span class="p">(</span><span class="n">transit_day</span><span class="p">,</span> <span class="n">gmst</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">t</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s1">&#39;GMST {0} on {1} = {2} GPS seconds&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">gmst</span><span class="p">,</span> <span class="n">obsdate</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s1">&#39;Failure to converge in Ephemeris/Timing.&#39;</span>
+    
+    <span class="c1"># print transitDT</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Nithyanandan Thyagarajan.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

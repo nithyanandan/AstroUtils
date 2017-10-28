@@ -1,0 +1,757 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>astroutils.mathops &mdash; AstroUtils 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="AstroUtils 0.1.0 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for astroutils.mathops</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">NP</span>
+<span class="kn">import</span> <span class="nn">scipy</span> <span class="kn">as</span> <span class="nn">SP</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">interpolate</span>
+<span class="kn">import</span> <span class="nn">healpy</span> <span class="kn">as</span> <span class="nn">HP</span>
+<span class="kn">import</span> <span class="nn">DSP_modules</span> <span class="kn">as</span> <span class="nn">DSP</span>
+<span class="kn">import</span> <span class="nn">lookup_operations</span> <span class="kn">as</span> <span class="nn">LKP</span>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="reverse"><a class="viewcode-back" href="../../astroutils.html#astroutils.mathops.reverse">[docs]</a><span class="k">def</span> <span class="nf">reverse</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ind_range</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    A generic function to reverse a specific axis or a subset of </span>
+<span class="sd">    indices of this specific axis of a multi-dimensional array. This </span>
+<span class="sd">    works on data up to 8 dimensions.</span>
+
+<span class="sd">    Input:</span>
+
+<span class="sd">    inp        Multi-dimensional array (up to 8 dimensions)</span>
+
+<span class="sd">    Keyword Inputs:</span>
+
+<span class="sd">    axis      [scalar, default = 0] The axis along which the array </span>
+<span class="sd">              is to be reversed while preserving the order of the other </span>
+<span class="sd">              axes. 0 &lt;= axis &lt;= 7</span>
+
+<span class="sd">    ind_range [2-element list] The lower and upper limits of indices</span>
+<span class="sd">              of the axis over which the data is to be reversed. Default = None</span>
+<span class="sd">              selects all indices for reversal.</span>
+
+<span class="sd">    Output:</span>
+
+<span class="sd">    The array with its data reversed over a subset or the entirety of the</span>
+<span class="sd">    specified axis.</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">inp</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="nb">isinstance</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+        <span class="c1"># type(inp) is numpy.ndarray</span>
+    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span> 
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Unable to convert to Numpy array data type&#39;</span><span class="p">)</span>
+
+    <span class="n">shp</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span>
+    <span class="n">ndim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">shp</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">8</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Input data with more than 8 dimensions not supported. Aborted execution in my_operations.reverse()&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">axis</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">axis</span> <span class="o">&gt;=</span> <span class="n">ndim</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Input data does not contain the axis specified. Aborted execution in my_operations.reverse()&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">ind_range</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">ind_range</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">shp</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="c1"># Select all indices</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ind_range</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">ind_range</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ind_range</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">ind_range</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">ind_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">ind_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1"># set default to starting index</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">ind_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">ind_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">shp</span><span class="p">[</span><span class="n">axis</span><span class="p">]):</span>
+                <span class="n">ind_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">shp</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span> <span class="c1"># set default to ending index</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;ind_range must be a two-element list or numpy array&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;ind_range must be a two-element list or numpy array&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">shp</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">inp</span>
+
+    <span class="n">revinds</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ind_range</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">ind_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">inp</span><span class="p">[</span><span class="n">revinds</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[</span><span class="n">revinds</span><span class="p">,:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,</span><span class="n">revinds</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[</span><span class="n">revinds</span><span class="p">,:,:]</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,</span><span class="n">revinds</span><span class="p">,:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,:,</span><span class="n">revinds</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">ndim</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[</span><span class="n">revinds</span><span class="p">,:,:,:]</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,</span><span class="n">revinds</span><span class="p">,:,:]</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,:,</span><span class="n">revinds</span><span class="p">,:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,:,:,</span><span class="n">revinds</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">ndim</span> <span class="o">==</span> <span class="mi">5</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[</span><span class="n">revinds</span><span class="p">,:,:,:,:]</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,</span><span class="n">revinds</span><span class="p">,:,:,:]</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,:,</span><span class="n">revinds</span><span class="p">,:,:]</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,:,:,</span><span class="n">revinds</span><span class="p">,:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,:,:,:,</span><span class="n">revinds</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">ndim</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[</span><span class="n">revinds</span><span class="p">,:,:,:,:,:]</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,</span><span class="n">revinds</span><span class="p">,:,:,:,:]</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,:,</span><span class="n">revinds</span><span class="p">,:,:,:]</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,:,:,</span><span class="n">revinds</span><span class="p">,:,:]</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,:,:,:,</span><span class="n">revinds</span><span class="p">,:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,:,:,:,:,</span><span class="n">revinds</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">ndim</span> <span class="o">==</span> <span class="mi">7</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[</span><span class="n">revinds</span><span class="p">,:,:,:,:,:,:]</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,</span><span class="n">revinds</span><span class="p">,:,:,:,:,:]</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,:,</span><span class="n">revinds</span><span class="p">,:,:,:,:]</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,:,:,</span><span class="n">revinds</span><span class="p">,:,:,:]</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,:,:,:,</span><span class="n">revinds</span><span class="p">,:,:]</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">5</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,:,:,:,:,</span><span class="n">revinds</span><span class="p">,:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,:,:,:,:,:,</span><span class="n">revinds</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">ndim</span> <span class="o">==</span> <span class="mi">8</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[</span><span class="n">revinds</span><span class="p">,:,:,:,:,:,:,:]</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,</span><span class="n">revinds</span><span class="p">,:,:,:,:,:,:]</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,:,</span><span class="n">revinds</span><span class="p">,:,:,:,:,:]</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,:,:,</span><span class="n">revinds</span><span class="p">,:,:,:,:]</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,:,:,:,</span><span class="n">revinds</span><span class="p">,:,:,:]</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">5</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,:,:,:,:,</span><span class="n">revinds</span><span class="p">,:,:]</span>
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,:,:,:,:,:,</span><span class="n">revinds</span><span class="p">,:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inp</span><span class="p">[:,:,:,:,:,:,:,</span><span class="n">revinds</span><span class="p">]</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="binned_statistic"><a class="viewcode-back" href="../../astroutils.html#astroutils.mathops.binned_statistic">[docs]</a><span class="k">def</span> <span class="nf">binned_statistic</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">statistic</span><span class="o">=</span><span class="s1">&#39;mean&#39;</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Same functionality as binned_statistic() under scipy.stats module but can </span>
+<span class="sd">    return reverse indices such as in IDL version of histogram. Read the </span>
+<span class="sd">    documentation on the two aforementioned functions.</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    x          [numpy vector] A sequence of values to be binned.</span>
+
+<span class="sd">    values     [numpy vector] The values on which the statistic will be computed.</span>
+<span class="sd">               This must be the same shape as x.</span>
+
+<span class="sd">    statistic  [string or callable, optional] The statistic to compute (default</span>
+<span class="sd">               is &#39;mean&#39;). The following statistics are available:</span>
+
+<span class="sd">               &#39;mean&#39;    : compute the mean of values for points within each bin.</span>
+<span class="sd">                          Empty bins will be represented by NaN.</span>
+<span class="sd">               &#39;median&#39;  : compute the median of values for points within each</span>
+<span class="sd">                          bin. Empty bins will be represented by NaN.</span>
+<span class="sd">               &#39;count&#39;   : compute the count of points within each bin. This is</span>
+<span class="sd">                          identical to an unweighted histogram. values array is</span>
+<span class="sd">                          not referenced.</span>
+<span class="sd">               &#39;sum&#39;     : compute the sum of values for points within each bin.</span>
+<span class="sd">                          This is identical to a weighted histogram.</span>
+<span class="sd">               function : a user-defined function which takes a 1D array of</span>
+<span class="sd">                          values, and outputs a single numerical statistic. This</span>
+<span class="sd">                          function will be called on the values in each bin.</span>
+<span class="sd">                          Empty bins will be represented by function([]), or NaN</span>
+<span class="sd">                          if this returns an error.</span>
+
+<span class="sd">    bins       [int or sequence of scalars, optional] If bins is an int, it</span>
+<span class="sd">               defines the number of equal-width bins in the given range (10, by</span>
+<span class="sd">               default). If bins is a sequence, it defines the bin edges,</span>
+<span class="sd">               including the rightmost edge, allowing for non-uniform bin widths.</span>
+
+<span class="sd">    range      [2-element tuple in list, optional] The lower and upper range of</span>
+<span class="sd">               the bins. If not provided, range is simply (x.min(), x.max()).</span>
+<span class="sd">               Values outside the range are ignored.</span>
+
+<span class="sd">    reverse_indices</span>
+<span class="sd">               [boolean] If set to True (default), returns the reverse indices</span>
+<span class="sd">               in revind</span>
+
+<span class="sd">    Outputs:</span>
+
+<span class="sd">    statistic  [numpy vector] The values of the selected statistic in each bin.</span>
+
+<span class="sd">    bin_edges  [numpy vector] Return the bin edges (length(statistic)+1).</span>
+
+<span class="sd">    binnumber  [numpy vector] This assigns to each observation an integer that</span>
+<span class="sd">               represents the bin in which this observation falls. Array has the</span>
+<span class="sd">               same length as values.</span>
+
+<span class="sd">    revind     [numpy vector] list of reverse indices like the IDL counterpart.</span>
+<span class="sd">               Vector whose number of elements is the sum of the number of</span>
+<span class="sd">               elements in the histogram, N, and the number of array elements</span>
+<span class="sd">               included in the histogram, plus one. The subscripts of the</span>
+<span class="sd">               original array elements falling in the ith bin, 0 &lt;= i &lt; N, are</span>
+<span class="sd">               given by the expression: R(R[i] : R[i+1]), where R is the</span>
+<span class="sd">               reverse index list. If R[i] is equal to R[i+1], no elements are</span>
+<span class="sd">               present in the i-th bin. </span>
+
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">sortind</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;heapsort&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">values</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">stat</span><span class="p">,</span> <span class="n">bin_edges</span><span class="p">,</span> <span class="n">binnum</span> <span class="o">=</span> <span class="n">SP</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">binned_statistic</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">sortind</span><span class="p">],</span> <span class="n">values</span><span class="p">[</span><span class="n">sortind</span><span class="p">],</span> <span class="n">statistic</span><span class="o">=</span><span class="n">statistic</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">bins</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="nb">range</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">stat</span><span class="p">,</span> <span class="n">bin_edges</span><span class="p">,</span> <span class="n">binnum</span> <span class="o">=</span> <span class="n">SP</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">binned_statistic</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">sortind</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="n">sortind</span><span class="p">],</span> <span class="n">statistic</span><span class="o">=</span><span class="n">statistic</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">bins</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="nb">range</span><span class="p">)</span>
+        
+    <span class="n">revind</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">bin_edges</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">bin_edges</span><span class="o">.</span><span class="n">size</span><span class="o">+</span><span class="n">NP</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">stat</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">int</span><span class="p">)),</span> <span class="n">sortind</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">stat</span><span class="p">,</span> <span class="n">bin_edges</span><span class="p">,</span> <span class="n">binnum</span><span class="p">,</span> <span class="n">revind</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="rms"><a class="viewcode-back" href="../../astroutils.html#astroutils.mathops.rms">[docs]</a><span class="k">def</span> <span class="nf">rms</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">filter_dict</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Estimate the rms of multi-dimensional (complex) input data along an axis (if</span>
+<span class="sd">    specified). Optionally, fourier frequency filtering and masks can be used to</span>
+<span class="sd">    refine the data before estimating rms.</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    inp         [Numpy array] input data for which RMS has to be estimated.</span>
+
+<span class="sd">    Keyword Inputs:</span>
+
+<span class="sd">    axis        [scalar integer] Axis over which FFT is performed. Default = None</span>
+<span class="sd">                (last axis). Any negative value or values exceeding the number of</span>
+<span class="sd">                axes in the input data will be reset to use the last axis.</span>
+
+<span class="sd">    filter_dict [dictionary] Filter parameters in the Fourier (frequency) domain.</span>
+<span class="sd">                Default is None (no filtering to be applied). If set, the</span>
+<span class="sd">                filtering will be applied along the specified axis. If axis is</span>
+<span class="sd">                not specified, no frequency domain filtering will be applied. </span>
+<span class="sd">                This is a dictionary consisting of the following keys and info:</span>
+<span class="sd">                &#39;freqwts&#39;    [Numpy array] frequency window of weights. Should </span>
+<span class="sd">                             either have same shape as inp or have number of</span>
+<span class="sd">                             elements equal to the number of elements in input</span>
+<span class="sd">                             data along specified axis. Default = None.</span>
+<span class="sd">                             If not set, then it will be set to a rectangular</span>
+<span class="sd">                             window of width specified by key &#39;width&#39; (see below) </span>
+<span class="sd">                             and will be applied as a filter identically to the</span>
+<span class="sd">                             entire data along the specified axis.</span>
+<span class="sd">                &#39;width&#39;      [scalar] Width of the frequency window as a fraction </span>
+<span class="sd">                             of the bandwidth. Has to be positive. Default is</span>
+<span class="sd">                             None. If width is None, wts should be set. One and</span>
+<span class="sd">                             only one among wts and width should be set.  </span>
+<span class="sd">                &#39;passband&#39;   [string scalar] String specifying the passband</span>
+<span class="sd">                             (&#39;low&#39; or &#39;high&#39;) to be used. Default = &#39;low&#39;.</span>
+
+<span class="sd">    mask        [Numpy array] Numpy array with same dimensions as the input </span>
+<span class="sd">                data. The values can be Boolean or can be integers which in turn</span>
+<span class="sd">                will be converted to Boolean values. Mask values with True will </span>
+<span class="sd">                be masked and ignored in the rms estimates while mask values with</span>
+<span class="sd">                False will only be considered in obtaining the rms estimates. </span>
+<span class="sd">                Default = None (no masking to be applied)</span>
+
+<span class="sd">    verbose     [boolean] If set to True (default), print messages indicating</span>
+<span class="sd">                progress</span>
+
+<span class="sd">    Output:</span>
+<span class="sd">    </span>
+<span class="sd">    RMS estimate of the input data. If the input data is complex, the output </span>
+<span class="sd">    consists of rms estimate of the real and imaginary parts of the data after</span>
+<span class="sd">    applying the specified filtering and/or masking.</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">inp</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;No input data specified.&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">inp</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;inp must be a list or numpy array&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">axis</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;axis must be an integer&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">axis</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">axis</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">inp</span><span class="o">.</span><span class="n">shape</span><span class="p">)):</span>
+                <span class="n">axis</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">inp</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>        
+                <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">Setting axis to be the last dimension of data&#39;</span>
+    
+        <span class="n">tempinp</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">filter_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">filter_dict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;filter_dict must be a dictionary&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">freqwts</span> <span class="o">=</span> <span class="bp">None</span>
+                <span class="k">if</span> <span class="s1">&#39;freqwts&#39;</span> <span class="ow">in</span> <span class="n">filter_dict</span><span class="p">:</span>
+                    <span class="n">freqwts</span> <span class="o">=</span> <span class="n">filter_dict</span><span class="p">[</span><span class="s1">&#39;freqwts&#39;</span><span class="p">]</span>
+            
+                <span class="n">width</span> <span class="o">=</span> <span class="bp">None</span>
+                <span class="k">if</span> <span class="s1">&#39;width&#39;</span> <span class="ow">in</span> <span class="n">filter_dict</span><span class="p">:</span>
+                    <span class="n">width</span> <span class="o">=</span> <span class="n">filter_dict</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span>
+
+                <span class="n">passband</span> <span class="o">=</span> <span class="s1">&#39;low&#39;</span>
+                <span class="k">if</span> <span class="s1">&#39;passband&#39;</span> <span class="ow">in</span> <span class="n">filter_dict</span><span class="p">:</span>
+                    <span class="n">passband</span> <span class="o">=</span> <span class="n">filter_dict</span><span class="p">[</span><span class="s1">&#39;passband&#39;</span><span class="p">]</span>
+
+                <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">Invoking fft_filter() in the DSP module...&#39;</span>
+
+                <span class="n">tempinp</span> <span class="o">=</span> <span class="n">DSP</span><span class="o">.</span><span class="n">fft_filter</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">wts</span><span class="o">=</span><span class="n">freqwts</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="n">width</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c1"># Check for broadcastability</span>
+            <span class="k">if</span> <span class="n">mask</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">tempinp</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">mask</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">tempinp</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">axis</span><span class="p">]:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;mask and inp cannot be broadcast as numpy arrays&#39;</span><span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">msk</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span> <span class="o">*</span> <span class="n">mask</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;mask and inp cannot be broadcast as compatible numpy arrays in order to create the mask&#39;</span><span class="p">)</span>
+
+            <span class="n">tempinp</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked_array</span><span class="p">(</span><span class="n">tempinp</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">msk</span><span class="p">)</span> <span class="c1"># create a masked array</span>
+
+        <span class="k">if</span> <span class="n">NP</span><span class="o">.</span><span class="n">iscomplexobj</span><span class="p">(</span><span class="n">inp</span><span class="p">):</span>
+            <span class="n">rms</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">tempinp</span><span class="o">.</span><span class="n">real</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1j</span> <span class="o">*</span> <span class="n">NP</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">tempinp</span><span class="o">.</span><span class="n">imag</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rms</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">tempinp</span><span class="o">.</span><span class="n">real</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">rms</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">tempinp</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
+            <span class="n">rms</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">rms</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span>
+        
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">tempinp</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">mask</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">inp</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;mask and inp cannot be broadcasted as numpy arrays&#39;</span><span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">msk</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span> <span class="o">*</span> <span class="n">mask</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;mask and inp cannot be broadcast as compatible numpy arrays in order to create the mask&#39;</span><span class="p">)</span>
+
+            <span class="n">tempinp</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked_array</span><span class="p">(</span><span class="n">tempinp</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">msk</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">NP</span><span class="o">.</span><span class="n">iscomplexobj</span><span class="p">(</span><span class="n">inp</span><span class="p">):</span>
+            <span class="n">rms</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">tempinp</span><span class="o">.</span><span class="n">real</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1j</span> <span class="o">*</span> <span class="n">NP</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">tempinp</span><span class="o">.</span><span class="n">imag</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rms</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">tempinp</span><span class="o">.</span><span class="n">real</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">rms</span></div>
+            
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="healpix_interp_along_axis"><a class="viewcode-back" href="../../astroutils.html#astroutils.mathops.healpix_interp_along_axis">[docs]</a><span class="k">def</span> <span class="nf">healpix_interp_along_axis</span><span class="p">(</span><span class="n">indata</span><span class="p">,</span> <span class="n">theta_phi</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">inloc_axis</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                              <span class="n">outloc_axis</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span>
+                              <span class="n">bounds_error</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">NP</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+                              <span class="n">assume_sorted</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">nest</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Interpolate healpix data to specified angular locations (HEALPIX </span>
+<span class="sd">    interpolation) and along one other specified axis (usually frequency axis, </span>
+<span class="sd">    for instance) via SciPy interpolation. Wraps HEALPIX and SciPy interpolations</span>
+<span class="sd">    into one routine.</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    indata      [numpy array] input data to be interpolated. Must be of shape </span>
+<span class="sd">                (nhpy x nax1 x nax2 x ...). Currently works only for </span>
+<span class="sd">                (nhpy x nax1). nhpy is a HEALPIX compatible npix</span>
+
+<span class="sd">    theta_phi   [numpy array] spherical angle locations (in radians) at which</span>
+<span class="sd">                the healpix data is to be interpolated to at each of the other </span>
+<span class="sd">                given axes. It must be of size nang x 2 where nang is the number </span>
+<span class="sd">                of spherical angle locations, 2 denotes theta and phi. If set to</span>
+<span class="sd">                None (default), no healpix interpolation is performed</span>
+
+<span class="sd">    inloc_axis  [numpy array] locations along the axis specified in axis (to be </span>
+<span class="sd">                interpolated with SciPy) in which indata is specified. It </span>
+<span class="sd">                should be of size nax1, nax2, ... or naxm. Currently it works </span>
+<span class="sd">                only if set to nax1</span>
+
+<span class="sd">    outloc_axis [numpy array] locations along the axis specified in axis to be </span>
+<span class="sd">                interpolated to with SciPy. The axis over which this </span>
+<span class="sd">                interpolation is to be done is specified in axis. It must be of</span>
+<span class="sd">                size nout. If this is set exactly equal to inloc_axis, no </span>
+<span class="sd">                interpolation along this axis is performed</span>
+
+<span class="sd">    axis        [integer] axis along which SciPy interpolation is to be done. </span>
+<span class="sd">                If set to -1 (default), the interpolation happens over the last</span>
+<span class="sd">                axis. Since the first axis of indata is reserved for the healpix</span>
+<span class="sd">                pixels, axis must be set to 1 or above (upto indata.ndim-1).</span>
+
+<span class="sd">    kind        [str or int] Specifies the kind of interpolation as a </span>
+<span class="sd">                string (&#39;linear&#39;, &#39;nearest&#39;, &#39;zero&#39;, &#39;slinear&#39;, &#39;quadratic&#39;, </span>
+<span class="sd">                &#39;cubic&#39; where &#39;slinear&#39;, &#39;quadratic&#39; and &#39;cubic&#39; refer to a </span>
+<span class="sd">                spline interpolation of first, second or third order) or as an </span>
+<span class="sd">                integer specifying the order of the spline interpolator to use. </span>
+<span class="sd">                Default is &#39;linear&#39;.</span>
+
+<span class="sd">    bounds_error </span>
+<span class="sd">                [bool, optional] If True, a ValueError is raised any time </span>
+<span class="sd">                interpolation is attempted on a value outside of the range of x </span>
+<span class="sd">                (where extrapolation is necessary). If False, out of bounds </span>
+<span class="sd">                values are assigned fill_value. By default, an error is raised.</span>
+
+<span class="sd">    fill_value  [float] If provided, then this value will be used to fill in </span>
+<span class="sd">                for requested points outside of the data range. If not provided, </span>
+<span class="sd">                then the default is NaN.</span>
+
+<span class="sd">    assume_sorted </span>
+<span class="sd">                [bool] If False, values of inloc_axis can be in any order and </span>
+<span class="sd">                they are sorted first. If True, inloc_axis has to be an array </span>
+<span class="sd">                of monotonically increasing values.</span>
+<span class="sd">    </span>
+<span class="sd">    nest        [bool] if True, the is assumed to be in NESTED ordering.</span>
+
+<span class="sd">    Outputs:</span>
+
+<span class="sd">    HEALPIX interpolated and SciPy interpolated output. Will be of size</span>
+<span class="sd">    nang x ... x nout x ... x naxm. Currently returns an array of shape </span>
+<span class="sd">    nang x nout</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">indata</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;input data not specified&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">indata</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;input data must be a numpy array&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">theta_phi</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">theta_phi</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;output locations must be a numpy array&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">theta_phi</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Output locations must be a 2D array&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">axis</span> <span class="o">=</span> <span class="n">indata</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">axis</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">axis</span> <span class="o">&gt;=</span> <span class="n">indata</span><span class="o">.</span><span class="n">ndim</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;input axis out of range&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">theta_phi</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">intermediate_data_shape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">indata</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">intermediate_data_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">theta_phi</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">intermediate_data_shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">intermediate_data_shape</span><span class="p">)</span>
+        
+        <span class="n">intermediate_data</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">intermediate_data_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">NP</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">indata</span><span class="o">.</span><span class="n">ndim</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">indata</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">ax</span><span class="p">]):</span>
+                <span class="n">intermediate_data</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">HP</span><span class="o">.</span><span class="n">get_interp_val</span><span class="p">(</span><span class="n">indata</span><span class="p">[:,</span><span class="n">i</span><span class="p">],</span> <span class="n">theta_phi</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">theta_phi</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">nest</span><span class="o">=</span><span class="n">nest</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">intermediate_data</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">indata</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">outloc_axis</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">inloc_axis</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">outloc_axis</span> <span class="o">=</span> <span class="n">outloc_axis</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+            <span class="n">inloc_axis</span> <span class="o">=</span> <span class="n">inloc_axis</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+            <span class="n">eps</span> <span class="o">=</span> <span class="mf">1e-8</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">outloc_axis</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="n">inloc_axis</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">inloc_axis</span><span class="o">-</span><span class="n">outloc_axis</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="n">eps</span><span class="p">):</span>
+                <span class="n">outdata</span> <span class="o">=</span> <span class="n">intermediate_data</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;fft&#39;</span><span class="p">:</span>
+                    <span class="n">df_inp</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">inloc_axis</span><span class="p">))</span>
+                    <span class="n">df_out</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">outloc_axis</span><span class="p">))</span>
+                    <span class="n">ntau</span> <span class="o">=</span> <span class="n">df_inp</span> <span class="o">/</span> <span class="n">df_out</span> <span class="o">*</span> <span class="n">inloc_axis</span><span class="o">.</span><span class="n">size</span>
+                    <span class="n">ntau</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">ntau</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+                    <span class="n">tau_inp</span> <span class="o">=</span> <span class="n">DSP</span><span class="o">.</span><span class="n">spectral_axis</span><span class="p">(</span><span class="n">inloc_axis</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">delx</span><span class="o">=</span><span class="n">df_inp</span><span class="p">,</span> <span class="n">shift</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                    <span class="n">fftinp</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fft</span><span class="p">(</span><span class="n">intermediate_data</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+                    <span class="n">fftinp_shifted</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fftshift</span><span class="p">(</span><span class="n">fftinp</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">fftinp</span><span class="o">.</span><span class="n">size</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">fftinp_shifted</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span> <span class="c1"># Blank out the N/2 element (0 element when FFT-shifted) for conjugate symmetry</span>
+                    <span class="n">npad</span> <span class="o">=</span> <span class="n">ntau</span> <span class="o">-</span> <span class="n">inloc_axis</span><span class="o">.</span><span class="n">size</span>
+                    <span class="k">if</span> <span class="n">npad</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">npad_before</span> <span class="o">=</span> <span class="n">npad</span><span class="o">/</span><span class="mi">2</span>
+                        <span class="n">npad_after</span> <span class="o">=</span> <span class="n">npad</span><span class="o">/</span><span class="mi">2</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">npad_before</span> <span class="o">=</span> <span class="n">npad</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span>
+                        <span class="n">npad_after</span> <span class="o">=</span> <span class="n">npad</span><span class="o">/</span><span class="mi">2</span>
+
+                    <span class="n">fftinp_shifted_padded</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">fftinp_shifted</span><span class="p">,</span> <span class="p">[(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="n">npad_before</span><span class="p">,</span> <span class="n">npad_after</span><span class="p">)],</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;constant&#39;</span><span class="p">)</span>
+                    <span class="n">fftinp_padded</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">ifftshift</span><span class="p">(</span><span class="n">fftinp_shifted_padded</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+                    <span class="n">ifftout</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">ifft</span><span class="p">(</span><span class="n">fftinp_padded</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">*</span> <span class="n">ntau</span> <span class="o">/</span> <span class="n">inloc_axis</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+                    <span class="n">eps_imag</span> <span class="o">=</span> <span class="mf">1e-10</span>
+                    <span class="k">if</span> <span class="n">NP</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">ifftout</span><span class="o">.</span><span class="n">imag</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">eps_imag</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Significant imaginary component has been introduced unintentionally during the FFT based interpolation. Debug the code.&#39;</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">ifftout</span> <span class="o">=</span> <span class="n">ifftout</span><span class="o">.</span><span class="n">real</span>
+                    <span class="n">fout</span> <span class="o">=</span> <span class="n">DSP</span><span class="o">.</span><span class="n">spectral_axis</span><span class="p">(</span><span class="n">ntau</span><span class="p">,</span> <span class="n">delx</span><span class="o">=</span><span class="n">tau_inp</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">tau_inp</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">shift</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                    <span class="n">fout</span> <span class="o">-=</span> <span class="n">fout</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+                    <span class="n">fout</span> <span class="o">+=</span> <span class="n">inloc_axis</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> 
+                    <span class="n">ind_outloc</span><span class="p">,</span> <span class="n">ind_fout</span><span class="p">,</span> <span class="n">dfreq</span> <span class="o">=</span> <span class="n">LKP</span><span class="o">.</span><span class="n">find_1NN</span><span class="p">(</span><span class="n">fout</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">outloc_axis</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">distance_ULIM</span><span class="o">=</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">fout</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">fout</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">remove_oob</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                    <span class="n">outdata</span> <span class="o">=</span> <span class="n">ifftout</span><span class="p">[:,</span><span class="n">ind_fout</span><span class="p">]</span>
+                    
+                    <span class="c1"># npad = 2 * (outloc_axis.size - inloc_axis.size)</span>
+                    <span class="c1"># dt_inp = DSP.spectral_axis(2*inloc_axis.size, delx=inloc_axis[1]-inloc_axis[0], shift=True)</span>
+                    <span class="c1"># dt_out = DSP.spectral_axis(2*outloc_axis.size, delx=outloc_axis[1]-outloc_axis[0], shift=True)</span>
+                    <span class="c1"># fftinp = NP.fft.fft(NP.pad(intermediate_data, [(0,0), (0,inloc_axis.size)], mode=&#39;constant&#39;), axis=axis) * (1.0 * outloc_axis.size / inloc_axis.size)</span>
+                    <span class="c1"># fftinp = NP.fft.fftshift(fftinp, axes=axis)</span>
+                    <span class="c1"># fftinp[0,0] = 0.0  # Blank out the N/2 element for conjugate symmetry</span>
+                    <span class="c1"># fftout = NP.pad(fftinp, [(0,0), (npad/2, npad/2)], mode=&#39;constant&#39;)</span>
+                    <span class="c1"># fftout = NP.fft.ifftshift(fftout, axes=axis)</span>
+                    <span class="c1"># outdata = NP.fft.ifft(fftout, axis=axis)</span>
+                    <span class="c1"># outdata = outdata[0,:outloc_axis.size]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">interp_func</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">inloc_axis</span><span class="p">,</span> <span class="n">intermediate_data</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="n">kind</span><span class="p">,</span> <span class="n">bounds_error</span><span class="o">=</span><span class="n">bounds_error</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">,</span> <span class="n">assume_sorted</span><span class="o">=</span><span class="n">assume_sorted</span><span class="p">)</span>
+                    <span class="n">outdata</span> <span class="o">=</span> <span class="n">interp_func</span><span class="p">(</span><span class="n">outloc_axis</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;input inloc_axis not specified&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">outdata</span> <span class="o">=</span> <span class="n">intermediate_data</span>
+
+    <span class="k">return</span> <span class="n">outdata</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="interpolate_array"><a class="viewcode-back" href="../../astroutils.html#astroutils.mathops.interpolate_array">[docs]</a><span class="k">def</span> <span class="nf">interpolate_array</span><span class="p">(</span><span class="n">inparray</span><span class="p">,</span> <span class="n">inploc</span><span class="p">,</span> <span class="n">outloc</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Interpolate a multi-dimensional array along one of its dimensions. It acts </span>
+<span class="sd">    as a wrapper to scipy.interpolate.interp1d but applies boundary conditions </span>
+<span class="sd">    differently</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    inparray    [numpy array] Multi-dimensional input array which will be used </span>
+<span class="sd">                in determining the interpolation function</span>
+
+<span class="sd">    inploc      [numpy array] Locations using which the interpolation function</span>
+<span class="sd">                is determined. It must be of size equal to the dimension of </span>
+<span class="sd">                input array along which interpolation is to be determined </span>
+<span class="sd">                specified by axis keyword input. It must be a list or numpy </span>
+<span class="sd">                array</span>
+
+<span class="sd">    outloc      [list or numpy array] Locations at which interpolated array is</span>
+<span class="sd">                to be determined along the specified axis. It must be a scalar, </span>
+<span class="sd">                list or numpy array. If any of outloc is outside the range of</span>
+<span class="sd">                inploc, the first and the last cubes from the inparray will</span>
+<span class="sd">                be used as boundary values</span>
+
+<span class="sd">    axis        [scalar] Axis along which interpolation is to be performed. </span>
+<span class="sd">                Default=-1 (last axis)</span>
+
+<span class="sd">    kind        [string or integer] Specifies the kind of interpolation as a </span>
+<span class="sd">                string (&#39;linear&#39;, &#39;nearest&#39;, &#39;zero&#39;, &#39;slinear&#39;, &#39;quadratic&#39;, </span>
+<span class="sd">                &#39;cubic&#39; where &#39;slinear&#39;, &#39;quadratic&#39; and &#39;cubic&#39; refer to a </span>
+<span class="sd">                spline interpolation of first, second or third order) or as an </span>
+<span class="sd">                integer specifying the order of the spline interpolator to use. </span>
+<span class="sd">                Default is &#39;linear&#39;.</span>
+
+<span class="sd">    Output:</span>
+
+<span class="sd">    outarray    [numpy array] Output array after interpolation </span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inparray</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">),</span> <span class="s1">&#39;Input array inparray must be a numpy array&#39;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inploc</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)),</span> <span class="s1">&#39;Input locations must be a list or numpy array&#39;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">outloc</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)),</span> <span class="s1">&#39;Output locations must be a scalar, list or numpy array&#39;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span> <span class="s1">&#39;Interpolation axis must be an integer&#39;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span> <span class="s1">&#39;Kind of interpolation must be a string&#39;</span>
+
+    <span class="n">inploc</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">inploc</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">outloc</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">outloc</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">inparray</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="n">axis</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;Insufficient dimensions in inparray for interpolation&#39;</span>
+    <span class="k">assert</span> <span class="n">inparray</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span><span class="o">==</span><span class="n">inploc</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="s1">&#39;Dimension of interpolation axis of inparray is mismatched with number of locations at which interpolation is requested&#39;</span>
+
+    <span class="n">interp_required</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="k">if</span> <span class="n">inploc</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="n">outloc</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">NP</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">inploc</span><span class="p">,</span> <span class="n">outloc</span><span class="p">):</span>
+            <span class="n">interp_required</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">return</span> <span class="n">inparray</span> <span class="c1"># no interpolation required, just return outarray=inparray</span>
+    <span class="k">if</span> <span class="n">interp_required</span><span class="p">:</span>
+        <span class="n">inbound_ind</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">outloc</span> <span class="o">&gt;=</span> <span class="n">inploc</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">outloc</span> <span class="o">&lt;=</span> <span class="n">inploc</span><span class="o">.</span><span class="n">max</span><span class="p">()))[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">outbound_low_ind</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">outloc</span> <span class="o">&lt;</span> <span class="n">inploc</span><span class="o">.</span><span class="n">min</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">outbound_high_ind</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">outloc</span> <span class="o">&gt;</span> <span class="n">inploc</span><span class="o">.</span><span class="n">max</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+    
+        <span class="n">outarray</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">inbound_ind</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">interpfunc</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">inploc</span><span class="p">,</span> <span class="n">inparray</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="n">kind</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">assume_sorted</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="n">outarray</span> <span class="o">=</span> <span class="n">interpfunc</span><span class="p">(</span><span class="n">outloc</span><span class="p">[</span><span class="n">inbound_ind</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">outbound_low_ind</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">outarray</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">outarray</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="n">inparray</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">),</span> <span class="n">outbound_low_ind</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">outarray</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">NP</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="n">inparray</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">),</span> <span class="n">outbound_low_ind</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">),</span> <span class="n">outarray</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">outbound_high_ind</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">outarray</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">outarray</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="n">inparray</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">),</span> <span class="n">outbound_high_ind</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">outarray</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">outarray</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="n">inparray</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">),</span> <span class="n">outbound_high_ind</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)),</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+    
+        <span class="k">return</span> <span class="n">outarray</span></div>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="percentiles_to_2D_contour_levels"><a class="viewcode-back" href="../../astroutils.html#astroutils.mathops.percentiles_to_2D_contour_levels">[docs]</a><span class="k">def</span> <span class="nf">percentiles_to_2D_contour_levels</span><span class="p">(</span><span class="n">pdf</span><span class="p">,</span> <span class="n">percentiles</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Determine 2D contour levels given percentiles</span>
+
+<span class="sd">    Inputs:</span>
+
+<span class="sd">    pdf         [numpy array] 2D array denoting the probability density function</span>
+<span class="sd">                from which contour levels for the given percentiles are to be</span>
+<span class="sd">                determined</span>
+
+<span class="sd">    percentiles [list or numpy array] The percentiles (in percent) for which </span>
+<span class="sd">                contour levels are to be determined. All elements in this</span>
+<span class="sd">                array must lie between 0 and 100</span>
+
+<span class="sd">    Output:     [numpy array] Contour levels corresponding to the input </span>
+<span class="sd">                percentiles. Size of returned array will be equal to that of </span>
+<span class="sd">                the input percentiles.</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">pdf</span><span class="p">,</span> <span class="n">percentiles</span>
+    <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;Inputs pdf and percentiles must be specified&#39;</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pdf</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">),</span> <span class="s1">&#39;Input pdf must be a numpy array&#39;</span>
+    <span class="k">assert</span> <span class="n">pdf</span><span class="o">.</span><span class="n">ndim</span><span class="o">==</span><span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;Input pdf must be a 2D numpy array&#39;</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">percentiles</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span><span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)),</span> <span class="s1">&#39;Input percentiles must be a list or numpy array&#39;</span>
+    <span class="k">if</span> <span class="n">NP</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">pdf</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input pdf must be non-negative&#39;</span><span class="p">)</span>
+    <span class="n">percentiles</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">percentiles</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+    <span class="n">eps</span> <span class="o">=</span> <span class="mf">1e-12</span>
+    <span class="n">percentiles</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">percentiles</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="mf">100.0</span><span class="o">-</span><span class="n">eps</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">NP</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">percentiles</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">)</span> <span class="ow">or</span> <span class="n">NP</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">percentiles</span> <span class="o">&gt;</span> <span class="mf">100.0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Percentiles must lie between 0 and 100&#39;</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="mi">10000</span>
+    <span class="n">adjustment_factor</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">pdf</span><span class="p">)</span>
+    <span class="n">pdf</span> <span class="o">=</span> <span class="n">pdf</span> <span class="o">/</span> <span class="n">adjustment_factor</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">pdf</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">n</span><span class="p">)</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">pdf</span> <span class="o">&gt;=</span> <span class="n">t</span><span class="p">[:,</span> <span class="n">NP</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span><span class="o">+</span><span class="n">eps</span><span class="p">)</span>
+    <span class="n">integral</span> <span class="o">=</span> <span class="p">(</span><span class="n">mask</span> <span class="o">*</span> <span class="n">pdf</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+    <span class="n">interpfunc</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">integral</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">)</span>
+    <span class="n">cntr_levels</span> <span class="o">=</span> <span class="n">interpfunc</span><span class="p">(</span><span class="n">percentiles</span><span class="o">/</span><span class="mf">100.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">adjustment_factor</span>
+    <span class="k">return</span> <span class="n">cntr_levels</span></div>
+
+<span class="c1">#################################################################################</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Nithyanandan Thyagarajan.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

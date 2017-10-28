@@ -1,0 +1,1071 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>astroutils.catalog &mdash; AstroUtils 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="AstroUtils 0.1.0 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for astroutils.catalog</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">NP</span>
+<span class="kn">import</span> <span class="nn">healpy</span> <span class="kn">as</span> <span class="nn">HP</span>
+<span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span>
+<span class="kn">from</span> <span class="nn">astropy.io</span> <span class="kn">import</span> <span class="n">fits</span><span class="p">,</span> <span class="n">ascii</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="kn">import</span> <span class="n">Angle</span><span class="p">,</span> <span class="n">SkyCoord</span>
+<span class="kn">from</span> <span class="nn">astropy</span> <span class="kn">import</span> <span class="n">units</span>
+<span class="kn">import</span> <span class="nn">scipy.constants</span> <span class="kn">as</span> <span class="nn">FCNST</span>
+<span class="kn">import</span> <span class="nn">geometry</span> <span class="kn">as</span> <span class="nn">GEOM</span>
+<span class="kn">import</span> <span class="nn">mathops</span> <span class="kn">as</span> <span class="nn">OPS</span>
+<span class="kn">import</span> <span class="nn">lookup_operations</span> <span class="kn">as</span> <span class="nn">LKP</span>
+<span class="kn">import</span> <span class="nn">constants</span> <span class="kn">as</span> <span class="nn">CNST</span>
+
+<span class="c1">#################################################################################</span>
+
+<div class="viewcode-block" id="SkyModel"><a class="viewcode-back" href="../../astroutils.html#astroutils.catalog.SkyModel">[docs]</a><span class="k">class</span> <span class="nc">SkyModel</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    -----------------------------------------------------------------------------</span>
+<span class="sd">    Class to manage sky model information.</span>
+
+<span class="sd">    Attributes:</span>
+
+<span class="sd">    name           [scalar or vector] Name of the catalog. If scalar, will be </span>
+<span class="sd">                   used for all sources in the sky model. If vector, will be </span>
+<span class="sd">                   used for corresponding object. If vector, size must equal </span>
+<span class="sd">                   the number of objects.</span>
+
+<span class="sd">    frequency      [scalar or vector] Frequency range for which sky model is</span>
+<span class="sd">                   applicable. Units in Hz.</span>
+
+<span class="sd">    location       [numpy array or list of lists] Positions of the sources in </span>
+<span class="sd">                   sky model. Each position is specified as a row (numpy array)</span>
+<span class="sd">                   or a 2-element list which is input as a list of lists for all</span>
+<span class="sd">                   the sources in the sky model</span>
+
+<span class="sd">    spec_type      [string] specifies the flux variation along the spectral </span>
+<span class="sd">                   axis. Allowed values are &#39;func&#39; and &#39;spectrum&#39;. If set to </span>
+<span class="sd">                   &#39;func&#39;, values under spec_parms are applicable. If set to </span>
+<span class="sd">                   &#39;spectrum&#39;, values under key &#39;spectrum&#39; are applicable.</span>
+
+<span class="sd">    spec_parms     [dictionary] specifies spectral parameters applicable for </span>
+<span class="sd">                   different spectral types. Only applicable if spec_type is </span>
+<span class="sd">                   set to &#39;func&#39;. It contains values in the following</span>
+<span class="sd">                   keys:</span>
+<span class="sd">                   &#39;name&#39;   [string] Specifies name of the functional variation</span>
+<span class="sd">                            of spectrum. Applicable when spec_type is set to </span>
+<span class="sd">                            &#39;func&#39;. Allowed values are &#39;random&#39;, &#39;monotone&#39;, </span>
+<span class="sd">                            &#39;power-law&#39;, and &#39;tanh&#39;. Default=&#39;power-law&#39; </span>
+<span class="sd">                            (with power law index set to 0). See member </span>
+<span class="sd">                            functions for these function definitions.</span>
+<span class="sd">                   &#39;power-law-index&#39; </span>
+<span class="sd">                            [scalar numpy vector or list] Power law index for </span>
+<span class="sd">                            each object (flux ~ freq^power_law_index). Will be </span>
+<span class="sd">                            specified and applicable when value in key &#39;name&#39; </span>
+<span class="sd">                            is set to &#39;power-law&#39;. Same size as the number of </span>
+<span class="sd">                            object locations.</span>
+<span class="sd">                   &#39;freq-ref&#39;</span>
+<span class="sd">                            [scalar or numpy array or list] Reference or pivot</span>
+<span class="sd">                            frequency as applicable. If a scalar, it is </span>
+<span class="sd">                            identical at all object locations. If a list or </span>
+<span class="sd">                            numpy array it must of size equal to the number of</span>
+<span class="sd">                            objects, one value at each location. If</span>
+<span class="sd">                            value under key &#39;name&#39; is set to &#39;power-law&#39;, this</span>
+<span class="sd">                            specifies the reference frequency at which the flux</span>
+<span class="sd">                            density is specified under key &#39;flux-scale&#39;. If </span>
+<span class="sd">                            value under key &#39;name&#39; is &#39;monotone&#39;, this specifies</span>
+<span class="sd">                            the frequency at which the spectrum of the object </span>
+<span class="sd">                            contains a spike and zero elsewhere. If value under</span>
+<span class="sd">                            key &#39;name&#39; is &#39;tanh&#39;, this specifies the frequency </span>
+<span class="sd">                            at which the spectrum is mid-way between min and </span>
+<span class="sd">                            max of the tanh function. This is not applicable </span>
+<span class="sd">                            when value under key &#39;name&#39; is set to &#39;random&#39; or </span>
+<span class="sd">                            &#39;flat&#39;. </span>
+<span class="sd">                   &#39;flux-scale&#39; </span>
+<span class="sd">                            [scalar or numpy array] Flux scale of the flux </span>
+<span class="sd">                            densities at object locations. If a scalar, it is</span>
+<span class="sd">                            common for all object locations. If it is a vector, </span>
+<span class="sd">                            it has a size equal to the number of object </span>
+<span class="sd">                            locations, one value for each object location. If </span>
+<span class="sd">                            value in &#39;name&#39; is set to &#39;power-law&#39;, this refers </span>
+<span class="sd">                            to the flux density scale at the reference frequency</span>
+<span class="sd">                            specified under key &#39;freq-ref&#39;. If value under key </span>
+<span class="sd">                            &#39;name&#39; is &#39;tanh&#39;, the flux density scale is half of</span>
+<span class="sd">                            the value specified under this key.</span>
+<span class="sd">                   &#39;flux-offset&#39;</span>
+<span class="sd">                            [numpy vector] Flux density offset applicable after</span>
+<span class="sd">                            applying the flux scale. Same units as the flux </span>
+<span class="sd">                            scale. If a scalar, it is common for all object </span>
+<span class="sd">                            locations. If it is a vector, it has a size equal </span>
+<span class="sd">                            to the number of object locations, one value </span>
+<span class="sd">                            for each object location. When value under the key</span>
+<span class="sd">                            &#39;name&#39; is set to &#39;random&#39;, this amounts to setting</span>
+<span class="sd">                            a mean flux density along the spectral axis.</span>
+<span class="sd">                   &#39;z-width&#39;</span>
+<span class="sd">                            [numpy vector] Characteristic redshift full-wdith</span>
+<span class="sd">                            in the definition of tanh expression applicable to</span>
+<span class="sd">                            global EoR signal. </span>
+
+<span class="sd">    spectrum       [numpy array] Spectrum of the catalog. Will be applicable </span>
+<span class="sd">                   if attribute spec_type is set to &#39;spectrum&#39; or if spectrum</span>
+<span class="sd">                   was computed using the member function. It will be of shape</span>
+<span class="sd">                   nsrc x nchan</span>
+
+<span class="sd">    src_shape      [3-column numpy array or list of 3-element lists] source </span>
+<span class="sd">                   shape specified by major axis FWHM (first column), minor axis </span>
+<span class="sd">                   FWHM (second column), and position angle (third column). The </span>
+<span class="sd">                   major and minor axes and position angle are stored in degrees. </span>
+<span class="sd">                   The number of rows must match the number of sources. Position </span>
+<span class="sd">                   angle is in degrees east of north (same convention as local</span>
+<span class="sd">                   azimuth)</span>
+
+<span class="sd">    epoch          [string] Epoch appropriate for the coordinate system. Default</span>
+<span class="sd">                   is &#39;J2000&#39;</span>
+
+<span class="sd">    coords         [string] Coordinate system used for the source positions in </span>
+<span class="sd">                   the sky model. Currently accepted values are &#39;radec&#39; (RA-Dec)</span>
+
+<span class="sd">    Member Functions:</span>
+
+<span class="sd">    __init__()     Initialize an instance of class SkyModel</span>
+
+<span class="sd">    match()        Match the source positions in an instance of class </span>
+<span class="sd">                   SkyModel with another instance of the same class to a </span>
+<span class="sd">                   specified angular radius using spherematch() in the geometry </span>
+<span class="sd">                   module</span>
+
+<span class="sd">    subset()       Provide a subset of the sky model using a list of indices onto</span>
+<span class="sd">                   the existing sky model. Subset can be either in position or </span>
+<span class="sd">                   frequency channels</span>
+
+<span class="sd">    generate_spectrum()</span>
+<span class="sd">                   Generate and return a spectrum from functional spectral </span>
+<span class="sd">                   parameters</span>
+
+<span class="sd">    to_healpix()   Convert catalog to a healpix format of given nside at </span>
+<span class="sd">                   specified frequencies.</span>
+
+<span class="sd">    save()         Save sky model to the specified output file</span>
+<span class="sd">    ------------------------------------------------------------------------------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1">##############################################################################</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">init_file</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">init_parms</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        --------------------------------------------------------------------------</span>
+<span class="sd">        Initialize an instance of class SkyModel</span>
+
+<span class="sd">        Class attributes initialized are:</span>
+<span class="sd">        frequency, location, flux_density, epoch, spectral_index, coords, </span>
+<span class="sd">        spectrum, src_shape</span>
+
+<span class="sd">        Inputs:</span>
+
+<span class="sd">        init_file   [string] Full path to the file containing saved </span>
+<span class="sd">                    information of an instance of class SkyModel. If set to</span>
+<span class="sd">                    None (default), parameters in the input init_parms </span>
+<span class="sd">                    will be used to initialize an instance of this class. </span>
+<span class="sd">                    If set to a filename, the instance will be initialized from </span>
+<span class="sd">                    this file, and init_parms and its parameters will be </span>
+<span class="sd">                    ignored.</span>
+
+<span class="sd">        init_parms  [dictionary] Dictionary containing parameters used to create</span>
+<span class="sd">                    an instance of class SkyModel. Used only if init_file is set</span>
+<span class="sd">                    to None. Initialization parameters are specified using the</span>
+<span class="sd">                    following keys and values:</span>
+<span class="sd">                    &#39;name&#39;      [scalar or vector] Name of the catalog. If </span>
+<span class="sd">                                scalar, will be used for all sources in the sky </span>
+<span class="sd">                                model. If vector, will be used for corresponding </span>
+<span class="sd">                                object. If vector, size must equal the number of </span>
+<span class="sd">                                objects.</span>
+<span class="sd">                    &#39;frequency&#39; [scalar or vector] Frequency range for which sky </span>
+<span class="sd">                                model is applicable. Units in Hz.</span>
+<span class="sd">                    &#39;location&#39;  [numpy array or list of lists] Positions of the </span>
+<span class="sd">                                sources in sky model. Each position is specified </span>
+<span class="sd">                                as a row (numpy array) or a 2-element list which </span>
+<span class="sd">                                is input as a list of lists for all the sources </span>
+<span class="sd">                                in the sky model</span>
+<span class="sd">                    &#39;spec_type&#39; [string] specifies the flux variation along the </span>
+<span class="sd">                                spectral axis. Allowed values are &#39;func&#39; and </span>
+<span class="sd">                                &#39;spectrum&#39;. If set to &#39;func&#39;, values under </span>
+<span class="sd">                                spec_parms are applicable. If set to &#39;spectrum&#39;, </span>
+<span class="sd">                                values under key &#39;spectrum&#39; are applicable.</span>
+<span class="sd">                    &#39;spec_parms&#39;</span>
+<span class="sd">                                [dictionary] specifies spectral parameters </span>
+<span class="sd">                                applicable for different spectral types. Only </span>
+<span class="sd">                                applicable if spec_type is set to &#39;func&#39;. It </span>
+<span class="sd">                                contains values in the following keys:</span>
+<span class="sd">                                &#39;name&#39;   [string] Specifies name of the </span>
+<span class="sd">                                         functional variation of spectrum. </span>
+<span class="sd">                                         Applicable when spec_type is set to </span>
+<span class="sd">                                         &#39;func&#39;. Allowed values are &#39;random&#39;, </span>
+<span class="sd">                                         &#39;monotone&#39;, &#39;power-law&#39;, and &#39;tanh&#39;. </span>
+<span class="sd">                                         Default=&#39;power-law&#39; (with power law </span>
+<span class="sd">                                         index set to 0). See member functions </span>
+<span class="sd">                                         for these function definitions.</span>
+<span class="sd">                                &#39;power-law-index&#39; </span>
+<span class="sd">                                         [scalar numpy vector or list] Power </span>
+<span class="sd">                                         law index for each object </span>
+<span class="sd">                                         (flux ~ freq^power_law_index). Will be </span>
+<span class="sd">                                         specified and applicable when value in </span>
+<span class="sd">                                         key &#39;name&#39; is set to &#39;power-law&#39;. Same </span>
+<span class="sd">                                         size as the number of object locations.</span>
+<span class="sd">                                &#39;freq-ref&#39;</span>
+<span class="sd">                                         [scalar or numpy array or list] </span>
+<span class="sd">                                         Reference or pivot frequency as </span>
+<span class="sd">                                         applicable. If a scalar, it is </span>
+<span class="sd">                                         identical at all object locations. If a </span>
+<span class="sd">                                         list or numpy array it must of size </span>
+<span class="sd">                                         equal to the number of objects, one </span>
+<span class="sd">                                         value at each location. If value under </span>
+<span class="sd">                                         key &#39;name&#39; is set to &#39;power-law&#39;, this </span>
+<span class="sd">                                         specifies the reference frequency at </span>
+<span class="sd">                                         which the flux density is specified </span>
+<span class="sd">                                         under key &#39;flux-scale&#39;. If value under </span>
+<span class="sd">                                         key &#39;name&#39; is &#39;monotone&#39;, this </span>
+<span class="sd">                                         specifies the frequency at which the </span>
+<span class="sd">                                         spectrum of the object contains a spike </span>
+<span class="sd">                                         and zero elsewhere. If value under key </span>
+<span class="sd">                                         &#39;name&#39; is &#39;tanh&#39;, this specifies the </span>
+<span class="sd">                                         frequency at which the spectrum is </span>
+<span class="sd">                                         mid-way between min and max of the tanh </span>
+<span class="sd">                                         function. This is not applicable when </span>
+<span class="sd">                                         value under key &#39;name&#39; is set to </span>
+<span class="sd">                                         &#39;random&#39; or &#39;flat&#39;. </span>
+<span class="sd">                                &#39;flux-scale&#39; </span>
+<span class="sd">                                         [scalar or numpy array] Flux scale of </span>
+<span class="sd">                                         the flux densities at object locations. </span>
+<span class="sd">                                         If a scalar, it is common for all </span>
+<span class="sd">                                         object locations. If it is a vector, it </span>
+<span class="sd">                                         has a size equal to the number of </span>
+<span class="sd">                                         object locations, one value for each </span>
+<span class="sd">                                         object location. If value in &#39;name&#39; is </span>
+<span class="sd">                                         set to &#39;power-law&#39;, this refers to the </span>
+<span class="sd">                                         flux density scale at the reference </span>
+<span class="sd">                                         frequency specified under key </span>
+<span class="sd">                                         &#39;freq-ref&#39;. If value under key &#39;name&#39; </span>
+<span class="sd">                                         is &#39;tanh&#39;, the flux density scale is </span>
+<span class="sd">                                         half of the value specified under this </span>
+<span class="sd">                                         key.</span>
+<span class="sd">                                &#39;flux-offset&#39;</span>
+<span class="sd">                                         [numpy vector] Flux density offset </span>
+<span class="sd">                                         applicable after applying the flux </span>
+<span class="sd">                                         scale. Same units as the flux scale. If </span>
+<span class="sd">                                         a scalar, it is common for all object </span>
+<span class="sd">                                         locations. If it is a vector, it has a </span>
+<span class="sd">                                         size equal to the number of object </span>
+<span class="sd">                                         locations, one value for each object </span>
+<span class="sd">                                         location. When value under the key </span>
+<span class="sd">                                         &#39;name&#39; is set to &#39;random&#39;, this amounts </span>
+<span class="sd">                                         to setting a mean flux density along </span>
+<span class="sd">                                         the spectral axis.</span>
+<span class="sd">                                &#39;z-width&#39;</span>
+<span class="sd">                                         [numpy vector] Characteristic redshift </span>
+<span class="sd">                                         full-wdith in the definition of tanh </span>
+<span class="sd">                                         expression applicable to global EoR </span>
+<span class="sd">                                         signal. </span>
+<span class="sd">                    &#39;spectrum&#39;  [numpy array] Spectrum of the catalog. Will be </span>
+<span class="sd">                                applicable if attribute spec_type is set to </span>
+<span class="sd">                                &#39;spectrum&#39;. It must be of shape nsrc x nchan</span>
+
+<span class="sd">                    &#39;src_shape&#39; [3-column numpy array or list of 3-element </span>
+<span class="sd">                                lists] source shape specified by major axis </span>
+<span class="sd">                                FWHM (first column), minor axis FWHM (second </span>
+<span class="sd">                                column), and position angle (third column). The </span>
+<span class="sd">                                major and minor axes and position angle are </span>
+<span class="sd">                                stored in degrees. The number of rows must match </span>
+<span class="sd">                                the number of sources. Position angle is in </span>
+<span class="sd">                                degrees east of north (same convention as local </span>
+<span class="sd">                                azimuth)</span>
+<span class="sd">                    </span>
+<span class="sd">                    &#39;epoch&#39;     [string] Epoch appropriate for the coordinate </span>
+<span class="sd">                                system. Default is &#39;J2000&#39;</span>
+
+<span class="sd">                    &#39;coords&#39;    [string] Coordinate system used for the source </span>
+<span class="sd">                                positions in the sky model. Currently accepted </span>
+<span class="sd">                                values are &#39;radec&#39; (RA-Dec)</span>
+
+<span class="sd">                    &#39;src_shape_units&#39; </span>
+<span class="sd">                                [3-element list or tuple of strings] Specifies </span>
+<span class="sd">                                the units of major axis FWHM, minor axis FWHM, </span>
+<span class="sd">                                and position angle. Accepted values for major </span>
+<span class="sd">                                and minor axes units are &#39;arcsec&#39;, &#39;arcmin&#39;, </span>
+<span class="sd">                                &#39;degree&#39;, or &#39;radian&#39;. Accepted values for </span>
+<span class="sd">                                position angle units are &#39;degree&#39; or &#39;radian&#39;</span>
+<span class="sd">        --------------------------------------------------------------------------</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">init_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">init_file</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fileobj</span><span class="p">:</span>
+                <span class="c1"># for key in fileobj.keys():</span>
+                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">,</span> <span class="s1">&#39;object&#39;</span><span class="p">,</span> <span class="s1">&#39;spectral_info&#39;</span><span class="p">]:</span>
+                    <span class="n">grp</span> <span class="o">=</span> <span class="n">fileobj</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;header&#39;</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">spec_type</span> <span class="o">=</span> <span class="n">grp</span><span class="p">[</span><span class="s1">&#39;spec_type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+                    <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;object&#39;</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">epoch</span> <span class="o">=</span> <span class="n">grp</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;epoch&#39;</span><span class="p">]</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">coords</span> <span class="o">=</span> <span class="n">grp</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;coords&#39;</span><span class="p">]</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">grp</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">coords</span> <span class="o">==</span> <span class="s1">&#39;radec&#39;</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">location</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">grp</span><span class="p">[</span><span class="s1">&#39;RA&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">grp</span><span class="p">[</span><span class="s1">&#39;Dec&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+                        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">coords</span> <span class="o">==</span> <span class="s1">&#39;altaz&#39;</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">location</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">grp</span><span class="p">[</span><span class="s1">&#39;Alt&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">grp</span><span class="p">[</span><span class="s1">&#39;Az&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+                        <span class="k">if</span> <span class="s1">&#39;shape&#39;</span> <span class="ow">in</span> <span class="n">grp</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span> <span class="o">=</span> <span class="n">grp</span><span class="p">[</span><span class="s1">&#39;shape&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span> <span class="o">=</span> <span class="bp">None</span>
+                    <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;spectral_info&#39;</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span> <span class="o">=</span> <span class="p">{}</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_type</span> <span class="o">==</span> <span class="s1">&#39;func&#39;</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">grp</span><span class="p">[</span><span class="s1">&#39;func-name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;freq-ref&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">grp</span><span class="p">[</span><span class="s1">&#39;freq&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-scale&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">grp</span><span class="p">[</span><span class="s1">&#39;flux_density&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+                            <span class="k">if</span> <span class="s1">&#39;spindex&#39;</span> <span class="ow">in</span> <span class="n">grp</span><span class="p">:</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;power-law-index&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">grp</span><span class="p">[</span><span class="s1">&#39;spindex&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="n">grp</span><span class="p">[</span><span class="s1">&#39;freq&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span> <span class="o">=</span> <span class="n">grp</span><span class="p">[</span><span class="s1">&#39;spectrum&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">init_parms</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;In the absence of init_file, init_parms must be provided for initialization&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">init_parms</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input init_parms must be a dictionary&#39;</span><span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">init_parms</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
+                <span class="n">frequency</span> <span class="o">=</span> <span class="n">init_parms</span><span class="p">[</span><span class="s1">&#39;frequency&#39;</span><span class="p">]</span>
+                <span class="n">location</span> <span class="o">=</span> <span class="n">init_parms</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">]</span>
+                <span class="n">spec_type</span> <span class="o">=</span> <span class="n">init_parms</span><span class="p">[</span><span class="s1">&#39;spec_type&#39;</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">&#39;Catalog name, frequency, location, and spectral type must be provided.&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="s1">&#39;spec_parms&#39;</span> <span class="ow">in</span> <span class="n">init_parms</span><span class="p">:</span>
+                <span class="n">spec_parms</span> <span class="o">=</span> <span class="n">init_parms</span><span class="p">[</span><span class="s1">&#39;spec_parms&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">spec_parms</span> <span class="o">=</span> <span class="bp">None</span>
+
+            <span class="k">if</span> <span class="s1">&#39;src_shape&#39;</span> <span class="ow">in</span> <span class="n">init_parms</span><span class="p">:</span>
+                <span class="n">src_shape</span> <span class="o">=</span> <span class="n">init_parms</span><span class="p">[</span><span class="s1">&#39;src_shape&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">src_shape</span> <span class="o">=</span> <span class="bp">None</span>
+
+            <span class="k">if</span> <span class="s1">&#39;src_shape_units&#39;</span> <span class="ow">in</span> <span class="n">init_parms</span><span class="p">:</span>
+                <span class="n">src_shape_units</span> <span class="o">=</span> <span class="n">init_parms</span><span class="p">[</span><span class="s1">&#39;src_shape_units&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">src_shape_units</span> <span class="o">=</span> <span class="bp">None</span>
+                
+            <span class="k">if</span> <span class="s1">&#39;coords&#39;</span> <span class="ow">in</span> <span class="n">init_parms</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">coords</span> <span class="o">=</span> <span class="n">init_parms</span><span class="p">[</span><span class="s1">&#39;coords&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">coords</span> <span class="o">=</span> <span class="s1">&#39;radec&#39;</span>
+
+            <span class="k">if</span> <span class="s1">&#39;epoch&#39;</span> <span class="ow">in</span> <span class="n">init_parms</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">epoch</span> <span class="o">=</span> <span class="n">init_parms</span><span class="p">[</span><span class="s1">&#39;epoch&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">epoch</span> <span class="o">=</span> <span class="s1">&#39;J2000&#39;</span>
+                
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">)):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">location</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">location</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">elif</span> <span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="n">location</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Size of input &quot;name&quot; does not match number of objects&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Catalog name must be a integer, float, string or numpy array&#39;</span><span class="p">)</span>
+    
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec_type</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">spec_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;func&#39;</span><span class="p">,</span> <span class="s1">&#39;spectrum&#39;</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">spec_type</span> <span class="o">=</span> <span class="n">spec_type</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Spectrum specification in spec_type must be &quot;func&quot; or &quot;spectrum&quot;&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Spectrum specification in spec_type must be a string&#39;</span><span class="p">)</span>
+    
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">frequency</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">frequency</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Sky model frequency must be a integer, float, or numpy array&#39;</span><span class="p">)</span>
+    
+            <span class="bp">self</span><span class="o">.</span><span class="n">location</span> <span class="o">=</span> <span class="n">location</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_type</span> <span class="o">==</span> <span class="s1">&#39;spectrum&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s1">&#39;spectrum&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">init_parms</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">&#39;Sky model spectrum not provided.&#39;</span><span class="p">)</span>
+                <span class="n">spectrum</span> <span class="o">=</span> <span class="n">init_parms</span><span class="p">[</span><span class="s1">&#39;spectrum&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spectrum</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Sky model spectrum must be a numpy array&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">spectrum</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Sky model spectrum must have same number of rows as number of object locations and same number of columns as number of frequency channels&#39;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span> <span class="o">=</span> <span class="n">spectrum</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">spec_parms</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">spec_parms</span> <span class="o">=</span> <span class="p">{}</span>
+                    <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="s1">&#39;power-law&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;power-law-index&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;freq-ref&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frequency</span><span class="p">)</span> <span class="o">+</span> <span class="n">NP</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-scale&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-offset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;z-width&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec_parms</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Spectral parameters in spec_parms must be specified as a dictionary&#39;</span><span class="p">)</span>
+    
+                <span class="k">if</span> <span class="s1">&#39;name&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">spec_parms</span><span class="p">:</span>
+                    <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="s1">&#39;power-law&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+                    <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Number of spectral functional names should match the number of object locations.&#39;</span><span class="p">)</span>
+                    <span class="n">uniq_names</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
+                    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">uniq_names</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;random&#39;</span><span class="p">,</span> <span class="s1">&#39;monotone&#39;</span><span class="p">,</span> <span class="s1">&#39;power-law&#39;</span><span class="p">,</span> <span class="s1">&#39;tanh&#39;</span><span class="p">]:</span>
+                            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Spectral functional names must be from &quot;random&quot;, &quot;monotone&quot;, &quot;power-law&quot; and &quot;tanh&quot;.&#39;</span><span class="p">)</span>
+    
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Values under key &quot;name&quot; in dictionary spec_parms must be a list or numpy array of strings&#39;</span><span class="p">)</span>
+                
+                <span class="k">if</span> <span class="s1">&#39;flux-scale&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">spec_parms</span><span class="p">:</span>
+                    <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-scale&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-scale&#39;</span><span class="p">],</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span><span class="nb">float</span><span class="p">,</span><span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+                        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Flux scale must be a scalar or numpy array&#39;</span><span class="p">)</span>
+                    <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-scale&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-scale&#39;</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-scale&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-scale&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-scale&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">NP</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="k">elif</span> <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-scale&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                        <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-scale&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-scale&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Size of flux scale must be equal to the number of sky locations&#39;</span><span class="p">)</span>
+                    
+                    <span class="k">if</span> <span class="n">NP</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-scale&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Flux scale values must be positive&#39;</span><span class="p">)</span>
+    
+                <span class="k">if</span> <span class="s1">&#39;flux-offset&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">spec_parms</span><span class="p">:</span>
+                    <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-offset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    
+                <span class="k">if</span> <span class="s1">&#39;freq-ref&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">spec_parms</span><span class="p">:</span>
+                    <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;freq-ref&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frequency</span><span class="p">)</span> <span class="o">+</span> <span class="n">NP</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">elif</span> <span class="n">NP</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;freq-ref&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Reference frequency values must be positive&#39;</span><span class="p">)</span>
+    
+                <span class="k">if</span> <span class="s1">&#39;power-law-index&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">spec_parms</span><span class="p">:</span>
+                    <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;power-law-index&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    
+                <span class="k">if</span> <span class="s1">&#39;z-width&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">spec_parms</span><span class="p">:</span>
+                    <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;z-width&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">elif</span> <span class="n">NP</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;z-width&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Characteristic redshift widths must not be negative&#39;</span><span class="p">)</span>
+    
+                <span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span> <span class="o">=</span> <span class="n">spec_parms</span>
+    
+            <span class="k">if</span> <span class="n">src_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">src_shape</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Source shape must consist of three columns (major axis FWHM, minor axis FWHM, position angle) per source.&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">src_shape_units</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">src_shape_units</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+                        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Source shape units must be provided as a list or tuple&#39;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">src_shape_units</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Source shape units must contain three elements.&#39;</span><span class="p">)</span>
+    
+                    <span class="k">if</span> <span class="n">src_shape_units</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;arcsec&#39;</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mf">3.6e3</span>
+                    <span class="k">elif</span> <span class="n">src_shape_units</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;arcmin&#39;</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mf">60.0</span>
+                    <span class="k">elif</span> <span class="n">src_shape_units</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;radian&#39;</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="k">elif</span> <span class="n">src_shape_units</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;degree&#39;</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;major axis FWHM must be specified as &quot;arcsec&quot;, &quot;arcmin&quot;, &quot;degree&quot; or &quot;radian&quot;&#39;</span><span class="p">)</span>
+    
+                    <span class="k">if</span> <span class="n">src_shape_units</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;arcsec&#39;</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mf">3.6e3</span>
+                    <span class="k">elif</span> <span class="n">src_shape_units</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;arcmin&#39;</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mf">60.0</span>
+                    <span class="k">elif</span> <span class="n">src_shape_units</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;radian&#39;</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="k">elif</span> <span class="n">src_shape_units</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;degree&#39;</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;minor axis FWHM must be specified as &quot;arcsec&quot;, &quot;arcmin&quot;, &quot;degree&quot; or &quot;radian&quot;&#39;</span><span class="p">)</span>
+    
+                    <span class="k">if</span> <span class="n">src_shape_units</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;radian&#39;</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span><span class="p">[:,</span><span class="mi">2</span><span class="p">])</span>
+                    <span class="k">elif</span> <span class="n">src_shape_units</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;degree&#39;</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;position angle must be specified as &quot;degree&quot; or &quot;radian&quot; measured from north towards east.&#39;</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">src_shape</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Number of source shapes in src_shape must match the number of object lcoations&#39;</span><span class="p">)</span>
+
+    <span class="c1">#############################################################################</span>
+
+<div class="viewcode-block" id="SkyModel.match"><a class="viewcode-back" href="../../astroutils.html#astroutils.catalog.SkyModel.match">[docs]</a>    <span class="k">def</span> <span class="nf">match</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">matchrad</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">nnearest</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">maxmatches</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        -------------------------------------------------------------------------</span>
+<span class="sd">        Match the source positions in an instance of class SkyModel with </span>
+<span class="sd">        another instance of the same class to a specified angular radius using</span>
+<span class="sd">        spherematch() in the geometry module</span>
+
+<span class="sd">        Inputs:</span>
+
+<span class="sd">        other       [2-column numpy array instance of class SkyModel] Numpy</span>
+<span class="sd">                    array with two columns specifying the source positions in </span>
+<span class="sd">                    the other sky model or the other instance of class </span>
+<span class="sd">                    SkyModel with which the current instance is to be </span>
+<span class="sd">                    matched with</span>
+
+<span class="sd">        matchrad    [scalar] Angular radius (in degrees) inside which matching </span>
+<span class="sd">                    should occur. If not specified, if maxmatches is positive, </span>
+<span class="sd">                    all the nearest maxmatches neighbours are found, and if</span>
+<span class="sd">                    maxmatches is not positive, the nnearest-th nearest </span>
+<span class="sd">                    neighbour specified by nnearest is found.</span>
+
+<span class="sd">        maxmatches  [scalar] The maximum number of matches (all of the </span>
+<span class="sd">                    maxmatches nearest neighbours) that lie within matchrad are </span>
+<span class="sd">                    found. If matchrad is not specified, all the maxmatches </span>
+<span class="sd">                    nearest neighbours are found. If maxmatches &lt; 0, and matchrad </span>
+<span class="sd">                    is not set, then the nnearest-th nearest neighbour is found </span>
+<span class="sd">                    (which defaults to the nearest neighbour if nnearest &lt;= 0)</span>
+
+<span class="sd">        nnearest    [scalar] nnearest-th neighbour to be found. Used only when</span>
+<span class="sd">                    maxmatches is not positive. If matchrad is set, the </span>
+<span class="sd">                    specified neighbour is identified if found inside matchrad, </span>
+<span class="sd">                    otherwise the nnearest-th neighbour is identified regardless</span>
+<span class="sd">                    of the angular distance.</span>
+
+<span class="sd">        Outputs:</span>
+
+<span class="sd">        m1          [list] List of indices of matches in the current instance of</span>
+<span class="sd">                    class SkyModel</span>
+<span class="sd">        </span>
+<span class="sd">        m2          [list] List of indices of matches in the other instance of</span>
+<span class="sd">                    class SkyModel</span>
+
+<span class="sd">        d12         [list] List of angular distances between the matched subsets</span>
+<span class="sd">                    of the two sky models indexed by m1 and m2 respectively</span>
+<span class="sd">        -------------------------------------------------------------------------</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">SkyModel</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;&quot;other&quot; must be a Nx2 numpy array or an instance of class SkyModel.&#39;</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">SkyModel</span><span class="p">):</span>
+            <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">epoch</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">epoch</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coords</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">coords</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">GEOM</span><span class="o">.</span><span class="n">spherematch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span>
+                                        <span class="n">other</span><span class="o">.</span><span class="n">location</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span>
+                                        <span class="n">other</span><span class="o">.</span><span class="n">location</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">matchrad</span><span class="p">,</span>
+                                        <span class="n">nnearest</span><span class="p">,</span> <span class="n">maxmatches</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;epoch and/or sky coordinate type mismatch. Cannot match.&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">GEOM</span><span class="o">.</span><span class="n">spherematch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span>
+                                    <span class="n">other</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">other</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">matchrad</span><span class="p">,</span>
+                                    <span class="n">nnearest</span><span class="p">,</span> <span class="n">maxmatches</span><span class="p">)</span></div>
+        
+    <span class="c1">#############################################################################</span>
+
+<div class="viewcode-block" id="SkyModel.subset"><a class="viewcode-back" href="../../astroutils.html#astroutils.catalog.SkyModel.subset">[docs]</a>    <span class="k">def</span> <span class="nf">subset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="s1">&#39;position&#39;</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        -------------------------------------------------------------------------</span>
+<span class="sd">        Provide a subset of the sky model using a list of indices onto the </span>
+<span class="sd">        existing sky model. Subset can be either in position or frequency </span>
+<span class="sd">        channels</span>
+<span class="sd">        </span>
+<span class="sd">        Inputs:</span>
+
+<span class="sd">        indices    [list or numpy array] Flattened list or numpy array of </span>
+<span class="sd">                   indices of sources in the current instance of class SkyModel</span>
+
+<span class="sd">        axis       [string] the axis to take the subset along. Currently </span>
+<span class="sd">                   accepted values are &#39;position&#39; (default) and &#39;spectrum&#39; </span>
+<span class="sd">                   which indicates the indices are to be used along the </span>
+<span class="sd">                   position or spectrum axis respectively to obtain the subset.</span>
+<span class="sd">                   When spectral axis is specified by spec_type=&#39;func&#39;, then </span>
+<span class="sd">                   there will be no slicing along the spectral axis and will </span>
+<span class="sd">                   return the original instance. </span>
+
+<span class="sd">        Output:    [instance of class SkyModel] An instance of class </span>
+<span class="sd">                   SkyModel holding a subset of the sources in the current </span>
+<span class="sd">                   instance of class SkyModel </span>
+<span class="sd">        -------------------------------------------------------------------------</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">indices</span>
+        <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+
+        <span class="k">if</span> <span class="n">axis</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;position&#39;</span><span class="p">,</span> <span class="s1">&#39;spectrum&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;input axis must be along position or spectrum&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">indices</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">init_parms</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="s1">&#39;position&#39;</span><span class="p">:</span>
+                <span class="n">indices</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+                <span class="n">init_parms</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">NP</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">indices</span><span class="p">),</span> <span class="s1">&#39;frequency&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span><span class="p">,</span> <span class="s1">&#39;location&#39;</span><span class="p">:</span> <span class="n">NP</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="s1">&#39;spec_type&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_type</span><span class="p">,</span> <span class="s1">&#39;epoch&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">epoch</span><span class="p">,</span> <span class="s1">&#39;coords&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">coords</span><span class="p">}</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_type</span> <span class="o">==</span> <span class="s1">&#39;spectrum&#39;</span><span class="p">:</span>
+                    <span class="n">init_parms</span><span class="p">[</span><span class="s1">&#39;spectrum&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                        <span class="n">init_parms</span><span class="p">[</span><span class="s1">&#39;src_shape&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">spec_parms</span> <span class="o">=</span> <span class="p">{}</span>
+                    <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="n">indices</span><span class="p">)</span>
+                    <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;power-law-index&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;power-law-index&#39;</span><span class="p">],</span> <span class="n">indices</span><span class="p">)</span>
+                    <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;freq-ref&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;freq-ref&#39;</span><span class="p">],</span> <span class="n">indices</span><span class="p">)</span>
+                    <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-scale&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-scale&#39;</span><span class="p">],</span> <span class="n">indices</span><span class="p">)</span>
+                    <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-offset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-offset&#39;</span><span class="p">],</span> <span class="n">indices</span><span class="p">)</span>
+                    <span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;z-width&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;z-width&#39;</span><span class="p">],</span> <span class="n">indices</span><span class="p">)</span>                
+                    <span class="n">init_parms</span><span class="p">[</span><span class="s1">&#39;spec_parms&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">spec_parms</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                        <span class="n">init_parms</span><span class="p">[</span><span class="s1">&#39;src_shape&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">indices</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+                <span class="n">init_parms</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;frequency&#39;</span><span class="p">:</span> <span class="n">NP</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frequency</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="s1">&#39;location&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">,</span> <span class="s1">&#39;spec_type&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_type</span><span class="p">,</span> <span class="s1">&#39;epoch&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">epoch</span><span class="p">,</span> <span class="s1">&#39;coords&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">coords</span><span class="p">}</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_type</span> <span class="o">==</span> <span class="s1">&#39;func&#39;</span><span class="p">:</span>
+                    <span class="n">init_parms</span><span class="p">[</span><span class="s1">&#39;spec_parms&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span>                        
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                        <span class="n">init_parms</span><span class="p">[</span><span class="s1">&#39;src_shape&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">init_parms</span><span class="p">[</span><span class="s1">&#39;spectrum&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                        <span class="n">init_parms</span><span class="p">[</span><span class="s1">&#39;src_shape&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span>
+
+            <span class="k">return</span> <span class="n">SkyModel</span><span class="p">(</span><span class="n">init_parms</span><span class="o">=</span><span class="n">init_parms</span><span class="p">,</span> <span class="n">init_file</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span></div>
+
+    <span class="c1">#############################################################################</span>
+
+<div class="viewcode-block" id="SkyModel.generate_spectrum"><a class="viewcode-back" href="../../astroutils.html#astroutils.catalog.SkyModel.generate_spectrum">[docs]</a>    <span class="k">def</span> <span class="nf">generate_spectrum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frequency</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        -------------------------------------------------------------------------</span>
+<span class="sd">        Generate and return a spectrum from functional spectral parameters</span>
+
+<span class="sd">        Inputs:</span>
+
+<span class="sd">        frequency  [scalar or numpy array] Frequencies at which the spectrum at</span>
+<span class="sd">                   all object locations is to be created. Must be in same units</span>
+<span class="sd">                   as the attribute frequency and values under key &#39;freq-ref&#39; </span>
+<span class="sd">                   of attribute spec_parms. If not provided (default=None), a </span>
+<span class="sd">                   spectrum is generated for all the frequencies specified in </span>
+<span class="sd">                   the attribute frequency and values under keys &#39;freq-ref&#39; and</span>
+<span class="sd">                   &#39;z-width&#39; of attribute spec_parms. </span>
+
+<span class="sd">        Outputs:</span>
+
+<span class="sd">        spectrum   [numpy array] Spectrum of the sky model at the respective</span>
+<span class="sd">                   sky locations. Has shape nobj x nfreq.</span>
+
+<span class="sd">        Power law calculation uses the convention, </span>
+<span class="sd">        spectrum = flux_offset + flux_scale * (freq/freq0)**spindex</span>
+
+<span class="sd">        Monotone places a delta function at the frequency channel closest to the</span>
+<span class="sd">        reference frequency if it lies inside the frequency range, otherwise</span>
+<span class="sd">        a zero spectrum is assigned. </span>
+<span class="sd">        Thus spectrum = flux_scale * delta(freq-freq0)</span>
+
+<span class="sd">        Random (currently only gaussian) places random fluxes in the spectrum</span>
+<span class="sd">        spectrum = flux_offset + flux_scale * random_normal(freq.size)</span>
+
+<span class="sd">        tanh spectrum is defined as (Bowman &amp; Rogers 2010):</span>
+<span class="sd">        spectrum = flux_scale * sqrt((1+z)/10) * 0.5 * [tanh((z-zr)/dz) + 1]</span>
+<span class="sd">        where, flux_scale is typically 0.027 K, zr = reionization redshift </span>
+<span class="sd">        when x_i = 0.5, and dz = redshift width (dz ~ 1)</span>
+
+<span class="sd">        If the attribute spec_type is &#39;spectrum&#39; the attribute spectrum is </span>
+<span class="sd">        returned without any modifications.</span>
+<span class="sd">        -------------------------------------------------------------------------</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_type</span> <span class="o">==</span> <span class="s1">&#39;func&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">frequency</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">frequency</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span><span class="nb">float</span><span class="p">,</span><span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+                    <span class="n">frequency</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">frequency</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input parameter frequency must be a scalar or a numpy array&#39;</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">NP</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">frequency</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input parameter frequency must contain positive values&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">frequency</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frequency</span><span class="p">)</span>
+
+            <span class="n">spectrum</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">frequency</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+            <span class="n">spectrum</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+
+            <span class="n">uniq_names</span><span class="p">,</span> <span class="n">invind</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="n">return_inverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">uniq_names</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">counts</span><span class="p">,</span> <span class="n">edges</span><span class="p">,</span> <span class="n">bnum</span><span class="p">,</span> <span class="n">ri</span> <span class="o">=</span> <span class="n">OPS</span><span class="o">.</span><span class="n">binned_statistic</span><span class="p">(</span><span class="n">invind</span><span class="p">,</span> <span class="n">statistic</span><span class="o">=</span><span class="s1">&#39;count&#39;</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">uniq_names</span><span class="p">)))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">counts</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">invind</span><span class="p">)</span>
+                <span class="n">ri</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">counts</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">uniq_names</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">uniq_names</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">indices</span> <span class="o">=</span> <span class="n">ri</span><span class="p">[</span><span class="n">ri</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span><span class="n">ri</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">indices</span> <span class="o">=</span> <span class="n">ri</span>
+
+                <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;random&#39;</span><span class="p">:</span>
+                    <span class="n">spectrum</span><span class="p">[</span><span class="n">indices</span><span class="p">,:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-offset&#39;</span><span class="p">][</span><span class="n">indices</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-scale&#39;</span><span class="p">][</span><span class="n">indices</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">NP</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">counts</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">frequency</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;monotone&#39;</span><span class="p">:</span>  <span class="c1"># Needs serious testing</span>
+                    <span class="n">spectrum</span><span class="p">[</span><span class="n">indices</span><span class="p">,:]</span> <span class="o">=</span> <span class="mf">0.0</span>
+                    <span class="n">inpind</span><span class="p">,</span> <span class="n">refind</span><span class="p">,</span> <span class="n">dNN</span> <span class="o">=</span> <span class="n">LKP</span><span class="o">.</span><span class="n">find_1NN</span><span class="p">(</span><span class="n">frequency</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;freq-ref&#39;</span><span class="p">][</span><span class="n">indices</span><span class="p">],</span> <span class="n">distance</span><span class="o">=</span><span class="n">frequency</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">frequency</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">remove_oob</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> 
+                    <span class="n">ind</span> <span class="o">=</span> <span class="n">indices</span><span class="p">[</span><span class="n">inpind</span><span class="p">]</span>
+                    <span class="n">ind2d</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span> <span class="n">refind</span><span class="p">)</span>
+                    <span class="n">spectrum</span><span class="p">[</span><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">ind2d</span><span class="p">)]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-scale&#39;</span><span class="p">][</span><span class="n">ind</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;power-law&#39;</span><span class="p">:</span>
+                    <span class="n">spectrum</span><span class="p">[</span><span class="n">indices</span><span class="p">,:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-offset&#39;</span><span class="p">][</span><span class="n">indices</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-scale&#39;</span><span class="p">][</span><span class="n">indices</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">frequency</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;freq-ref&#39;</span><span class="p">][</span><span class="n">indices</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;power-law-index&#39;</span><span class="p">][</span><span class="n">indices</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;tanh&#39;</span><span class="p">:</span>
+                    <span class="n">z</span> <span class="o">=</span> <span class="n">CNST</span><span class="o">.</span><span class="n">rest_freq_HI</span><span class="o">/</span><span class="n">frequency</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+                    <span class="n">zr</span> <span class="o">=</span> <span class="n">CNST</span><span class="o">.</span><span class="n">rest_freq_HI</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;freq-ref&#39;</span><span class="p">][</span><span class="n">indices</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+                    <span class="n">dz</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;z-width&#39;</span><span class="p">][</span><span class="n">indices</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+
+                    <span class="n">amp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-scale&#39;</span><span class="p">][</span><span class="n">indices</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">NP</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="mi">1</span><span class="o">+</span><span class="n">z</span><span class="p">)</span><span class="o">/</span><span class="mi">10</span><span class="p">)</span>
+                    <span class="n">xh</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">NP</span><span class="o">.</span><span class="n">tanh</span><span class="p">((</span><span class="n">z</span><span class="o">-</span><span class="n">zr</span><span class="p">)</span><span class="o">/</span><span class="n">dz</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="n">spectrum</span><span class="p">[</span><span class="n">indices</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">amp</span> <span class="o">*</span> <span class="n">xh</span>
+                    
+            <span class="k">return</span> <span class="n">spectrum</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span></div>
+
+    <span class="c1">#############################################################################</span>
+
+<div class="viewcode-block" id="SkyModel.to_healpix"><a class="viewcode-back" href="../../astroutils.html#astroutils.catalog.SkyModel.to_healpix">[docs]</a>    <span class="k">def</span> <span class="nf">to_healpix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">freq</span><span class="p">,</span> <span class="n">nside</span><span class="p">,</span> <span class="n">in_units</span><span class="o">=</span><span class="s1">&#39;Jy&#39;</span><span class="p">,</span> <span class="n">out_coords</span><span class="o">=</span><span class="s1">&#39;equatorial&#39;</span><span class="p">,</span>
+                   <span class="n">out_units</span><span class="o">=</span><span class="s1">&#39;K&#39;</span><span class="p">,</span> <span class="n">outfile</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">outfmt</span><span class="o">=</span><span class="s1">&#39;fits&#39;</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        -------------------------------------------------------------------------</span>
+<span class="sd">        Convert catalog to a healpix format of given nside at specified </span>
+<span class="sd">        frequencies.</span>
+
+<span class="sd">        Inputs:</span>
+
+<span class="sd">        freq         [scalar or numpy array] Frequencies at which HEALPIX output</span>
+<span class="sd">                     maps are to be generated</span>
+
+<span class="sd">        nside        [integer] HEALPIX nside parameter for the output map(s)</span>
+
+<span class="sd">        in_units     [string] Units of input map or catalog. Accepted values are</span>
+<span class="sd">                     &#39;K&#39; for Temperature of &#39;Jy&#39; for flux density. Default=&#39;Jy&#39;</span>
+
+<span class="sd">        out_coords   [string] Output coordinate system. Accepted values are </span>
+<span class="sd">                     &#39;galactic&#39; and &#39;equatorial&#39; (default)</span>
+
+<span class="sd">        out_units    [string] Units of output map. Accepted values are</span>
+<span class="sd">                     &#39;K&#39; for Temperature of &#39;Jy&#39; for flux density. Default=&#39;K&#39;</span>
+
+<span class="sd">        outfile      [string] Filename with full path to save the output HEALPIX</span>
+<span class="sd">                     map(s) to. Default=None</span>
+
+<span class="sd">        outfmt       [string] File format for output file. Accepted values are</span>
+<span class="sd">                     &#39;fits&#39; (default) and &#39;ascii&#39;</span>
+
+<span class="sd">        Output(s):</span>
+
+<span class="sd">        A dictionary with the following keys and values:</span>
+
+<span class="sd">        &#39;filename&#39;   Pull path to the output file. Set only if input parameter </span>
+<span class="sd">                     outfile is set. Default=None.</span>
+
+<span class="sd">        &#39;spectrum&#39;   A numpy array of size nsrc x nchan where nsrc is the number </span>
+<span class="sd">                     sky locations depending on input parameter out_nside and </span>
+<span class="sd">                     nchan is the number of frequencies in input parameter freq</span>
+<span class="sd">        -------------------------------------------------------------------------</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">freq</span>
+        <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+            <span class="n">freq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span><span class="o">.</span><span class="n">ravel</span><span class="p">()[</span><span class="bp">self</span><span class="o">.</span><span class="n">frequency</span><span class="o">.</span><span class="n">size</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span><span class="nb">float</span><span class="p">,</span><span class="nb">list</span><span class="p">,</span><span class="n">NP</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input parameter freq must be a scalar or numpy array&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">freq</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">nside</span>
+        <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;Input parameter nside not specified&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">nside</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input parameter nside must be an integer&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out_coords</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input parameter out_coords must be a string&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">out_coords</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;equatorial&#39;</span><span class="p">,</span> <span class="s1">&#39;galactic&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input parameter out_coords must be set to &quot;equatorial&quot; or &quot;galactic&quot;&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">in_units</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;in_units must be a string&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">in_units</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;K&#39;</span><span class="p">,</span> <span class="s1">&#39;Jy&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;in_units must be &quot;K&quot; or &quot;Jy&quot;&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out_units</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;out_units must be a string&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">out_units</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;K&#39;</span><span class="p">,</span> <span class="s1">&#39;Jy&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;out_units must be &quot;K&quot; or &quot;Jy&quot;&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">outfile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;outfile must be a string&#39;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">outfmt</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;outfile format must be specified by a string&#39;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">outfmt</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;ascii&#39;</span><span class="p">,</span> <span class="s1">&#39;fits&#39;</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;outfile format must be &quot;ascii&quot; or &quot;fits&quot;&#39;</span><span class="p">)</span>
+
+        <span class="n">ec</span> <span class="o">=</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">ra</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">dec</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="s1">&#39;icrs&#39;</span><span class="p">)</span>
+        <span class="n">gc</span> <span class="o">=</span> <span class="n">ec</span><span class="o">.</span><span class="n">transform_to</span><span class="p">(</span><span class="s1">&#39;galactic&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">out_coords</span> <span class="o">==</span> <span class="s1">&#39;galactic&#39;</span><span class="p">:</span>
+            <span class="n">phi</span> <span class="o">=</span> <span class="n">gc</span><span class="o">.</span><span class="n">l</span><span class="o">.</span><span class="n">radian</span>
+            <span class="n">theta</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="n">gc</span><span class="o">.</span><span class="n">b</span><span class="o">.</span><span class="n">radian</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">phi</span> <span class="o">=</span> <span class="n">ec</span><span class="o">.</span><span class="n">ra</span><span class="o">.</span><span class="n">radian</span>
+            <span class="n">theta</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="n">ec</span><span class="o">.</span><span class="n">dec</span><span class="o">.</span><span class="n">radian</span>
+
+        <span class="n">outmap</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">HP</span><span class="o">.</span><span class="n">nside2npix</span><span class="p">(</span><span class="n">nside</span><span class="p">),</span> <span class="n">freq</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+        <span class="n">pixarea</span> <span class="o">=</span> <span class="n">HP</span><span class="o">.</span><span class="n">nside2pixarea</span><span class="p">(</span><span class="n">nside</span><span class="p">)</span>
+        <span class="n">pix</span> <span class="o">=</span> <span class="n">HP</span><span class="o">.</span><span class="n">ang2pix</span><span class="p">(</span><span class="n">nside</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">phi</span><span class="p">)</span>
+        <span class="n">spectrum</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_spectrum</span><span class="p">(</span><span class="n">frequency</span><span class="o">=</span><span class="n">freq</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">in_units</span> <span class="o">!=</span> <span class="n">out_units</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">out_units</span> <span class="o">==</span> <span class="s1">&#39;K&#39;</span><span class="p">:</span>
+                <span class="n">spectrum</span> <span class="o">=</span> <span class="p">(</span><span class="n">FCNST</span><span class="o">.</span><span class="n">c</span> <span class="o">/</span> <span class="n">freq</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">FCNST</span><span class="o">.</span><span class="n">k</span><span class="o">*</span><span class="n">pixarea</span><span class="p">)</span> <span class="o">*</span> <span class="n">spectrum</span> <span class="o">*</span> <span class="n">CNST</span><span class="o">.</span><span class="n">Jy</span> <span class="c1"># Convert into temperature</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">spectrum</span> <span class="o">=</span> <span class="p">(</span><span class="n">freq</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">FCNST</span><span class="o">.</span><span class="n">c</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">FCNST</span><span class="o">.</span><span class="n">k</span><span class="o">*</span><span class="n">pixarea</span><span class="p">)</span> <span class="o">*</span> <span class="n">spectrum</span> <span class="o">/</span> <span class="n">CNST</span><span class="o">.</span><span class="n">Jy</span> <span class="c1"># Convert into Jy</span>
+
+        <span class="n">uniq_pix</span><span class="p">,</span> <span class="n">uniq_pix_ind</span><span class="p">,</span> <span class="n">pix_invind</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">pix</span><span class="p">,</span> <span class="n">return_index</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">return_inverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">counts</span><span class="p">,</span> <span class="n">binedges</span><span class="p">,</span> <span class="n">binnums</span><span class="p">,</span> <span class="n">ri</span> <span class="o">=</span> <span class="n">OPS</span><span class="o">.</span><span class="n">binned_statistic</span><span class="p">(</span><span class="n">pix_invind</span><span class="p">,</span> <span class="n">statistic</span><span class="o">=</span><span class="s1">&#39;count&#39;</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">NP</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">uniq_pix</span><span class="o">.</span><span class="n">size</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">ind_count_gt1</span><span class="p">,</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">counts</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">ind_count_eq1</span><span class="p">,</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">counts</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>        
+        <span class="n">upix_1count</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">spec_ind</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ind_count_eq1</span><span class="p">:</span>
+            <span class="n">ind</span> <span class="o">=</span> <span class="n">ri</span><span class="p">[</span><span class="n">ri</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span><span class="n">ri</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="n">upix_1count</span> <span class="o">+=</span> <span class="p">[</span><span class="n">uniq_pix</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+            <span class="n">spec_ind</span> <span class="o">+=</span> <span class="p">[</span><span class="n">ind</span><span class="p">]</span>
+
+        <span class="n">upix_1count</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">upix_1count</span><span class="p">)</span>
+        <span class="n">spec_ind</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">spec_ind</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+        <span class="n">outmap</span><span class="p">[</span><span class="n">upix_1count</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">spectrum</span><span class="p">[</span><span class="n">spec_ind</span><span class="p">,:]</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ind_count_gt1</span><span class="p">:</span>
+            <span class="n">upix</span> <span class="o">=</span> <span class="n">uniq_pix</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">ind</span> <span class="o">=</span> <span class="n">ri</span><span class="p">[</span><span class="n">ri</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span><span class="n">ri</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="n">outmap</span><span class="p">[</span><span class="n">upix</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">spectrum</span><span class="p">[</span><span class="n">ind</span><span class="p">,:],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># Save the healpix spectrum to file</span>
+        <span class="k">if</span> <span class="n">outfile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">outfmt</span> <span class="o">==</span> <span class="s1">&#39;fits&#39;</span><span class="p">:</span>
+                <span class="n">hdulist</span> <span class="o">=</span> <span class="p">[]</span>
+    
+                <span class="n">hdulist</span> <span class="o">+=</span> <span class="p">[</span><span class="n">fits</span><span class="o">.</span><span class="n">PrimaryHDU</span><span class="p">()]</span>
+                <span class="n">hdulist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;EXTNAME&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;PRIMARY&#39;</span>
+                <span class="n">hdulist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;NSIDE&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nside</span>
+                <span class="n">hdulist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;UNTIS&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">out_units</span>
+                <span class="n">hdulist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;NFREQ&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">freq</span><span class="o">.</span><span class="n">size</span>
+        
+                <span class="k">for</span> <span class="n">chan</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">freq</span><span class="p">):</span>
+                    <span class="n">hdulist</span> <span class="o">+=</span> <span class="p">[</span><span class="n">fits</span><span class="o">.</span><span class="n">ImageHDU</span><span class="p">(</span><span class="n">outmap</span><span class="p">[:,</span><span class="n">chan</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;{0:.1f} MHz&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">f</span><span class="o">/</span><span class="mf">1e6</span><span class="p">))]</span>
+        
+                <span class="n">hdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">HDUList</span><span class="p">(</span><span class="n">hdulist</span><span class="p">)</span>
+                <span class="n">hdu</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="n">outfile</span><span class="o">+</span><span class="s1">&#39;.fits&#39;</span><span class="p">,</span> <span class="n">clobber</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+                <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;hlpxfile&#39;</span><span class="p">:</span> <span class="n">outfile</span><span class="o">+</span><span class="n">outfmt</span><span class="p">,</span> <span class="s1">&#39;hlpxspec&#39;</span><span class="p">:</span> <span class="n">outmap</span><span class="p">}</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">out_dict</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">colnames</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">colfrmts</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">for</span> <span class="n">chan</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">freq</span><span class="p">):</span>
+                    <span class="n">out_dict</span><span class="p">[</span><span class="s1">&#39;{0:.1f}_MHz&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">f</span><span class="o">/</span><span class="mf">1e6</span><span class="p">)]</span> <span class="o">=</span> <span class="n">outmap</span><span class="p">[:,</span><span class="n">chan</span><span class="p">]</span>
+                    <span class="n">colnames</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;{0:.1f}_MHz&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">f</span><span class="o">/</span><span class="mf">1e6</span><span class="p">)]</span>
+                    <span class="n">colfrmts</span><span class="p">[</span><span class="s1">&#39;{0:.1f}_MHz&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">f</span><span class="o">/</span><span class="mf">1e6</span><span class="p">)]</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%0.5f</span><span class="s1">&#39;</span>
+
+                <span class="n">tbdata</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="n">out_dict</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="n">colnames</span><span class="p">)</span>
+                <span class="n">ascii</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">tbdata</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="n">outfile</span><span class="o">+</span><span class="s1">&#39;.txt&#39;</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s1">&#39;fixed_width_two_line&#39;</span><span class="p">,</span> <span class="n">formats</span><span class="o">=</span><span class="n">colfrmts</span><span class="p">,</span> <span class="n">bookend</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39;|&#39;</span><span class="p">,</span> <span class="n">delimiter_pad</span><span class="o">=</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+
+                <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;filename&#39;</span><span class="p">:</span> <span class="n">outfile</span><span class="o">+</span><span class="n">outfmt</span><span class="p">,</span> <span class="s1">&#39;spectrum&#39;</span><span class="p">:</span> <span class="n">outmap</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;filename&#39;</span><span class="p">:</span> <span class="n">outfile</span><span class="p">,</span> <span class="s1">&#39;spectrum&#39;</span><span class="p">:</span> <span class="n">outmap</span><span class="p">}</span></div>
+
+    <span class="c1">############################################################################</span>
+
+<div class="viewcode-block" id="SkyModel.save"><a class="viewcode-back" href="../../astroutils.html#astroutils.catalog.SkyModel.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outfile</span><span class="p">,</span> <span class="n">fileformat</span><span class="o">=</span><span class="s1">&#39;hdf5&#39;</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        -------------------------------------------------------------------------</span>
+<span class="sd">        Save sky model to the specified output file</span>
+
+<span class="sd">        Inputs:</span>
+
+<span class="sd">        outfile     [string] Output filename including full path omitting the</span>
+<span class="sd">                    extension which will be appended automatically</span>
+
+<span class="sd">        fileformat  [string] format for the output. Accepted values are &#39;ascii&#39;</span>
+<span class="sd">                    and &#39;hdf5&#39; (default). </span>
+<span class="sd">        -------------------------------------------------------------------------</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">outfile</span>
+        <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;outfile not specified&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">fileformat</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;hdf5&#39;</span><span class="p">,</span> <span class="s1">&#39;ascii&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Output fileformat must be set to &quot;hdf5&quot; or &quot;ascii&quot;&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">fileformat</span> <span class="o">==</span> <span class="s1">&#39;hdf5&#39;</span><span class="p">:</span>
+            <span class="n">outfile</span> <span class="o">=</span> <span class="n">outfile</span> <span class="o">+</span> <span class="s1">&#39;.hdf5&#39;</span>
+            <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fileobj</span><span class="p">:</span>
+                <span class="n">hdr_group</span> <span class="o">=</span> <span class="n">fileobj</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s1">&#39;header&#39;</span><span class="p">)</span>
+                <span class="n">hdr_group</span><span class="p">[</span><span class="s1">&#39;spec_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_type</span>
+
+                <span class="n">object_group</span> <span class="o">=</span> <span class="n">fileobj</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s1">&#39;object&#39;</span><span class="p">)</span>
+                <span class="n">object_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;epoch&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">epoch</span>
+                <span class="n">object_group</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;coords&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coords</span>
+                <span class="n">name_dset</span> <span class="o">=</span> <span class="n">object_group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="s1">&#39;gzip&#39;</span><span class="p">,</span> <span class="n">compression_opts</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">coords</span> <span class="o">==</span> <span class="s1">&#39;radec&#39;</span><span class="p">:</span>
+                    <span class="n">ra_dset</span> <span class="o">=</span> <span class="n">object_group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s1">&#39;RA&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">compression</span><span class="o">=</span><span class="s1">&#39;gzip&#39;</span><span class="p">,</span> <span class="n">compression_opts</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+                    <span class="n">ra_dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;degrees&#39;</span>
+                    <span class="n">dec_dset</span> <span class="o">=</span> <span class="n">object_group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s1">&#39;Dec&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">compression</span><span class="o">=</span><span class="s1">&#39;gzip&#39;</span><span class="p">,</span> <span class="n">compression_opts</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+                    <span class="n">dec_dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;degrees&#39;</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">coords</span> <span class="o">==</span> <span class="s1">&#39;altaz&#39;</span><span class="p">:</span>
+                    <span class="n">alt_dset</span> <span class="o">=</span> <span class="n">object_group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s1">&#39;Alt&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">compression</span><span class="o">=</span><span class="s1">&#39;gzip&#39;</span><span class="p">,</span> <span class="n">compression_opts</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+                    <span class="n">alt_dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;degrees&#39;</span>
+                    <span class="n">az_dset</span> <span class="o">=</span> <span class="n">object_group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s1">&#39;Az&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">compression</span><span class="o">=</span><span class="s1">&#39;gzip&#39;</span><span class="p">,</span> <span class="n">compression_opts</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+                    <span class="n">az_dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;degrees&#39;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;This coordinate system is not currently supported&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">src_shape_dset</span> <span class="o">=</span> <span class="n">object_group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s1">&#39;shape&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">src_shape</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="s1">&#39;gzip&#39;</span><span class="p">,</span> <span class="n">compression_opts</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+                    <span class="n">src_shape_dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;degrees&#39;</span>
+
+                <span class="n">spec_group</span> <span class="o">=</span> <span class="n">fileobj</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s1">&#39;spectral_info&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_type</span> <span class="o">==</span> <span class="s1">&#39;func&#39;</span><span class="p">:</span>
+                    <span class="n">spec_group</span><span class="p">[</span><span class="s1">&#39;func-name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
+                    <span class="n">freq_dset</span> <span class="o">=</span> <span class="n">spec_group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s1">&#39;freq&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;freq-ref&#39;</span><span class="p">],</span> <span class="n">compression</span><span class="o">=</span><span class="s1">&#39;gzip&#39;</span><span class="p">,</span> <span class="n">compression_opts</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+                    <span class="n">freq_dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Hz&#39;</span>
+                    <span class="n">flux_dset</span> <span class="o">=</span> <span class="n">spec_group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s1">&#39;flux_density&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-scale&#39;</span><span class="p">],</span> <span class="n">compression</span><span class="o">=</span><span class="s1">&#39;gzip&#39;</span><span class="p">,</span> <span class="n">compression_opts</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+                    <span class="n">flux_dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Jy&#39;</span>
+                    <span class="k">if</span> <span class="n">NP</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;power-law&#39;</span><span class="p">):</span>
+                        <span class="n">spindex_dset</span> <span class="o">=</span> <span class="n">spec_group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s1">&#39;spindex&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;power-law-index&#39;</span><span class="p">],</span> <span class="n">compression</span><span class="o">=</span><span class="s1">&#39;gzip&#39;</span><span class="p">,</span> <span class="n">compression_opts</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">freq_dset</span> <span class="o">=</span> <span class="n">spec_group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s1">&#39;freq&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">frequency</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">compression</span><span class="o">=</span><span class="s1">&#39;gzip&#39;</span><span class="p">,</span> <span class="n">compression_opts</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+                    <span class="n">freq_dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Hz&#39;</span>
+                    <span class="n">spectrum_dset</span> <span class="o">=</span> <span class="n">spec_group</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s1">&#39;spectrum&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="s1">&#39;gzip&#39;</span><span class="p">,</span> <span class="n">compression_opts</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">outfile</span> <span class="o">=</span> <span class="n">outfile</span> <span class="o">+</span> <span class="s1">&#39;.txt&#39;</span>
+            <span class="n">frmts</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">frmts</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">19&#39;</span>
+            <span class="n">frmts</span><span class="p">[</span><span class="s1">&#39;RA (deg)&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%10.6f</span><span class="s1">&#39;</span>
+            <span class="n">frmts</span><span class="p">[</span><span class="s1">&#39;DEC (deg)&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%+10.6f</span><span class="s1">&#39;</span>
+            <span class="n">frmts</span><span class="p">[</span><span class="s1">&#39;S (Jy)&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%8.3f</span><span class="s1">&#39;</span>
+            <span class="n">frmts</span><span class="p">[</span><span class="s1">&#39;FREQ (MHz)&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%12.7f</span><span class="s1">&#39;</span>
+    
+            <span class="n">data_dict</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">coords</span> <span class="o">==</span> <span class="s1">&#39;radec&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">epoch</span> <span class="o">==</span> <span class="s1">&#39;B1950&#39;</span><span class="p">:</span>
+                    <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;B&#39;</span><span class="o">+</span><span class="n">NP</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">Angle</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span><span class="n">unit</span><span class="o">=</span><span class="n">units</span><span class="o">.</span><span class="n">degree</span><span class="p">)</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">units</span><span class="o">.</span><span class="n">hour</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="s1">&#39;:&#39;</span><span class="p">,</span><span class="n">alwayssign</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span><span class="n">pad</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span><span class="n">precision</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span><span class="o">+</span><span class="n">NP</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">Angle</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span><span class="n">unit</span><span class="o">=</span><span class="n">units</span><span class="o">.</span><span class="n">degree</span><span class="p">)</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">units</span><span class="o">.</span><span class="n">degree</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="s1">&#39;:&#39;</span><span class="p">,</span><span class="n">alwayssign</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span><span class="n">pad</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span><span class="n">precision</span><span class="o">=</span><span class="mi">1</span><span class="p">)),</span> <span class="s1">&#39;:&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">NP</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;J&#39;</span><span class="o">+</span><span class="n">NP</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">Angle</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span><span class="n">unit</span><span class="o">=</span><span class="n">units</span><span class="o">.</span><span class="n">degree</span><span class="p">)</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">units</span><span class="o">.</span><span class="n">hour</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="s1">&#39;:&#39;</span><span class="p">,</span><span class="n">alwayssign</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span><span class="n">pad</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span><span class="n">precision</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span><span class="o">+</span><span class="n">NP</span><span class="o">.</span><span class="n">char</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">Angle</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span><span class="n">unit</span><span class="o">=</span><span class="n">units</span><span class="o">.</span><span class="n">degree</span><span class="p">)</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">units</span><span class="o">.</span><span class="n">degree</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="s1">&#39;:&#39;</span><span class="p">,</span><span class="n">alwayssign</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span><span class="n">pad</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span><span class="n">precision</span><span class="o">=</span><span class="mi">1</span><span class="p">)),</span> <span class="s1">&#39;:&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>                
+            <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;RA (deg)&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;DEC (deg)&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_type</span> <span class="o">==</span> <span class="s1">&#39;func&#39;</span><span class="p">:</span>
+                <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;S (Jy)&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;flux-scale&#39;</span><span class="p">]</span>
+                <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;FREQ (MHz)&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;freq-ref&#39;</span><span class="p">]</span><span class="o">/</span><span class="mf">1e6</span> <span class="c1"># in MHz</span>
+                <span class="k">if</span> <span class="n">NP</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;power-law&#39;</span><span class="p">):</span>
+                    <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;SPINDEX&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_parms</span><span class="p">[</span><span class="s1">&#39;power-law-index&#39;</span><span class="p">]</span>
+                    <span class="n">frmts</span><span class="p">[</span><span class="s1">&#39;SPINDEX&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%0.2f</span><span class="s1">&#39;</span>
+                    <span class="n">field_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">,</span> <span class="s1">&#39;RA (deg)&#39;</span><span class="p">,</span> <span class="s1">&#39;DEC (deg)&#39;</span><span class="p">,</span> <span class="s1">&#39;S (Jy)&#39;</span><span class="p">,</span> <span class="s1">&#39;FREQ (MHz)&#39;</span><span class="p">,</span> <span class="s1">&#39;SPINDEX&#39;</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">field_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">,</span> <span class="s1">&#39;RA (deg)&#39;</span><span class="p">,</span> <span class="s1">&#39;DEC (deg)&#39;</span><span class="p">,</span> <span class="s1">&#39;S (Jy)&#39;</span><span class="p">,</span> <span class="s1">&#39;FREQ (MHz)&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">data_dict</span><span class="p">[</span><span class="s1">&#39;FREQ (MHz)&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span><span class="o">.</span><span class="n">flatten</span><span class="p">()[</span><span class="bp">self</span><span class="o">.</span><span class="n">frequency</span><span class="o">.</span><span class="n">size</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1e6</span> <span class="o">+</span> <span class="n">NP</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="c1"># MHz</span>
+                <span class="n">field_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">,</span> <span class="s1">&#39;RA (deg)&#39;</span><span class="p">,</span> <span class="s1">&#39;DEC (deg)&#39;</span><span class="p">,</span> <span class="s1">&#39;FREQ (MHz)&#39;</span><span class="p">]</span>
+    
+            <span class="n">tbdata</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="n">data_dict</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="n">field_names</span><span class="p">)</span>
+            <span class="n">ascii</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">tbdata</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="n">outfile</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s1">&#39;fixed_width_two_line&#39;</span><span class="p">,</span> <span class="n">formats</span><span class="o">=</span><span class="n">frmts</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="n">delimiter_pad</span><span class="o">=</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="n">bookend</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span></div></div>
+
+    <span class="c1">############################################################################</span>
+
+        
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Nithyanandan Thyagarajan.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
