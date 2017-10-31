@@ -1,3 +1,8 @@
+From eb6a5d4 (cosmology):
+========================
+
+(*) Add astroutils/cosmoutils.py to git repo
+
 From dce1a17 (master):
 =====================
 
