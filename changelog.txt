@@ -1,3 +1,8 @@
+From 80a5fad (master):
+=====================
+
+(*) Rename changelog_general.txt to changelog.txt
+
 From 95b284e (master):
 =====================
 
