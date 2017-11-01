@@ -1,3 +1,10 @@
+From f452eaa (master):
+=====================
+
+In README.rst,
+
+(*) Minor updates to documentation
+
 From 13eced4 (master):
 =====================
 

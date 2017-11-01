@@ -41,7 +41,7 @@ Basic Usage
 
 Typical usage often looks like this::
 
-``from AstroUtils import geometry``
-    
 ``from AstroUtils import DSP_modules``
+
+``from AstroUtils import geometry``
 
