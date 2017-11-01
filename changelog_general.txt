@@ -1,3 +1,8 @@
+From 1149682 (master):
+=====================
+
+(*) Update and add .gitignore to repo
+
 From 82519d5 (master):
 =====================
 
