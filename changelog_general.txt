@@ -1,3 +1,13 @@
+From eb6a5d4 (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Add triangle solving routines along with docstrings -- aaas(),
+sss(), sas(), ssa(), and trisolve()
+(*) Import print_function, absolute_import, sys and warnings
+(*) Insert system-generated tolerance variable called epsilon
+
 From dce1a17 (master):
 =====================
 

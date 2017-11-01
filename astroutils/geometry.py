@@ -1,6 +1,8 @@
-from __future__ import division
+from __future__ import division, print_function, absolute_import
+import sys
 import numpy as NP
 import healpy as HP
+import warnings
 
 try:
     from scipy.spatial import cKDTree as KDT
@@ -8,6 +10,9 @@ except ImportError:
     from scipy.spatial import KDTree as KDT
 
 import ipdb as PDB
+
+epsilon = sys.float_info.epsilon # typical floating-point calculation error
+
 #################################################################################
 
 class Point:
@@ -124,7 +129,7 @@ class Point:
         try:
             other
         except NameError:
-            print 'No object provided for addition.'
+            warnings.warn('No object provided for addition.')
             return self
         
         if not isinstance(other, Point):
@@ -152,7 +157,7 @@ class Point:
         try:
             other
         except NameError:
-            print 'No object provided for subtraction.'
+            warnings.warn('No object provided for subtraction.')
             return self
         
         if not isinstance(other, Point):
@@ -184,7 +189,7 @@ class Point:
         try:
             other
         except NameError:
-            print 'No object provided for product.'
+            warnings.warn('No object provided for product.')
             return self
         
         if not isinstance(other, Point):
@@ -214,7 +219,7 @@ class Point:
         try:
             value
         except NameError:
-            print 'No scalar value provided for product.'
+            warnings.warn('No scalar value provided for product.')
             return self
         
         if not isinstance(value, (int,float)):
@@ -1120,7 +1125,7 @@ def ecef2enu(xyz, ref_info):
             if ref_info['units'] not in ['degrees', 'radians']:
                 raise ValueError('Invalid specification for value under key "units" in input ref_info')
         else:
-            print 'Value under key "units" in input ref_info not specified. Assuming the units are in radians.'
+            warnings.warn('Value under key "units" in input ref_info not specified. Assuming the units are in radians.')
     else:
         raise TypeError('Input ref_info must be a dictionary')
 
@@ -1215,7 +1220,7 @@ def enu2ecef(enu, ref_info):
             if ref_info['units'] not in ['degrees', 'radians']:
                 raise ValueError('Invalid specification for value under key "units" in input ref_info')
         else:
-            print 'Value under key "units" in input ref_info not specified. Assuming the units are in radians.'
+            warnings.warn('Value under key "units" in input ref_info not specified. Assuming the units are in radians.')
     else:
         raise TypeError('Input ref_info must be a dictionary')
 
@@ -1506,12 +1511,12 @@ def spherematch(lon1, lat1, lon2=None, lat2=None, matchrad=None, nnearest=0,
     if matchrad is None:
         if maxmatches > 0:
             nnearest = 0
-            print 'No matchrad specified. Will determine all the {0} nearest neighbours.'.format(maxmatches)
+            warnings.warn('No matchrad specified. Will determine all the {0} nearest neighbours.'.format(maxmatches))
         else:
             maxmatches = -1
             if nnearest <= 0:
                 nnearest = 1
-            print 'No matchrad specified. Will determine the nearest neighbour # {0}.'.format(nnearest)
+            warnings.warn('No matchrad specified. Will determine the nearest neighbour # {0}.'.format(nnearest))
     elif not isinstance(matchrad, (int,float)):
         raise TypeError('matchrad should be a scalar number.')
     elif matchrad > 0.0:
@@ -1521,7 +1526,7 @@ def spherematch(lon1, lat1, lon2=None, lat2=None, matchrad=None, nnearest=0,
         else:
             if nnearest <= 0:
                 nnearest = 1
-            print 'maxmatches is negative. Will determine the nearest neighbour # {0}.'.format(nnearest)            
+            warnings.warn('maxmatches is negative. Will determine the nearest neighbour # {0}.'.format(nnearest))
     else:
         raise ValueError('matchrad is not positive.')
 
@@ -1898,4 +1903,176 @@ def sample_paraboloid(f, open_angle, wavelength=1.0, axis=[90.0,270.0], angunits
 
     return xyz
     
+################################################################################
+
+# Below are some triangle solving routines 
+# Source: https://github.com/sbyrnes321/trianglesolver
+# These allow numpy array operations
+
+# Following the usual convention, lower-case letters are side lengths and
+# capital letters are angles. Corresponding letters are opposite each other,
+# e.g. side b is opposite angle B. All angles are assumed to be in radians
+
+################################################################################
+
+def aaas(D, E, F, f):
+
+    """ 
+    ---------------------------------------------------------------------------
+    This function solves the triangle and returns (d,e,f,D,E,F) 
+    ---------------------------------------------------------------------------
+    """
+    
+    d = f * NP.sin(D) / NP.sin(F)
+    e = f * NP.sin(E) / NP.sin(F)
+    return (d,e,f,D,E,F)
+
+###############################################################################
+
+def sss(d,e,f):
+    
+    """ 
+    ---------------------------------------------------------------------------
+    This function solves the triangle and returns (d,e,f,D,E,F) 
+    ---------------------------------------------------------------------------
+    """
+
+    # assert d + e > f and e + f > d and f + d > e
+    if NP.any(d+e <= f) or NP.any(e+f <= d) or NP.any(f+d <= e):
+        raise ValueError('Invalid sides specified for triangle')
+    F = NP.arccos((d**2 + e**2 - f**2) / (2 * d * e))
+    E = NP.arccos((d**2 + f**2 - e**2) / (2 * d * f))
+    D = NP.pi - F - E
+    return (d,e,f,D,E,F)
+
+###############################################################################
+
+def sas(d,e,F):
+
+    """ 
+    ---------------------------------------------------------------------------
+    This function solves the triangle and returns (d,e,f,D,E,F) 
+    ---------------------------------------------------------------------------
+    """
+
+    f = NP.sqrt(d**2 + e**2 - 2 * d * e * NP.cos(F))
+    return sss(d,e,f)
+
+###############################################################################
+
+def ssa(d, e, D, ssa_flag):
+
+    """ 
+    ---------------------------------------------------------------------------
+    This function solves the triangle and returns (d,e,f,D,E,F) 
+    ---------------------------------------------------------------------------
+    """
+
+    sinE = NP.sin(D) * e / d
+    if NP.abs(sinE - 1) < 100 * epsilon:
+        # Right triangle, where the solution is unique
+        E = NP.pi/2
+    elif sinE > 1:
+        raise ValueError('No such triangle')
+    elif ssa_flag == 'forbid':
+        raise ValueError('Two different triangles fit this description')
+    else:
+        E = NP.arcsin(sinE)
+        if ssa_flag == 'obtuse':
+            E = NP.pi - E
+    F = NP.pi - D - E
+    e,f,d,E,F,D = aaas(E,F,D,d)
+    return (d,e,f,D,E,F)
+
+################################################################################
+
+def trisolve(a=None, b=None, c=None, A=None, B=None, C=None, ssa_flag='forbid'):
+
+    """
+    ---------------------------------------------------------------------------
+    Solve to find all the information about a triangle, given partial
+    information.
+    
+    a, b, c, A, B, and C are the three sides and angles. (e.g. A is the angle
+    opposite the side of length a.) Out of these six possibilities, you need 
+    to tell the program exactly three. Then the program will tell you all six.
+    
+    It returns a tuple (a, b, c, A, B, C).
+    
+    "ssa" is the situation when you give two sides and an angle which is not
+    between them. This is usually not enough information to specify a unique
+    triangle. (Except in one special case involving right triangles.) Instead
+    there are usually two possibilities.
+    
+    Therefore there is an 'ssa_flag'. You can set it to'forbid' (raise an error
+    if the answer is not unique - the default setting), or 'acute' (where the
+    unknown angle across from the known side is chosen to be acute) or 'obtuse'
+    (similarly).
+    ---------------------------------------------------------------------------
+    """
+
+    if sum(x is not None for x in [a,b,c,A,B,C]) != 3:
+        raise ValueError('Must provide exactly 3 inputs')
+    if sum(x is None for x in [a,b,c]) == 3:
+        raise ValueError('Must provide at least 1 side length')
+    assert all(NP.all(x > 0) for x in [a,b,c,A,B,C] if x is not None)
+    assert all(NP.all(x < NP.pi) for x in [A,B,C] if x is not None)
+    assert ssa_flag in ['forbid', 'acute', 'obtuse']
+    
+    # If three sides are known...
+    if sum(x is not None for x in [a,b,c]) == 3:
+        a,b,c,A,B,C = sss(a,b,c)
+        return (a,b,c,A,B,C)
+
+    # If two sides and one angle are known...
+    if sum(x is not None for x in [a,b,c]) == 2:
+        # ssa case
+        if all(x is not None for x in [a, A, b]):
+            a,b,c,A,B,C = ssa(a, b, A, ssa_flag)
+        elif all(x is not None for x in [a, A, c]):
+            a,c,b,A,C,B = ssa(a, c, A, ssa_flag)
+        elif all(x is not None for x in [b, B, a]):
+            b,a,c,B,A,C = ssa(b, a, B, ssa_flag)
+        elif all(x is not None for x in [b, B, c]):
+            b,c,a,B,C,A = ssa(b, c, B, ssa_flag)
+        elif all(x is not None for x in [c, C, a]):
+            c,a,b,C,A,B = ssa(c, a, C, ssa_flag)
+        elif all(x is not None for x in [c, C, b]):
+            c,b,a,C,B,A = ssa(c, b, C, ssa_flag)
+        
+        # sas case
+        elif all(x is not None for x in [a, b, C]):
+            a,b,c,A,B,C = sas(a, b, C)
+        elif all(x is not None for x in [b, c, A]):
+            b,c,a,B,C,A = sas(b, c, A)
+        elif all(x is not None for x in [c, a, B]):
+            c,a,b,C,A,B = sas(c, a, B)
+        else:
+            raise ValueError('Oops, this code should never run')
+        return (a,b,c,A,B,C)
+    
+    # If one side and two angles are known...
+    if sum(x is not None for x in [a,b,c]) == 1:
+        # Find the third angle...
+        if A is None:
+            A = NP.pi - B - C
+        elif B is None:
+            B = NP.pi - A - C
+        else:
+            C = NP.pi - A - B
+        assert NP.all(A > 0) and NP.all(B > 0) and NP.all(C > 0)
+        # Then solve the triangle...
+        if c is not None:
+            a,b,c,A,B,C = aaas(A,B,C,c)
+        elif a is not None:
+            b,c,a,B,C,A = aaas(B,C,A,a)
+        else:
+            c,a,b,C,A,B = aaas(C,A,B,b)
+        return (a,b,c,A,B,C)
+    raise ValueError('Oops, this code should never run')
+
+################################################################################
+
+# End of triangle solving routines
+
 ################################################################################
