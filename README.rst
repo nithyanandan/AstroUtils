@@ -29,17 +29,17 @@ Then install conda packages:
 
 Finally, either install AstroUtils directly:
 
-``pip install git+https://github.com/nithyanandan/Astroutils.git``
+``pip install git+https://github.com/nithyanandan/AstroUtils.git``
 
 or clone it into a directory and from inside that directory issue the command:
 
-``pip install .``.
+``pip install .``
 
 
 Basic Usage
 ===========
 
-Typical usage often looks like this::
+Typical usage often looks like this:
 
 ``from AstroUtils import DSP_modules``
 
