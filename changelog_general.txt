@@ -1,3 +1,10 @@
+From 82519d5 (master):
+=====================
+
+In astroutils/test/geometry_test.py,
+
+(*) Add test_xyz2sph() to test xyz2sph() in geometry.py
+
 From eb6a5d4 (master):
 =====================
 
