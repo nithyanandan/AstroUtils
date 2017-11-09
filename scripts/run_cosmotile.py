@@ -9,9 +9,11 @@ import time
 import healpy as HP
 import numpy as NP
 import astropy.cosmology as cosmology
+import astropy.constants as FCNST
 import progressbar as PGB
 import warnings
 from astroutils import cosmotile
+from astroutils import constants as CNST
 import astroutils
 import ipdb as PDB
 
@@ -240,8 +242,10 @@ if __name__ == '__main__':
             else:
                 theta = NP.degrees(theta)
                 phi = NP.degrees(phi)
+            wl = FCNST.c.to('m/s').value / ofreqs
+            dJy_dK = 2 * FCNST.k_B.to('J/K').value * pixarea_patch / wl**2 / CNST.Jy # nchan (in Jy/K)
             radec = NP.hstack((phi.reshape(-1,1), 90.0 - theta.reshape(-1,1)))
-            init_parms = {'name': cube_source, 'frequency': ofreqs, 'location': radec, 'spec_type': 'spectrum', 'spectrum': pixarea_patch*sphpatches.T, 'src_shape': NP.hstack((angres_patch+NP.zeros(phi.size).reshape(-1,1), angres_patch+NP.zeros(phi.size).reshape(-1,1), NP.zeros(phi.size).reshape(-1,1))), 'epoch': 'J2000', 'coords': 'radec', 'src_shape_units': ('degree', 'degree', 'degree')}
+            init_parms = {'name': cube_source, 'frequency': ofreqs, 'location': radec, 'spec_type': 'spectrum', 'spectrum': dJy_dK.reshape(1,-1)*sphpatches.T, 'src_shape': NP.hstack((angres_patch+NP.zeros(phi.size).reshape(-1,1), angres_patch+NP.zeros(phi.size).reshape(-1,1), NP.zeros(phi.size).reshape(-1,1))), 'epoch': 'J2000', 'coords': 'radec', 'src_shape_units': ('degree', 'degree', 'degree')}
             cosmotile.write_lightcone_catalog(init_parms, outfile=outfile, action='store')
         else:
             cosmotile.write_lightcone_surfaces(sphpatches, units, outfile, ofreqs, cosmo=cosmo, is_healpix=is_healpix)

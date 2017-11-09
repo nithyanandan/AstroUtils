@@ -220,7 +220,8 @@ output      :
                                 # spherical patch. The final angular
                                 # resolution will be equal or finer
                                 # than this. It will be assumed to
-                                # be FWHM
+                                # be FWHM. Applies only if nside is
+                                # set to null
 
 ########## Processing parameters ##########
 

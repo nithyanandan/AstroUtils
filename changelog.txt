@@ -1,3 +1,16 @@
+From 9f0ce1b (master):
+=====================
+
+In scripts/run_cosmotile.py,
+
+(*) Import constants from astroutils and astropy
+(*) Introduce the Temperature to flux density scaling factor before
+writing to skymod file
+
+In astroutils/examples/cosmotile/cosmotile_parms.yaml,
+
+(*) Update description for angres
+
 From 39d70c7 (master):
 =====================
 
