@@ -918,36 +918,37 @@ class SkyModel(object):
                 object_group = fileobj.create_group('object')
                 object_group.attrs['epoch'] = self.epoch
                 object_group.attrs['coords'] = self.coords
-                name_dset = object_group.create_dataset('name', data=self.name, compression='gzip', compression_opts=9)
+                name_dset = object_group.create_dataset('name', (self.name.size,), maxshape=(None,), data=self.name, compression='gzip', compression_opts=9)
                 if self.coords == 'radec':
-                    ra_dset = object_group.create_dataset('RA', data=self.location[:,0], compression='gzip', compression_opts=9)
+                    ra_dset = object_group.create_dataset('RA', (self.location.shape[0],), maxshape=(None,), data=self.location[:,0], compression='gzip', compression_opts=9)
                     ra_dset.attrs['units'] = 'degrees'
-                    dec_dset = object_group.create_dataset('Dec', data=self.location[:,1], compression='gzip', compression_opts=9)
+                    dec_dset = object_group.create_dataset('Dec', (self.location.shape[0],), maxshape=(None,), data=self.location[:,1], compression='gzip', compression_opts=9)
                     dec_dset.attrs['units'] = 'degrees'
                 elif self.coords == 'altaz':
-                    alt_dset = object_group.create_dataset('Alt', data=self.location[:,0], compression='gzip', compression_opts=9)
+                    alt_dset = object_group.create_dataset('Alt', (self.location.shape[0],), maxshape=(None,), data=self.location[:,0], compression='gzip', compression_opts=9)
                     alt_dset.attrs['units'] = 'degrees'
-                    az_dset = object_group.create_dataset('Az', data=self.location[:,1], compression='gzip', compression_opts=9)
+                    az_dset = object_group.create_dataset('Az', (self.location.shape[0],), maxshape=(None,), data=self.location[:,1], compression='gzip', compression_opts=9)
                     az_dset.attrs['units'] = 'degrees'
                 else:
                     raise ValueError('This coordinate system is not currently supported')
                 if self.src_shape is not None:
-                    src_shape_dset = object_group.create_dataset('shape', data=self.src_shape, compression='gzip', compression_opts=9)
+                    src_shape_dset = object_group.create_dataset('shape', self.src_shape, maxshape=(None,self.src_shape[1]), data=self.src_shape, compression='gzip', compression_opts=9)
                     src_shape_dset.attrs['units'] = 'degrees'
 
                 spec_group = fileobj.create_group('spectral_info')
                 if self.spec_type == 'func':
-                    spec_group['func-name'] = self.spec_parms['name']
-                    freq_dset = spec_group.create_dataset('freq', data=self.spec_parms['freq-ref'], compression='gzip', compression_opts=9)
+                    # spec_group['func-name'] = self.spec_parms['name']
+                    func_name_dset = spec_group.create_dataset('func-name', self.spec_parms['name'].shape, maxshape=(None,), data=self.spec_parms['name'])
+                    freq_dset = spec_group.create_dataset('freq', self.spec_parms['freq-ref'].shape, maxshape=(None,), data=self.spec_parms['freq-ref'], compression='gzip', compression_opts=9)
                     freq_dset.attrs['units'] = 'Hz'
-                    flux_dset = spec_group.create_dataset('flux_density', data=self.spec_parms['flux-scale'], compression='gzip', compression_opts=9)
+                    flux_dset = spec_group.create_dataset('flux_density', self.spec_parms['flux-scale'].shape, maxshape=(None,), data=self.spec_parms['flux-scale'], compression='gzip', compression_opts=9)
                     flux_dset.attrs['units'] = 'Jy'
                     if NP.all(self.spec_parms['name'] == 'power-law'):
-                        spindex_dset = spec_group.create_dataset('spindex', data=self.spec_parms['power-law-index'], compression='gzip', compression_opts=9)
+                        spindex_dset = spec_group.create_dataset('spindex', self.spec_parms['power-law-index'].shape, maxshape=(None,), data=self.spec_parms['power-law-index'], compression='gzip', compression_opts=9)
                 else:
-                    freq_dset = spec_group.create_dataset('freq', data=self.frequency.ravel(), compression='gzip', compression_opts=9)
+                    freq_dset = spec_group.create_dataset('freq', (self.frequency.size,), maxshape=(None,), data=self.frequency.ravel(), compression='gzip', compression_opts=9)
                     freq_dset.attrs['units'] = 'Hz'
-                    spectrum_dset = spec_group.create_dataset('spectrum', data=self.spectrum, compression='gzip', compression_opts=9)
+                    spectrum_dset = spec_group.create_dataset('spectrum', self.spectrum.shape, maxshape=(None,None), data=self.spectrum, compression='gzip', compression_opts=9)
         else:
             outfile = outfile + '.txt'
             frmts = {}

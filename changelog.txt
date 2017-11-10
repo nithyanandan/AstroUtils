@@ -1,3 +1,11 @@
+From 664479b (cosmotiling):
+==========================
+
+In astroutils/catalog.py,
+
+(*) Create resizeable data sets when instance of class SkyModel is
+written to HDF5 file
+
 From 9f0ce1b (master):
 =====================
 
