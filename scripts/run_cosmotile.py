@@ -14,6 +14,7 @@ import progressbar as PGB
 import warnings
 from astroutils import cosmotile
 from astroutils import constants as CNST
+from astroutils import catalog as SM
 import astroutils
 import ipdb as PDB
 
@@ -196,6 +197,18 @@ if __name__ == '__main__':
         interpdicts += [idict]
         tiledicts += [tdict]
 
+    if save_as_skymodel:
+        if nside is not None:
+            angres_patch = NP.degrees(HP.nside2resol(nside))
+            pixarea_patch = HP.nside2pixarea(nside)
+            theta, phi = NP.degrees(HP.pix2ang(nside, NP.arange(HP.nside2npix(nside))))
+        else:
+            theta = NP.degrees(theta)
+            phi = NP.degrees(phi)
+        wl = FCNST.c.to('m/s').value / ofreqs
+        dJy_dK = 2 * FCNST.k_B.to('J/K').value * pixarea_patch / wl**2 / CNST.Jy # nchan (in Jy/K)
+        radec = NP.hstack((phi.reshape(-1,1), 90.0 - theta.reshape(-1,1)))
+
     sphsurfaces = []
     if parallel:
         ts = time.time()
@@ -224,13 +237,27 @@ if __name__ == '__main__':
             sphsurfaces = []
             warnings.warn('Memory requirements too high. Downgrading to serial processing.')
         
+    PDB.set_trace()
     if not parallel:
         progress = PGB.ProgressBar(widgets=[PGB.Percentage(), PGB.Bar(marker='-', left=' |', right='| '), PGB.Counter(), '/{0:0d} Frequency channels '.format(ofreqs.size), PGB.ETA()], maxval=ofreqs.size).start()
-        for ind in range(len(interpdicts)):
-            sphsurfaces += [cosmotile.coeval_interp_cube_to_sphere_surface_wrapper(interpdicts[ind], tiledicts[ind])]
+        for ind in xrange(len(interpdicts)):
+            # sphsurfaces += [cosmotile.coeval_interp_cube_to_sphere_surface_wrapper(interpdicts[ind], tiledicts[ind])]
+            sphsurface = cosmotile.coeval_interp_cube_to_sphere_surface_wrapper(interpdicts[ind], tiledicts[ind])
+            if save_as_skymodel:
+                init_parms = {'name': cube_source, 'frequency': ofreqs[ind], 'location': radec, 'spec_type': 'spectrum', 'spectrum': dJy_dK[ind]*sphsurface.reshape(-1,1), 'src_shape': NP.hstack((angres_patch+NP.zeros(phi.size).reshape(-1,1), angres_patch+NP.zeros(phi.size).reshape(-1,1), NP.zeros(phi.size).reshape(-1,1))), 'epoch': 'J2000', 'coords': 'radec', 'src_shape_units': ('degree', 'degree', 'degree')}
+                skymod = SM.SkyModel(init_file=None, init_parms=init_parms)
+                if ind == 0:
+                    skymod.save(outfile, fileformat='hdf5')
+                    # cosmotile.write_lightcone_catalog(init_parms, outfile=outfile, action='store')
+                else:
+                    SM.append_SkyModel_file(outfile, skymod, 'freq', filemode='a')
+            else:
+                cosmotile.write_lightcone_surfaces(sphpatches, units, outfile, ofreqs, cosmo=cosmo, is_healpix=is_healpix)
+
             progress.update(ind+1)
         progress.finish()
 
+    PDB.set_trace()
     sphpatches = NP.asarray([sphsurf for sphsurf in sphsurfaces])
     sphpatches = conv_factor * NP.asarray(sphpatches)
     if save:

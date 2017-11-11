@@ -1,3 +1,17 @@
+From 7764aae (resize_hdf5):
+==========================
+
+In astroutils/catalog.py,
+
+(*) Create function append_SkyModel_file() to append data from an
+instance of class SkyModel to an already existing skymodel file
+
+In scripts/run_cosmotile.py,
+
+(*) Update to use function append_SkyModel_file() in
+astroutils/catalog.py to update an existing sky model file with newer
+instances of class SkyModel
+
 From 664479b (cosmotiling):
 ==========================
 
