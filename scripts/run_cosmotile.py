@@ -237,7 +237,6 @@ if __name__ == '__main__':
             sphsurfaces = []
             warnings.warn('Memory requirements too high. Downgrading to serial processing.')
         
-    PDB.set_trace()
     if not parallel:
         progress = PGB.ProgressBar(widgets=[PGB.Percentage(), PGB.Bar(marker='-', left=' |', right='| '), PGB.Counter(), '/{0:0d} Frequency channels '.format(ofreqs.size), PGB.ETA()], maxval=ofreqs.size).start()
         for ind in xrange(len(interpdicts)):
@@ -257,7 +256,6 @@ if __name__ == '__main__':
             progress.update(ind+1)
         progress.finish()
 
-    PDB.set_trace()
     sphpatches = NP.asarray([sphsurf for sphsurf in sphsurfaces])
     sphpatches = conv_factor * NP.asarray(sphpatches)
     if save:

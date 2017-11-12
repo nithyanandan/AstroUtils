@@ -1132,13 +1132,14 @@ def write_lightcone_surfaces(light_cone_surfaces, units, outfile, freqs,
         hdr_grp['units'] = units
         hdr_grp['is_healpix'] = int(is_healpix)
         spec_grp = fileobj.create_group('specinfo')
-        spec_grp['freqs'] = freqs
-        spec_grp['freqs'].attrs['units'] = 'Hz'
+        # spec_grp['freqs'] = freqs
+        freq_dset = spec_grp.create_dataset('freqs', (freqs.size,), maxshape=(None,), data=freqs.ravel())
+        freq_dset.attrs['units'] = 'Hz'
         cosmo_grp = fileobj.create_group('cosmology')
         for key in cosmoinfo:
             cosmo_grp[key] = cosmoinfo[key]
         surfaces_grp = fileobj.create_group('skyinfo')
-        dset = surfaces_grp.create_dataset('surfaces', data=light_cone_surfaces, chunks=(1,light_cone_surfaces.shape[1]), compression='gzip', compression_opts=9)
+        dset = surfaces_grp.create_dataset('surfaces', light_cone_surfaces.shape, maxshape=(None, None), data=light_cone_surfaces, chunks=(1,light_cone_surfaces.shape[1]), compression='gzip', compression_opts=9)
 
 #################################################################################
 

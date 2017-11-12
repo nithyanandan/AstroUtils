@@ -1,3 +1,11 @@
+From 7a4e052 (resize_hdf5):
+==========================
+
+In astroutils/catalog.py,
+
+(*) Modify function write_lightcone_surfaces() to keep the data in
+the HDF5 file resizeable
+
 From 7764aae (resize_hdf5):
 ==========================
 
