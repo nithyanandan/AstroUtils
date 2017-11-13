@@ -1143,6 +1143,97 @@ def write_lightcone_surfaces(light_cone_surfaces, units, outfile, freqs,
 
 #################################################################################
 
+def append_lightcone_surfaces(light_cone_surfaces, filename, appendaxis, 
+                              units=None, freqs=None):
+
+    """
+    -----------------------------------------------------------------------------
+    Append light cone surfaces to HDF5 file if it already exists
+
+    Inputs:
+
+    light_cone_surfaces
+                [numpy array] Light cone surfaces. Must be of shape nchan x npix
+
+    filename    [string] Filename to write the output to
+
+    units       [string] Units of the values in light_cone_surfaces. Default=None
+                means use the units that exist in the HDF5 file.
+
+    freqs       [numpy array] The frequencies corresponding to the surfaces. 
+                It is of size nchan and units in 'Hz'. If set to None, the input
+                appendaxis must be set to 'src' to append along the 'src' axis. 
+                Otherwise, freqs must be specified to append along the frequency
+                axis.
+
+    appendaxis  [string] Axis along which the specified skymod data has to be 
+                appended. Accepted values are 'freq' (append along frequency
+                axis) or 'src' (append along source location axis). All other 
+                axes and attributes must match.
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        light_cone_surfaces, filename, appendaxis
+    except NameError:
+        raise NameError('Input light_cone_surfaces, filename, and appendaxis must be specified')
+
+    if not isinstance(filename, str):
+        raise TypeError('Input filename must be a string')
+
+    if not isinstance(light_cone_surfaces, NP.ndarray):
+        raise TypeError('Input light_cone_surfaces must be a numpy array')
+
+    if not isinstance(appendaxis, str):
+        raise TypeError('Input appendaxis must be a string')
+    else:
+        appendaxis = appendaxis.lower()
+        if appendaxis not in ['src', 'freq']:
+            raise ValueError('Invalid value specified for input appendaxis')
+    
+    if units is not None:
+        if not isinstance(units, str):
+            raise TypeError('Input units must be a string')
+    if freqs is not None:
+        if not isinstance(freqs, NP.ndarray):
+            raise TypeError('Input freqs must be a numpy array')
+
+    # if cosmo is not None:
+    #     if isinstance(cosmo, dict):
+    #         cosmokeys = ['Om0', 'Ode0', 'h', 'Ob0', 'w0']
+    #         for ckey in cosmokeys:
+    #             if ckey not in cosmo:
+    #                 raise KeyError('Input cosmo dictionary does not have the required key {0}'.format(ckey))
+    #     elif not isinstance(cosmo, cosmology.FLRW):
+    #         raise TypeError('Input cosmo must be a dictionary or an instance of class cosmology')
+
+    if not os.path.isfile(filename):
+        write_lightcone_surfaces(light_cone_surfaces, units, filename, freqs)
+    else:
+        with h5py.File(filename, 'a') as fileobj:
+            if freqs is not None:
+                if appendaxis == 'freq':
+                    if freqs.size != fileobj['specinfo']['freqs'].size:
+                        raise ValueError('Size of frequencies does not match with that in ')
+                    freqs_in_file = fileobj['specinfo']['freqs'].value
+                    if NP.any(NP.abs(freqs - fileobj['specinfo']['freqs'].value) > 1e-14):
+                        raise ValueError('The specified frequencies and that in the file do not match')
+            else:
+                if appendaxis != 'src':
+                    raise ValueError('Frequencies to append not specified')
+                if fileobj['skyinfo']['surfaces'].shape[0] != light_cone_surfaces.shape[0]:
+                    raise ValueError('Number of sources in light_cone_surfaces and the HDF5 file do not match')
+            if appendaxis == 'freq':
+                fileobj['specinfo']['freqs'].resize(fileobj['specinfo']['freqs'].size+freqs.size, axis=0)
+                fileobj['specinfo']['freqs'][-freqs.size:] = freqs.ravel()
+                fileobj['skyinfo']['surfaces'].resize(fileobj['skyinfo']['surfaces'].shape[1]+freqs.size, axis=1)
+                fileobj['skyinfo']['surfaces'][:,-freqs.size:] = light_cone_surfaces
+            else:
+                fileobj['skyinfo']['surfaces'].resize(fileobj['skyinfo']['surfaces'].shape[0]+light_cone_surfaces.shape[0], axis=0)
+                fileobj['skyinfo']['surfaces'][-light_cone_surfaces.shape[0]:,:] = light_cone_surfaces
+
+#################################################################################
+
 def write_lightcone_catalog(init_parms, outfile=None, action='return'):
 
     """

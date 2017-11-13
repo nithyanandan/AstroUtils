@@ -1,7 +1,16 @@
+From a24ad0a (resize_hdf5):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Add function append_lightcone_surfaces() along with docstring
+to append light cone surfaces to the one created by
+write_lightcone_surfaces()
+
 From 7a4e052 (resize_hdf5):
 ==========================
 
-In astroutils/catalog.py,
+In astroutils/cosmotile.py,
 
 (*) Modify function write_lightcone_surfaces() to keep the data in
 the HDF5 file resizeable
