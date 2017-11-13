@@ -1212,7 +1212,7 @@ def append_lightcone_surfaces(light_cone_surfaces, filename, appendaxis,
     else:
         with h5py.File(filename, 'a') as fileobj:
             if freqs is not None:
-                if appendaxis == 'freq':
+                if appendaxis != 'freq':
                     if freqs.size != fileobj['specinfo']['freqs'].size:
                         raise ValueError('Size of frequencies does not match with that in ')
                     freqs_in_file = fileobj['specinfo']['freqs'].value
@@ -1226,11 +1226,14 @@ def append_lightcone_surfaces(light_cone_surfaces, filename, appendaxis,
             if appendaxis == 'freq':
                 fileobj['specinfo']['freqs'].resize(fileobj['specinfo']['freqs'].size+freqs.size, axis=0)
                 fileobj['specinfo']['freqs'][-freqs.size:] = freqs.ravel()
-                fileobj['skyinfo']['surfaces'].resize(fileobj['skyinfo']['surfaces'].shape[1]+freqs.size, axis=1)
-                fileobj['skyinfo']['surfaces'][:,-freqs.size:] = light_cone_surfaces
+                fileobj['skyinfo']['surfaces'].resize(fileobj['skyinfo']['surfaces'].shape[0]+freqs.size, axis=0)
+                fileobj['skyinfo']['surfaces'][-freqs.size:,:] = light_cone_surfaces
             else:
-                fileobj['skyinfo']['surfaces'].resize(fileobj['skyinfo']['surfaces'].shape[0]+light_cone_surfaces.shape[0], axis=0)
-                fileobj['skyinfo']['surfaces'][-light_cone_surfaces.shape[0]:,:] = light_cone_surfaces
+                fileobj['skyinfo']['surfaces'].resize(fileobj['skyinfo']['surfaces'].shape[1]+light_cone_surfaces.shape[1], axis=1)
+                fileobj['skyinfo']['surfaces'][:,-light_cone_surfaces.shape[0]:] = light_cone_surfaces
+            if fileobj['header']['is_healpix']:
+                if not HP.isnpixok(fileobj['skyinfo']['surfaces'].shape[1]):
+                    fileobj['header']['is_healpix'] = False
 
 #################################################################################
 

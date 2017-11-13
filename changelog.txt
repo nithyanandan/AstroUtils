@@ -1,3 +1,21 @@
+From 313beb0 (resize_hdf5):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Update append_lightcone_surfaces() to modify the is_healpix
+value if necessary
+
+In scripts/run_cosmotile.py,
+
+(*) Update to use append functionality in case of large sized light
+cone surfaces
+
+In astroutils/examples/cosmotile/cosmotile_parms.yaml,
+
+(*) Add parameter write_mode to write light cone surfaces all at once
+or append incrementally to HDF5 file
+
 From a24ad0a (resize_hdf5):
 ==========================
 

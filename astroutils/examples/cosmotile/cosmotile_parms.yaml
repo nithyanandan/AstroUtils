@@ -228,10 +228,20 @@ output      :
 processing  :
                                 # Processing parameters
 
+    write_mode      : null
+                                # Mode to write data out. If set to
+                                # null (default), all surfaces will
+                                # be written out at once. If set to
+                                # 'append' light cone surfaces will
+                                # be appended incrementally.
+                                # Currently applies only if parallel
+                                # is set to false.
+
     parallel        : false
                                 # If set to true (parallelize using
                                 # multiprocessing), otherwise set
-                                # to false (default)
+                                # to false (default). Setting this
+                                # to true does not seem to help. 
 
     nproc           : 16
                                 # Number of parallel threads if

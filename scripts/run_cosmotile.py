@@ -131,6 +131,10 @@ if __name__ == '__main__':
     if NP.any(ofreqs < 0.0):
         raise ValueError('Output frequencies must not be negative')
 
+    write_mode = parms['processing']['write_mode']
+    if write_mode not in [None, 'append']:
+        raise ValueError('Input write_mode is invalid')
+            
     parallel = parms['processing']['parallel']
     nproc = parms['processing']['nproc']
     wait_after_run = parms['processing']['wait_after_run']
@@ -241,39 +245,47 @@ if __name__ == '__main__':
         progress = PGB.ProgressBar(widgets=[PGB.Percentage(), PGB.Bar(marker='-', left=' |', right='| '), PGB.Counter(), '/{0:0d} Frequency channels '.format(ofreqs.size), PGB.ETA()], maxval=ofreqs.size).start()
         for ind in xrange(len(interpdicts)):
             # sphsurfaces += [cosmotile.coeval_interp_cube_to_sphere_surface_wrapper(interpdicts[ind], tiledicts[ind])]
-            sphsurface = cosmotile.coeval_interp_cube_to_sphere_surface_wrapper(interpdicts[ind], tiledicts[ind])
-            if save_as_skymodel:
-                init_parms = {'name': cube_source, 'frequency': ofreqs[ind], 'location': radec, 'spec_type': 'spectrum', 'spectrum': dJy_dK[ind]*sphsurface.reshape(-1,1), 'src_shape': NP.hstack((angres_patch+NP.zeros(phi.size).reshape(-1,1), angres_patch+NP.zeros(phi.size).reshape(-1,1), NP.zeros(phi.size).reshape(-1,1))), 'epoch': 'J2000', 'coords': 'radec', 'src_shape_units': ('degree', 'degree', 'degree')}
-                skymod = SM.SkyModel(init_file=None, init_parms=init_parms)
-                if ind == 0:
-                    skymod.save(outfile, fileformat='hdf5')
-                    # cosmotile.write_lightcone_catalog(init_parms, outfile=outfile, action='store')
+            if write_mode == 'append':
+                sphsurface = cosmotile.coeval_interp_cube_to_sphere_surface_wrapper(interpdicts[ind], tiledicts[ind])
+                if save_as_skymodel:
+                    init_parms = {'name': cube_source, 'frequency': ofreqs[ind], 'location': radec, 'spec_type': 'spectrum', 'spectrum': dJy_dK[ind]*sphsurface.reshape(-1,1), 'src_shape': NP.hstack((angres_patch+NP.zeros(phi.size).reshape(-1,1), angres_patch+NP.zeros(phi.size).reshape(-1,1), NP.zeros(phi.size).reshape(-1,1))), 'epoch': 'J2000', 'coords': 'radec', 'src_shape_units': ('degree', 'degree', 'degree')}
+                    skymod = SM.SkyModel(init_file=None, init_parms=init_parms)
+                    if ind == 0:
+                        skymod.save(outfile, fileformat='hdf5')
+                        # cosmotile.write_lightcone_catalog(init_parms, outfile=outfile, action='store')
+                    else:
+                        SM.append_SkyModel_file(outfile, skymod, 'freq', filemode='a')
                 else:
-                    SM.append_SkyModel_file(outfile, skymod, 'freq', filemode='a')
+                    # cosmotile.write_lightcone_surfaces(sphpatches, units, outfile, ofreqs, cosmo=cosmo, is_healpix=is_healpix)
+                    if ind == 0:
+                        cosmotile.write_lightcone_surfaces(sphsurface.reshape(1,-1), units, outfile, NP.asarray(ofreqs[ind]).reshape(-1), cosmo=cosmo, is_healpix=is_healpix)
+                    else:
+                        cosmotile.append_lightcone_surfaces(sphsurface.reshape(1,-1), outfile, 'freq', units=units, freqs=NP.asarray(ofreqs[ind]).reshape(-1))
             else:
-                cosmotile.write_lightcone_surfaces(sphpatches, units, outfile, ofreqs, cosmo=cosmo, is_healpix=is_healpix)
+                sphsurfaces += [cosmotile.coeval_interp_cube_to_sphere_surface_wrapper(interpdicts[ind], tiledicts[ind])]
 
             progress.update(ind+1)
         progress.finish()
 
-    sphpatches = NP.asarray([sphsurf for sphsurf in sphsurfaces])
-    sphpatches = conv_factor * NP.asarray(sphpatches)
-    if save:
-        if save_as_skymodel:
-            if nside is not None:
-                angres_patch = NP.degrees(HP.nside2resol(nside))
-                pixarea_patch = HP.nside2pixarea(nside)
-                theta, phi = NP.degrees(HP.pix2ang(nside, NP.arange(HP.nside2npix(nside))))
+    if parallel or (write_mode is None):
+        sphpatches = NP.asarray([sphsurf for sphsurf in sphsurfaces])
+        sphpatches = conv_factor * NP.asarray(sphpatches)
+        if save:
+            if save_as_skymodel:
+                if nside is not None:
+                    angres_patch = NP.degrees(HP.nside2resol(nside))
+                    pixarea_patch = HP.nside2pixarea(nside)
+                    theta, phi = NP.degrees(HP.pix2ang(nside, NP.arange(HP.nside2npix(nside))))
+                else:
+                    theta = NP.degrees(theta)
+                    phi = NP.degrees(phi)
+                wl = FCNST.c.to('m/s').value / ofreqs
+                dJy_dK = 2 * FCNST.k_B.to('J/K').value * pixarea_patch / wl**2 / CNST.Jy # nchan (in Jy/K)
+                radec = NP.hstack((phi.reshape(-1,1), 90.0 - theta.reshape(-1,1)))
+                init_parms = {'name': cube_source, 'frequency': ofreqs, 'location': radec, 'spec_type': 'spectrum', 'spectrum': dJy_dK.reshape(1,-1)*sphpatches.T, 'src_shape': NP.hstack((angres_patch+NP.zeros(phi.size).reshape(-1,1), angres_patch+NP.zeros(phi.size).reshape(-1,1), NP.zeros(phi.size).reshape(-1,1))), 'epoch': 'J2000', 'coords': 'radec', 'src_shape_units': ('degree', 'degree', 'degree')}
+                cosmotile.write_lightcone_catalog(init_parms, outfile=outfile, action='store')
             else:
-                theta = NP.degrees(theta)
-                phi = NP.degrees(phi)
-            wl = FCNST.c.to('m/s').value / ofreqs
-            dJy_dK = 2 * FCNST.k_B.to('J/K').value * pixarea_patch / wl**2 / CNST.Jy # nchan (in Jy/K)
-            radec = NP.hstack((phi.reshape(-1,1), 90.0 - theta.reshape(-1,1)))
-            init_parms = {'name': cube_source, 'frequency': ofreqs, 'location': radec, 'spec_type': 'spectrum', 'spectrum': dJy_dK.reshape(1,-1)*sphpatches.T, 'src_shape': NP.hstack((angres_patch+NP.zeros(phi.size).reshape(-1,1), angres_patch+NP.zeros(phi.size).reshape(-1,1), NP.zeros(phi.size).reshape(-1,1))), 'epoch': 'J2000', 'coords': 'radec', 'src_shape_units': ('degree', 'degree', 'degree')}
-            cosmotile.write_lightcone_catalog(init_parms, outfile=outfile, action='store')
-        else:
-            cosmotile.write_lightcone_surfaces(sphpatches, units, outfile, ofreqs, cosmo=cosmo, is_healpix=is_healpix)
+                cosmotile.write_lightcone_surfaces(sphpatches, units, outfile, ofreqs, cosmo=cosmo, is_healpix=is_healpix)
 
     if wait_after_run:
         PDB.set_trace()
