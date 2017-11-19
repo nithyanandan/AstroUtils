@@ -1,3 +1,8 @@
+From ad56efa (master):
+=====================
+
+(*) Add astroutils/statistics.py to the repository
+
 From 313beb0 (resize_hdf5):
 ==========================
 
