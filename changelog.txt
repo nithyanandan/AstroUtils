@@ -1,3 +1,10 @@
+From ff23f91 (master):
+=====================
+
+In epic/cosmotile.py,
+
+(*) Minor update to docstring of function write_coeval_cube()
+
 From ad56efa (master):
 =====================
 

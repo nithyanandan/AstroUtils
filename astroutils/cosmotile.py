@@ -1329,7 +1329,7 @@ def write_coeval_cube(data, outfile, hdrinfo=None):
 
     Inputs:
 
-    cube        [numpy array] Coeval cube. Usually 3D.
+    data        [numpy array] Coeval cube. Usually 3D.
 
     outfile     [string] Filename including full path where the data is to be
                 saved in HDF5 format. It should not include the extension as it
