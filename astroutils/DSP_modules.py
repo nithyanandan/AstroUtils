@@ -6,6 +6,14 @@ import lookup_operations as LKP
 
 #################################################################################
 
+def unwrap_FFT2D(arg, **kwarg):
+    return NP.fft.fft2(*arg, **kwarg)
+
+def unwrap_IFFT2D(arg, **kwarg):
+    return NP.fft.ifft2(*arg, **kwarg)
+
+#################################################################################
+
 def FT1D(inp, ax=-1, use_real=False, shift=False, inverse=False, verbose=True):
 
     """

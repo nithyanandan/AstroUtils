@@ -1,7 +1,20 @@
+From f3fb63b (master):
+=====================
+
+In astroutils/DSP_modules.py,
+
+(*) Add parallel processing wrapper functions unwrap_FFT2D() and
+unwrap_IFFT2D() for numpy.fft.fft2() and numpy.fft.ifft2()
+respectively
+
+In changelog.txt,
+
+(*) Correct message of commit ff23f91 (master)
+
 From ff23f91 (master):
 =====================
 
-In epic/cosmotile.py,
+In astroutils/cosmotile.py,
 
 (*) Minor update to docstring of function write_coeval_cube()
 
