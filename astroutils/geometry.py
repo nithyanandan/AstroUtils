@@ -9,8 +9,6 @@ try:
 except ImportError:
     from scipy.spatial import KDTree as KDT
 
-import ipdb as PDB
-
 epsilon = sys.float_info.epsilon # typical floating-point calculation error
 
 #################################################################################

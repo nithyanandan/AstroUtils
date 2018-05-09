@@ -1,3 +1,10 @@
+From 7c5ac03 (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Remove import of ipdb
+
 From f3fb63b (master):
 =====================
 
