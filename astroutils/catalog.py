@@ -1,3 +1,4 @@
+import os, warnings
 import numpy as NP
 import healpy as HP
 from astropy.table import Table
@@ -10,6 +11,136 @@ import geometry as GEOM
 import mathops as OPS
 import lookup_operations as LKP
 import constants as CNST
+
+#################################################################################
+
+def append_SkyModel_file(skymodfile, skymod, appendaxis, filemode='a'):
+
+    """
+    -----------------------------------------------------------------------------
+    Append an instance of class SkyModel to an already existing file or create a
+    new file.
+
+    Inputs:
+
+    skymodfile  [string] Pull path to HDF5 file (without .hdf5 extension) that
+                contains saved information of an instance of class SkyModel. If
+                it does not exist, it will be created. If it already exists, 
+                skymod -- an instance of class SkyModel will be appended to it.
+
+    skymod      [instance of class SkyModel] Instance of class SkyModel that will
+                be appended on to the skymodfile if it exists or will be saved
+                to skymodfile if the file does not exist already
+
+    appendaxis  [string] Axis along which the specified skymod data has to be 
+                appended. Accepted values are 'freq' (append along frequency
+                axis) or 'src' (append along source location axis). All other 
+                axes and attributes must match.
+
+    filemode    [string] Mode in which the HDF5 must be opened. Accepted values
+                are 'a' (Read/write if exists, create otherwise (default)) and 
+                'w' (Create file, truncate if exists).
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        skymodfile, skymod, appendaxis
+    except NameError:
+        raise NameError('Inputs skymodfile, skymod, and appendaxis must be specified')
+
+    if not isinstance(skymodfile, str):
+        raise TypeError('Input skymodfile must be a string')
+
+    if not isinstance(filemode, str):
+        raise TypeError('Input filemode must be a string')
+    else:
+        filemode = filemode.lower()
+        if filemode not in ['a', 'w']:
+            raise ValueError('Invalid value specified for filemore')
+
+    if not isinstance(skymod, SkyModel):
+        raise TypeError('Input skymod must be an instance of class SkyModel')
+
+    if not isinstance(appendaxis, str):
+        raise TypeError('Input appendaxis must be a string')
+    else:
+        appendaxis = appendaxis.lower()
+        if appendaxis not in ['src', 'freq']:
+            raise ValueError('Invalid value specified for input appendaxis')
+
+    if not os.path.isfile(skymodfile+'.hdf5'):
+        skymod.save(skymodfile, fileformat='hdf5')
+    else:
+        with h5py.File(skymodfile+'.hdf5', filemode) as fileobj:
+            hdr_group = fileobj['header']
+            if hdr_group['spec_type'].value != skymod.spec_type:
+                raise ValueError('The spectral type in the SkyModel instance and the skymodfile do not match')
+            object_group = fileobj['object']
+            if object_group.attrs['epoch'] != skymod.epoch:
+                raise ValueError('The epochs in the SkyModel instance and the skymodfile do not match')
+            if object_group.attrs['coords'] != skymod.coords:
+                raise ValueError('The coordinate system in the SkyModel instance and the skymodfile do not match')
+            src_shape_in_file = 'shape' in object_group
+            src_shape_in_skymod = skymod.src_shape is not None
+            if src_shape_in_file != src_shape_in_skymod:
+                raise KeyError('src_shape is not consistent between the SkyModel instance and the skymodfile')
+            if skymod.coords == 'radec':
+                lon = 'RA'
+                lat = 'Dec'
+            else:
+                lon = 'Az'
+                lat = 'Alt'
+            spec_group = fileobj['spectral_info']
+            if appendaxis == 'src':
+                if skymod.frequency.size != spec_group['freq'].size:
+                    raise IndexError('The frequencies in the skymodefile and the SkyModel instance do not match')
+                if NP.any(NP.abs(skymod.frequency - spec_group['freq'].value) > 1e-14):
+                    raise ValueError('The frequencies in the skymodefile and the SkyModel instance do not match')
+                object_group['name'].resize(object_group['name'].size+skymod.name.size, axis=0)
+                object_group['name'][-skymod.name.size:] = skymod.name
+                object_group[lon].resize(object_group[lon].size+skymod.location.shape[0], axis=0)
+                object_group[lat].resize(object_group[lat].size+skymod.location.shape[0], axis=0)
+                if skymod.coords == 'radec':
+                    object_group[lon][-skymod.locations.shape[0]:] = skymod.location[:,0]
+                    object_group[lat][-skymod.locations.shape[0]:] = skymod.location[:,1]
+                else:
+                    object_group[lon][-skymod.locations.shape[0]:] = skymod.location[:,1]
+                    object_group[lat][-skymod.locations.shape[0]:] = skymod.location[:,0]
+                if src_shape_in_file:
+                    object_group['shape'].resize(object_group['shape'].shape[0]+skymod.src_shape.shape[0], axis=0)
+                    object_group['shape'][-skymod.src_shape.shape[0]:,:] = skymod.src_shape
+                if skymod.spec_type == 'func':
+                    spec_group['func-name'].resize(spec_group['func-name'].size+skymod.spec_parms['name'].size, axis=0)
+                    spec_group['func-name'][-skymod.name.size:] = skymod.spec_parms['name']
+                    spec_group['freq'].resize(spec_group['freq'].size+skymod.spec_parms['freq-ref'].size, axis=0)
+                    spec_group['freq'][-skymod.name.size:] = skymod.spec_parms['freq-ref']
+                    spec_group['flux_density'].resize(spec_group['flux_density'].size+skymod.spec_parms['flux-scale'].size, axis=0)
+                    spec_group['flux_density'][-skymod.name.size:] = skymod.spec_parms['flux-scale']
+                    if ('spindex' in spec_group) and ('power-law-index' in skymod.spec_parms):
+                        spec_group['spindex'].resize(spec_group['spindex'].size+skymod.spec_parms['power-law-index'].size, axis=0)
+                        spec_group['spindex'][-skymod.name.size:] = skymod.spec_parms['power-law-index']
+                else:
+                    spec_group['spectrum'].resize(spec_group['spectrum'].shape[0]+skymod.spectrum.shape[0], axis=0)
+                    spec_group['spectrum'][-skymod.name.size:,:] = skymod.spectrum
+            else:
+                if skymod.name.size != object_group['name'].size:
+                    raise IndexError('The objects in the skymodefile and the SkyModel instance do not match')
+                if NP.any(skymod.name != object_group['name'].value):
+                    raise ValueError('The objects in the skymodefile and the SkyModel instance do not match')
+                if skymod.coords == 'radec':
+                    if NP.any(NP.abs(skymod.location - NP.hstack((object_group['RA'].value.reshape(-1,1), object_group['Dec'].value.reshape(-1,1)))) > 1e-14):
+                        raise ValueError('The locations in the skymodefile and the SkyModel instance do not match')
+                else:
+                    if NP.any(NP.abs(skymod.location - NP.hstack((object_group['Alt'].value.reshape(-1,1), object_group['Az'].value.reshape(-1,1)))) > 1e-14):
+                        raise ValueError('The locations in the skymodefile and the SkyModel instance do not match')
+                if src_shape_in_file:
+                    if NP.any(NP.abs(skymod.src_shape - object_group['shape'].value) > 1e-14):
+                        raise ValueError('The locations in the skymodefile and the SkyModel instance do not match')
+                spec_group['freq'].resize(spec_group['freq'].size+skymod.frequency.size, axis=0)
+                spec_group['freq'][-skymod.frequency.size:] = skymod.frequency.ravel()
+                if skymod.spec_type == 'spectrum':
+                    spec_group['spectrum'].resize(spec_group['spectrum'].shape[1]+skymod.spectrum.shape[1], axis=1)
+                    spec_group['spectrum'][:,-skymod.name.size:] = skymod.spectrum
 
 #################################################################################
 
@@ -918,36 +1049,37 @@ class SkyModel(object):
                 object_group = fileobj.create_group('object')
                 object_group.attrs['epoch'] = self.epoch
                 object_group.attrs['coords'] = self.coords
-                name_dset = object_group.create_dataset('name', data=self.name, compression='gzip', compression_opts=9)
+                name_dset = object_group.create_dataset('name', (self.name.size,), maxshape=(None,), data=self.name, compression='gzip', compression_opts=9)
                 if self.coords == 'radec':
-                    ra_dset = object_group.create_dataset('RA', data=self.location[:,0], compression='gzip', compression_opts=9)
+                    ra_dset = object_group.create_dataset('RA', (self.location.shape[0],), maxshape=(None,), data=self.location[:,0], compression='gzip', compression_opts=9)
                     ra_dset.attrs['units'] = 'degrees'
-                    dec_dset = object_group.create_dataset('Dec', data=self.location[:,1], compression='gzip', compression_opts=9)
+                    dec_dset = object_group.create_dataset('Dec', (self.location.shape[0],), maxshape=(None,), data=self.location[:,1], compression='gzip', compression_opts=9)
                     dec_dset.attrs['units'] = 'degrees'
                 elif self.coords == 'altaz':
-                    alt_dset = object_group.create_dataset('Alt', data=self.location[:,0], compression='gzip', compression_opts=9)
+                    alt_dset = object_group.create_dataset('Alt', (self.location.shape[0],), maxshape=(None,), data=self.location[:,0], compression='gzip', compression_opts=9)
                     alt_dset.attrs['units'] = 'degrees'
-                    az_dset = object_group.create_dataset('Az', data=self.location[:,1], compression='gzip', compression_opts=9)
+                    az_dset = object_group.create_dataset('Az', (self.location.shape[0],), maxshape=(None,), data=self.location[:,1], compression='gzip', compression_opts=9)
                     az_dset.attrs['units'] = 'degrees'
                 else:
                     raise ValueError('This coordinate system is not currently supported')
                 if self.src_shape is not None:
-                    src_shape_dset = object_group.create_dataset('shape', data=self.src_shape, compression='gzip', compression_opts=9)
+                    src_shape_dset = object_group.create_dataset('shape', self.src_shape.shape, maxshape=(None,self.src_shape.shape[1]), data=self.src_shape, compression='gzip', compression_opts=9)
                     src_shape_dset.attrs['units'] = 'degrees'
 
                 spec_group = fileobj.create_group('spectral_info')
                 if self.spec_type == 'func':
-                    spec_group['func-name'] = self.spec_parms['name']
-                    freq_dset = spec_group.create_dataset('freq', data=self.spec_parms['freq-ref'], compression='gzip', compression_opts=9)
+                    # spec_group['func-name'] = self.spec_parms['name']
+                    func_name_dset = spec_group.create_dataset('func-name', self.spec_parms['name'].shape, maxshape=(None,), data=self.spec_parms['name'])
+                    freq_dset = spec_group.create_dataset('freq', self.spec_parms['freq-ref'].shape, maxshape=(None,), data=self.spec_parms['freq-ref'], compression='gzip', compression_opts=9)
                     freq_dset.attrs['units'] = 'Hz'
-                    flux_dset = spec_group.create_dataset('flux_density', data=self.spec_parms['flux-scale'], compression='gzip', compression_opts=9)
+                    flux_dset = spec_group.create_dataset('flux_density', self.spec_parms['flux-scale'].shape, maxshape=(None,), data=self.spec_parms['flux-scale'], compression='gzip', compression_opts=9)
                     flux_dset.attrs['units'] = 'Jy'
                     if NP.all(self.spec_parms['name'] == 'power-law'):
-                        spindex_dset = spec_group.create_dataset('spindex', data=self.spec_parms['power-law-index'], compression='gzip', compression_opts=9)
+                        spindex_dset = spec_group.create_dataset('spindex', self.spec_parms['power-law-index'].shape, maxshape=(None,), data=self.spec_parms['power-law-index'], compression='gzip', compression_opts=9)
                 else:
-                    freq_dset = spec_group.create_dataset('freq', data=self.frequency.ravel(), compression='gzip', compression_opts=9)
+                    freq_dset = spec_group.create_dataset('freq', (self.frequency.size,), maxshape=(None,), data=self.frequency.ravel(), compression='gzip', compression_opts=9)
                     freq_dset.attrs['units'] = 'Hz'
-                    spectrum_dset = spec_group.create_dataset('spectrum', data=self.spectrum, compression='gzip', compression_opts=9)
+                    spectrum_dset = spec_group.create_dataset('spectrum', self.spectrum.shape, maxshape=(None,None), data=self.spectrum, compression='gzip', compression_opts=9)
         else:
             outfile = outfile + '.txt'
             frmts = {}

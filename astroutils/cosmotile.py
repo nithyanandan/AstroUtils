@@ -2,6 +2,7 @@ import os, sys
 from os.path import basename
 import numpy as NP
 from scipy import interpolate
+import scipy as SP
 import healpy as HP
 import h5py
 import astropy.cosmology as cosmology
@@ -11,6 +12,7 @@ import time, warnings
 import constants as CNST
 import catalog as SM
 import mathops as OPS
+import DSP_modules as DSP
 
 #################################################################################
 
@@ -18,7 +20,8 @@ def read_21cmfast_cube(cubefile, dtype=NP.float32):
     
     """
     -----------------------------------------------------------------------------
-    Read 21cmfast cosmological cubes -- coeval or lightcone versions
+    Read 21cmfast cosmological cubes -- coeval or lightcone versions. Use faster
+    version fastread_21cmfast_cube()
 
     Inputs:
 
@@ -83,6 +86,192 @@ def fastread_21cmfast_cube(cubefile, dtype=NP.float32):
     if sys.byteorder == 'big':
         data = data.byteswap()
     data = data.reshape((dim, dim, dim), order='F') # it has to be read in F-order
+    return data
+
+#################################################################################
+
+def cube_smooth_downsample_save(inpdict):
+    
+    """
+    -----------------------------------------------------------------------------
+    Read, smooth, downsample and save a cube
+
+    Inputs:
+
+    inpdict     [dictionary] It should contain the following keys and values:
+                'infile'    [string] Filename containing the raw coeval cube in
+                            binary format
+                'process_stage'
+                            [string] Indicates whether the input file is 'raw'
+                            (default) or 'processed' 
+                'smooth_axes'
+                            [int or list/array of ints] Axes to be smoothed as a
+                            list. 
+                'smooth_scale'
+                            [int, float or list] Smoothing scales (in units of 
+                            pixels). If it is a scalar, it will be applied to all
+                            axes specified in 'smooth_axes' otherwise if given as
+                            a list, its length must match the number of elements 
+                            in 'smooth_axes'. If set to None, no smoothing is 
+                            done.
+                'downsample_axes'
+                            [int or list/array of ints] Axes to be downsampled 
+                            as a list. Value under 'indata' must contain these 
+                            axes
+                'downsample_factor'
+                            [int, float or list] Downsampling factor. If it is a 
+                            scalar, it will be applied to all axes specified in 
+                            'downsample_axes' otherwise if given as
+                            a list, its length must match the number of elements 
+                            in 'downsample_axes'. If set to None, no downsampling 
+                            is done.
+                'outfile'   [string] Filename to save the smoothed and optionally 
+                            downsampled cube in HDF5 format. No extension should 
+                            be provided as it will be determined internally
+    -----------------------------------------------------------------------------
+    """
+
+    process_stage = 'raw'
+    if 'process_stage' in inpdict:
+        if inpdict['process_stage'].lower() not in ['raw', 'processed']:
+            raise ValueError('Process stage of input data must be set to "raw" or "processed"')
+        process_stage = inpdict['process_stage'].lower()
+            
+    if process_stage == 'raw':
+        data = fastread_21cmfast_cube(inpdict['infile'])
+    else:
+        data, hdrinfo = read_coeval_cube(inpdict['infile'])
+    indata_dims = NP.asarray(data.shape)
+    smooth_downsample_dict = {'indata': data, 'smooth_axes': inpdict['smooth_axes'], 'downsample_axes': inpdict['downsample_axes'], 'smooth_scale': inpdict['smooth_scale'], 'downsample_factor': inpdict['downsample_factor']}
+    data = smooth_downsample_cube(smooth_downsample_dict)
+    if process_stage == 'raw':
+        inpres = inpdict['inpres']
+    else:
+        inpres = hdrinfo['pixres']
+    outres = inpres * indata_dims / NP.asarray(data.shape)
+    hdrinfo = {'pixres': outres}
+    write_coeval_cube(data, inpdict['outfile'], hdrinfo=hdrinfo)
+
+#################################################################################
+
+def smooth_downsample_cube(inpdict):
+    
+    """
+    -----------------------------------------------------------------------------
+    Smooth a cube and optionally downsample
+
+    Inputs:
+
+    inpdict     [dictionary] contains info for smoothing and downsampling. It has
+                the following keys and values:
+                'indata'    [numpy array] Coeval cube. Usually it is in 3D
+                'smooth_axes'
+                            [int or list/array of ints] Axes to be smoothed as a
+                            list. Value under 'indata' must contain these axes
+                'smooth_scale'
+                            [int, float or list] Smoothing scales (in units of 
+                            pixels). If it is a scalar, it will be applied to all
+                            axes specified in 'smooth_axes' otherwise if given as
+                            a list, its length must match the number of elements 
+                            in 'smooth_axes'. If set to None, no smoothing is 
+                            done.
+                'downsample_axes'
+                            [int or list/array of ints] Axes to be downsampled 
+                            as a list. Value under 'indata' must contain these 
+                            axes
+                'downsample_factor'
+                            [int, float or list] Downsampling factor. If it is a 
+                            scalar, it will be applied to all axes specified in 
+                            'downsample_axes' otherwise if given as
+                            a list, its length must match the number of elements 
+                            in 'downsample_axes'. If set to None, no downsampling 
+                            is done.
+
+    Output:
+
+    Numpy array containing the smoothed (and optionally downsampled) cube
+    -----------------------------------------------------------------------------
+    """
+
+    data = inpdict['indata']
+    if not isinstance(data, NP.ndarray):
+        raise TypeError('Value in key "indata" must be a numpy array')
+
+    if 'smooth_axes' in inpdict:
+        smooth_axes = inpdict['smooth_axes']
+        if smooth_axes is not None:
+            if isinstance(smooth_axes, int):
+                smooth_axes = NP.asarray(smooth_axes).reshape(-1)
+            elif isinstance(smooth_axes, (list, NP.ndarray)):
+                smooth_axes = NP.asarray(smooth_axes).reshape(-1)
+            else:
+                raise TypeError('Value under key "smooth_axes" must be an integer or numpy array')
+    
+            smooth_axes = NP.unique(smooth_axes)
+            if NP.any(smooth_axes >= data.ndim):
+                raise ValueError('One or more of smoothing axis not found in input array')
+    else:
+        smooth_axes = None
+
+    if 'downsample_axes' in inpdict:
+        downsample_axes = inpdict['downsample_axes']
+        if downsample_axes is not None:
+            if isinstance(downsample_axes, int):
+                downsample_axes = NP.asarray(downsample_axes).reshape(-1)
+            elif isinstance(downsample_axes, (list, NP.ndarray)):
+                downsample_axes = NP.asarray(downsample_axes).reshape(-1)
+            else:
+                raise TypeError('Value under key "downsample_axes" must be an integer or numpy array')
+        
+            downsample_axes = NP.unique(downsample_axes)
+            if NP.any(downsample_axes >= data.ndim):
+                raise ValueError('One or more of downsample axis not found in input array')
+    else:
+        downsample_axes = None
+    
+    if 'smooth_scale' in inpdict:
+        smooth_scale = inpdict['smooth_scale']
+        if smooth_scale is not None:
+            if isinstance(smooth_scale, (int,float,list,NP.ndarray)):
+                smooth_scale = NP.asarray(smooth_scale).reshape(-1)
+            else:
+                raise TypeError('Value under key "smooth_scale" is not of the correct type')
+            if smooth_axes is None:
+                smooth_axes = NP.arange(data.ndim)
+            if smooth_scale.size == 1:
+                smooth_scale = smooth_scale + NP.zeros(smooth_axes.size)
+            elif smooth_scale.size != smooth_axes.size:
+                raise ValueError('Smooth scales and axes not compatible')
+    else:
+        smooth_scale = None
+
+    if 'downsample_factor' in inpdict:
+        downsample_factor = inpdict['downsample_factor']
+        if downsample_factor is not None:
+            if isinstance(downsample_factor, (int,float,list,NP.ndarray)):
+                downsample_factor = NP.asarray(downsample_factor).reshape(-1)
+            else:
+                raise TypeError('Value under key "downsample_factor" is not of the correct type')
+            if downsample_axes is None:
+                downsample_axes = NP.arange(data.ndim)
+            if downsample_factor.size == 1:
+                downsample_factor = downsample_factor + NP.zeros(downsample_axes.size)
+            elif downsample_factor.size != downsample_axes.size:
+                raise ValueError('Downsample factors and axes not compatible')
+    else:
+        downsample_factor = None
+
+    if smooth_scale is not None:
+        if smooth_scale.size == data.ndim:
+            data = SP.ndimage.filters.gaussian_filter(data, smooth_scale)
+        else:
+            for si, smax in enumerate(smooth_axes):
+                data = SP.ndimage.filters.gaussian_filter1d(data, smooth_scale[si], axis=smax)
+
+    if downsample_factor is not None:
+        for di, dsax in enumerate(downsample_axes):
+            data = DSP.downsampler(data, downsample_factor[di], axis=dsax)
+
     return data
 
 #################################################################################
@@ -211,6 +400,11 @@ def interp_coevalcubes_inpdict(inpdict):
         cube_source = None
 
     try:
+        process_stage
+    except NameError:
+        process_stage = 'raw'
+        
+    try:
         interp_method
     except NameError:
         interp_method = 'linear'
@@ -225,13 +419,13 @@ def interp_coevalcubes_inpdict(inpdict):
     except NameError:
         returncubes = True
 
-    return interp_coevalcubes(invals, outvals, inpcubes=inpcubes, cubefiles=cubefiles, cubedims=cubedims, cube_source=cube_source, interp_method=interp_method, outfiles=outfiles, returncubes=returncubes)
+    return interp_coevalcubes(invals, outvals, inpcubes=inpcubes, cubefiles=cubefiles, cubedims=cubedims, cube_source=cube_source, process_stage=process_stage, interp_method=interp_method, outfiles=outfiles, returncubes=returncubes)
 
 #################################################################################
 
 def interp_coevalcubes(invals, outvals, inpcubes=None, cubefiles=None,
-                       cubedims=None, cube_source=None, interp_method='linear',
-                       outfiles=None, returncubes=True):
+                       cubedims=None, cube_source=None, process_stage='raw', 
+                       interp_method='linear', outfiles=None, returncubes=True):
 
     """
     -----------------------------------------------------------------------------
@@ -278,6 +472,10 @@ def interp_coevalcubes(invals, outvals, inpcubes=None, cubefiles=None,
 
     cube_source [string] Source of input cubes. At the moment, the accepted 
                 values are '21cmfast'
+
+    process_stage
+                [string] Indicates whether the input file is 'raw' (default) or 
+                'processed' 
 
     method      [string] Method of interpolation across coeval cubes along axis
                 for which invals are provided. Usually it is the spectral, 
@@ -331,6 +529,10 @@ def interp_coevalcubes(invals, outvals, inpcubes=None, cubefiles=None,
         else:
             raise TypeError('outfiles must be a string or list of strings')
 
+    assert isinstance(process_stage, str), 'Input process_stage must be a string'
+    if process_stage.lower() not in ['raw', 'processed']:
+        raise ValueError('Input process_stage must be set to "raw" or "processed"')
+
     if (cubefiles is None) and (inpcubes is None):
         raise ValueError('One of the inputs cubefiles and inpcubes must be specified')
     elif (cubefiles is not None) and (inpcubes is not None):
@@ -354,7 +556,10 @@ def interp_coevalcubes(invals, outvals, inpcubes=None, cubefiles=None,
             print '\nReading in 21cmfast cubes...'
             ts = time.time()
 
-            inpcubes = [fastread_21cmfast_cube(cubefile) for cubefile in cubefiles]
+            if process_stage.lower() == 'raw':
+                inpcubes = [fastread_21cmfast_cube(cubefile) for cubefile in cubefiles]
+            else:
+                inpcubes = [read_coeval_cube(cubefile)[0] for cubefile in cubefiles]
 
             te = time.time()
             print 'Reading 21cmfast cubes took {0:.1f} seconds'.format(te-ts)
@@ -380,7 +585,7 @@ def interp_coevalcubes(invals, outvals, inpcubes=None, cubefiles=None,
 
     if outfiles is not None:
         for fi,outfile in enumerate(outfiles):
-            write_coeval_cube(outfile, outcubes[fi])
+            write_coeval_cube(outcubes[fi], outfile)
 
     if returncubes:
         return outcubes
@@ -945,13 +1150,108 @@ def write_lightcone_surfaces(light_cone_surfaces, units, outfile, freqs,
         hdr_grp['units'] = units
         hdr_grp['is_healpix'] = int(is_healpix)
         spec_grp = fileobj.create_group('specinfo')
-        spec_grp['freqs'] = freqs
-        spec_grp['freqs'].attrs['units'] = 'Hz'
+        # spec_grp['freqs'] = freqs
+        freq_dset = spec_grp.create_dataset('freqs', (freqs.size,), maxshape=(None,), data=freqs.ravel())
+        freq_dset.attrs['units'] = 'Hz'
         cosmo_grp = fileobj.create_group('cosmology')
         for key in cosmoinfo:
             cosmo_grp[key] = cosmoinfo[key]
         surfaces_grp = fileobj.create_group('skyinfo')
-        dset = surfaces_grp.create_dataset('surfaces', data=light_cone_surfaces, chunks=(1,light_cone_surfaces.shape[1]), compression='gzip', compression_opts=9)
+        dset = surfaces_grp.create_dataset('surfaces', light_cone_surfaces.shape, maxshape=(None, None), data=light_cone_surfaces, chunks=(1,light_cone_surfaces.shape[1]), compression='gzip', compression_opts=9)
+
+#################################################################################
+
+def append_lightcone_surfaces(light_cone_surfaces, filename, appendaxis, 
+                              units=None, freqs=None):
+
+    """
+    -----------------------------------------------------------------------------
+    Append light cone surfaces to HDF5 file if it already exists
+
+    Inputs:
+
+    light_cone_surfaces
+                [numpy array] Light cone surfaces. Must be of shape nchan x npix
+
+    filename    [string] Filename to write the output to
+
+    units       [string] Units of the values in light_cone_surfaces. Default=None
+                means use the units that exist in the HDF5 file.
+
+    freqs       [numpy array] The frequencies corresponding to the surfaces. 
+                It is of size nchan and units in 'Hz'. If set to None, the input
+                appendaxis must be set to 'src' to append along the 'src' axis. 
+                Otherwise, freqs must be specified to append along the frequency
+                axis.
+
+    appendaxis  [string] Axis along which the specified skymod data has to be 
+                appended. Accepted values are 'freq' (append along frequency
+                axis) or 'src' (append along source location axis). All other 
+                axes and attributes must match.
+    -----------------------------------------------------------------------------
+    """
+
+    try:
+        light_cone_surfaces, filename, appendaxis
+    except NameError:
+        raise NameError('Input light_cone_surfaces, filename, and appendaxis must be specified')
+
+    if not isinstance(filename, str):
+        raise TypeError('Input filename must be a string')
+
+    if not isinstance(light_cone_surfaces, NP.ndarray):
+        raise TypeError('Input light_cone_surfaces must be a numpy array')
+
+    if not isinstance(appendaxis, str):
+        raise TypeError('Input appendaxis must be a string')
+    else:
+        appendaxis = appendaxis.lower()
+        if appendaxis not in ['src', 'freq']:
+            raise ValueError('Invalid value specified for input appendaxis')
+    
+    if units is not None:
+        if not isinstance(units, str):
+            raise TypeError('Input units must be a string')
+    if freqs is not None:
+        if not isinstance(freqs, NP.ndarray):
+            raise TypeError('Input freqs must be a numpy array')
+
+    # if cosmo is not None:
+    #     if isinstance(cosmo, dict):
+    #         cosmokeys = ['Om0', 'Ode0', 'h', 'Ob0', 'w0']
+    #         for ckey in cosmokeys:
+    #             if ckey not in cosmo:
+    #                 raise KeyError('Input cosmo dictionary does not have the required key {0}'.format(ckey))
+    #     elif not isinstance(cosmo, cosmology.FLRW):
+    #         raise TypeError('Input cosmo must be a dictionary or an instance of class cosmology')
+
+    if not os.path.isfile(filename):
+        write_lightcone_surfaces(light_cone_surfaces, units, filename, freqs)
+    else:
+        with h5py.File(filename, 'a') as fileobj:
+            if freqs is not None:
+                if appendaxis != 'freq':
+                    if freqs.size != fileobj['specinfo']['freqs'].size:
+                        raise ValueError('Size of frequencies does not match with that in ')
+                    freqs_in_file = fileobj['specinfo']['freqs'].value
+                    if NP.any(NP.abs(freqs - fileobj['specinfo']['freqs'].value) > 1e-14):
+                        raise ValueError('The specified frequencies and that in the file do not match')
+            else:
+                if appendaxis != 'src':
+                    raise ValueError('Frequencies to append not specified')
+                if fileobj['skyinfo']['surfaces'].shape[0] != light_cone_surfaces.shape[0]:
+                    raise ValueError('Number of sources in light_cone_surfaces and the HDF5 file do not match')
+            if appendaxis == 'freq':
+                fileobj['specinfo']['freqs'].resize(fileobj['specinfo']['freqs'].size+freqs.size, axis=0)
+                fileobj['specinfo']['freqs'][-freqs.size:] = freqs.ravel()
+                fileobj['skyinfo']['surfaces'].resize(fileobj['skyinfo']['surfaces'].shape[0]+freqs.size, axis=0)
+                fileobj['skyinfo']['surfaces'][-freqs.size:,:] = light_cone_surfaces
+            else:
+                fileobj['skyinfo']['surfaces'].resize(fileobj['skyinfo']['surfaces'].shape[1]+light_cone_surfaces.shape[1], axis=1)
+                fileobj['skyinfo']['surfaces'][:,-light_cone_surfaces.shape[0]:] = light_cone_surfaces
+            if fileobj['header']['is_healpix']:
+                if not HP.isnpixok(fileobj['skyinfo']['surfaces'].shape[1]):
+                    fileobj['header']['is_healpix'] = False
 
 #################################################################################
 
@@ -1038,3 +1338,75 @@ def write_lightcone_catalog(init_parms, outfile=None, action='return'):
         return skymod
 
 #################################################################################
+
+def write_coeval_cube(data, outfile, hdrinfo=None):
+
+    """
+    -----------------------------------------------------------------------------
+    Write cosmological coeval cubes to HDF5 file
+
+    Inputs:
+
+    data        [numpy array] Coeval cube. Usually 3D.
+
+    outfile     [string] Filename including full path where the data is to be
+                saved in HDF5 format. It should not include the extension as it
+                will be determined internally
+
+    hdrinfo     [dictionary] Any header information in the form of a dictionary
+    -----------------------------------------------------------------------------
+    """
+
+    if not isinstance(data, NP.ndarray):
+        raise TypeError('Input data must be a numpy array')
+
+    if not isinstance(outfile, str):
+        raise TypeError('outfile must be a string')
+
+    with h5py.File(outfile, 'w') as fileobj:
+        if hdrinfo is not None:
+            if not isinstance(hdrinfo, dict):
+                raise TypeError('Input hdrinfo must be a dictionary')
+            hdr_grp = fileobj.create_group('header')
+            for key in hdrinfo:
+                hdr_grp[key] = hdrinfo[key]
+
+        dset = fileobj.create_dataset('data', data=data, compression='gzip', compression_opts=9)
+        
+#################################################################################
+
+def read_coeval_cube(infile):
+
+    """
+    -----------------------------------------------------------------------------
+    Read processed cosmological coeval cubes from HDF5 file
+
+    Inputs:
+
+    infile      [string] Filename including full path where the processed data 
+                is to be read in HDF5 format. It should not include the extension 
+                as it will be determined internally
+
+    Output:
+
+    Tuple containing processed 21cmfast coeval cube as a 3D numpy array and a 
+    dictionary that contains header information (set to None if no header info 
+    found)
+    -----------------------------------------------------------------------------
+    """
+
+    if not isinstance(infile, str):
+        raise TypeError('infile must be a string')
+
+    hdrinfo = None
+    with h5py.File(infile, 'r') as fileobj:
+        if 'header' in fileobj:
+            hdrinfo = {key: fileobj['header'][key].value for key in fileobj['header']}
+        if 'data' not in fileobj:
+            raise KeyError('Input HDF5 file does not contain data')
+        data = fileobj['data'].value
+
+    return (data, hdrinfo)
+
+#################################################################################
+

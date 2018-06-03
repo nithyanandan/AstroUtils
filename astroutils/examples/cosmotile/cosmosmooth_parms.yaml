@@ -21,19 +21,7 @@ dirstruct   :
                                 # set to null (default), no prefix
                                 # is assumed
 
-    interpdir       : null
-                                # Folder to store interpolated
-                                # coeval cubes. If set to nul
-                                # (default), interpolated coeval
-                                # cubes will not be saved
-
-    write           : true
-                                # If set to true (default), write
-                                # the lightcone surfaces to disk
-                                # as specified by outdir and
-                                # outfile_prefix parameters below
-
-    outdir          : '/data3/t_nithyanandan/EoR_models/21cmFAST/Andrei_Mesinger/Faint_galaxies_1024_coeval/sphsurfaces/'
+    outdir          : '/data3/t_nithyanandan/EoR_models/21cmFAST/Andrei_Mesinger/Faint_galaxies_1024_coeval/smoothed/'
                                 # Output folder to put the spherical
                                 # surfaces
 
@@ -137,117 +125,31 @@ sim         :
                                 # Accepted values are 'K' (default)
                                 # and 'mK'
 
-    process_stage : 'processed'
-                                # Specifies if the input cubes are
-                                # 'raw' or 'processed' (smoothing
-                                # and/or downsampling)
-
 ########## Output parameters ##########
 
 output      :
                                 # Output parameters
 
-    redshifts       : null
-                                # Output redshifts. If set to
-                                # null, frequencies (see below) will
-                                # be checked for non-null values.
-                                # If both redshifts and frequencies
-                                # are set to null, frequency 
-                                # parameters below will be used. 
-                                # Otherwise it must be a list of 
-                                # redshifts and frequency parameters 
-                                # will be ignored
-
-    frequencies     : null
-                                # Output frequencies as a list.
-                                # Allows specifying arbitrary list
-                                # of frequencies. Will be checked
-                                # if redshifts is not null. If both
-                                # redshifts and frequencies are null,
-                                # frequency parameters below will be
-                                # used, otherwise they will be ignored
-
-    f0              : 150000000.0
-                                # Center frequency (in Hz)
-
-    freq_resolution : 390625.0
-                                # Frequency resolution (in Hz)
-
-    nchan           : 256
-                                # Number of channels
-
-    rest_frequency  : 1420405751.77
-                                # Rest frequency (in Hz). Default is
-                                # for HI spin flip transition
-
-    skymodel        : true
-                                # If true (default), an instance of
-                                # class SkyModel is to be created and
-                                # saved depending on the parameter
-                                # 'write'. Otherwise, just save raw
-                                # lightcone surfaces.
-                                
     nside           : null
                                 # NSIDE parameter if HEALPIX output
                                 # is desired. If set to null
-                                # (default), specific colatitude and
-                                # longitude parameters below must be
-                                # used. If nside is set, the co-lat
-                                # and longitude parameters below are
-                                # ignored.
-
-    theta_range     : [80.0, 100.0]
-                                # Range of theta (co-latitude) in
-                                # degrees. If nside is not set, these
-                                # parameters are used to determine
-                                # specific patches on the sphere.
-                                # All latitudes such as dec, alt, or
-                                # galactic latitudes must be converted
-                                # to the corresponding theta
-
-    phi_range       : [80.0, 100.0]
-                                # Range of phi (longitude) in degrees.
-                                # If nside is not set, there
-                                # parameters are used to determine
-                                # specific patches on the sphere. 
-                                # All longitudes such as ra, az, or
-                                # galactic longitudes must be 
-                                # converted to the corresponding phi
+                                # (default), angres parameter below
+                                # will be used. 
 
     angres          : 1.0
-                                # Angular resolution (in degrees)
-                                # to generate theta and phi on a
-                                # spherical patch. The final angular
-                                # resolution will be equal or finer
-                                # than this. It will be assumed to
-                                # be FWHM. Applies only if nside is
-                                # set to null
+                                # Angular resolution (in arcmin)
+                                # to smooth output cubes to. Will be
+                                # used if nside is set to null
 
 ########## Processing parameters ##########
 
 processing  :
                                 # Processing parameters
 
-    write_mode      : null
-                                # Mode to write data out. If set to
-                                # null (default), all surfaces will
-                                # be written out at once. If set to
-                                # 'append' light cone surfaces will
-                                # be appended incrementally.
-                                # Currently applies only if parallel
-                                # is set to false.
-
     parallel        : false
                                 # If set to true (parallelize using
                                 # multiprocessing), otherwise set
-                                # to false (default). Setting this
-                                # to true does not seem to help. 
-
-    prll_type       : 1
-                                # If set to 1 (default), one spherical
-                                # patch will be computed per process.
-                                # If set to 2, multiple spherical
-                                # patches will be computed per process
+                                # to false (default)
 
     nproc           : 16
                                 # Number of parallel threads if
