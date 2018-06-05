@@ -1,3 +1,11 @@
+From d7c468f (cosmotiling-adv):
+==============================
+
+In astroutils/examples/cosmotile_parms.yaml,
+
+(*) Minor update to description of parameter infile_suffix
+(*) Minor update to description of parameter z_identifier
+
 From 06a9378 (cosmotiling-adv), 971d0be (master):
 ================================================
 

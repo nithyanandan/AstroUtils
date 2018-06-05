@@ -17,7 +17,7 @@ dirstruct   :
                                 # is assumed
 
     infile_suffix   : null
-                                # prefix for selecting infiles. If
+                                # suffix for selecting infiles. If
                                 # set to null (default), no prefix
                                 # is assumed
 
@@ -68,7 +68,7 @@ format     :
     z_identifier    : 'z'
                                 # This string is present in the
                                 # delimited filename either before
-                                # of after (see z_identifier_place)
+                                # or after (see z_identifier_place)
                                 # the redshift value. If no such
                                 # identifier string present, set to
                                 # null (default)
