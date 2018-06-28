@@ -1,3 +1,13 @@
+From 27f3a7b (master):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Import modules numpy.ma, skimage.restoration, and
+astropy.convolution
+(*) Add function smooth_masked_array_1D() along with docstring
+(*) Add function phase_unwrap_1D() along with docstring
+
 From d7c468f (cosmotiling-adv):
 ==============================
 

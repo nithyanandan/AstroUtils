@@ -1,6 +1,9 @@
 import numpy as NP
+import numpy.ma as MA
 import scipy as SP
 from scipy import interpolate
+from skimage.restoration import unwrap_phase
+import astropy.convolution as CONV
 import healpy as HP
 import DSP_modules as DSP
 import lookup_operations as LKP
@@ -670,3 +673,218 @@ def percentiles_to_2D_contour_levels(pdf, percentiles):
     return cntr_levels
 
 #################################################################################
+
+def smooth_masked_array_1D(maskarr, smooth_parms, axis=-1, boundary='fill',
+                           fill_value=0., nan_treatment='interpolate',
+                           normalize_kernel=True, preserve_nan=False,
+                           normalization_zero_tol=1e-8):
+
+    """
+    -----------------------------------------------------------------------------
+    Smooth a multi-dimensional array including masked arrays or arrays with 
+    missing (NaN) values along a specified axis. It is a wrapper for 
+    astropy.convolution module but along a single specified axis.
+
+    Inputs:
+
+    maskarr     [numpy array or masked array] Numpy array (possibly including 
+                NaN) or masked array to be smoothed.
+
+    smooth_parms
+                [dictionary] Dictionary specifying smoothing parameters. It has
+                the following keys and values:
+                'op_type'       [string] Specifies the smoothing kernel.
+                                Must be specified (no default). Accepted values are
+                                'tophat' (astropy.convolution) and 'gaussian' 
+                                (astropy.convolution)
+                'window_size'   [integer (optional)] Specifies the size of the
+                                interpolating/smoothing kernel. The kernel is a 
+                                tophat function when 'op_type' is set to 'tophat'
+                                and refers to FWHM when 'op_type' is set to 
+                                'gaussian'
+    
+    axis        [integer] Axis along which smoothing is to be done. Must be an 
+                integer. Default=-1 (last axis)
+
+    boundary    [str (optional)] A flag indicating how to handle boundaries. 
+                Accepted values are:
+                * `None`
+                    Set the ``result`` values to zero where the kernel
+                    extends beyond the edge of the array.
+                * 'fill'
+                    Set values outside the array boundary to ``fill_value`` 
+                    (default).
+                * 'wrap'
+                    Periodic boundary that wrap to the other side of ``array``.
+                * 'extend'
+                    Set values outside the array to the nearest ``array``
+                    value.
+
+    fill_value  [float (optional)] The value to use outside the array when 
+                using ``boundary='fill'``
+
+    normalize_kernel 
+                [bool (optional)] Whether to normalize the kernel to have a sum 
+                of one prior to convolving
+    nan_treatment 
+                [string (optional)] Accepted values are 'interpolate', 'fill'. 
+                'interpolate' will result in renormalization of the kernel at 
+                each position ignoring (pixels that are NaN in the image) in 
+                both the image and the kernel. 'fill' will replace the NaN 
+                pixels with a fixed numerical value (default zero, see 
+                ``fill_value``) prior to convolution. Note that if the kernel 
+                has a sum equal to zero, NaN interpolation is not possible and 
+                will raise an exception
+
+    preserve_nan 
+                [bool (optional)] After performing convolution, should pixels 
+                that were originally NaN again become NaN?
+
+    normalization_zero_tol 
+                [float (optional)] The absolute tolerance on whether the 
+                kernel is different than zero. If the kernel sums to zero to 
+                within this precision, it cannot be normalized. Default is 
+                "1e-8".
+
+    Output:
+
+    Masked array containing smoothed array. Same shape as input maskarr.
+    -----------------------------------------------------------------------------
+    """
+
+    if not isinstance(maskarr, (NP.ndarray,MA.MaskedArray)):
+        raise TypeError('Input maskarr must be a numpy array or an instance of class Masked Array')
+    if not isinstance(axis, int):
+        raise TypeError('Input axis must be a scalar')
+    if not isinstance(smooth_parms, dict):
+        raise TypeError('Input smooth_parms must be a dictionary')
+    if 'op_type' not in smooth_parms:
+        raise KeyError('Key "op_type" not found in input smooth_parms')
+    if smooth_parms['op_type'].lower() not in ['gaussian', 'tophat']:
+        raise ValueError('op_type specified in smooth_parms currently not supported')
+    if smooth_parms['op_type'].lower() in ['gaussian', 'tophat']:
+        if 'window_size' not in smooth_parms:
+            raise KeyError('Input "window_size" not found in smooth_parms')
+        if smooth_parms['window_size'] <= 0:
+            raise ValueError('Filter window size must be positive')
+    if isinstance(maskarr, MA.MaskedArray):
+        maskarr_filled = MA.filled(maskarr, NP.nan)
+    else:
+        maskarr_filled = NP.copy(maskarr)
+    if NP.iscomplexobj(maskarr):
+        maskarr_filled[NP.isnan(maskarr)] += 1j * NP.nan # Make imaginary part NaN
+    maskarr_reshaped = NP.moveaxis(maskarr_filled, axis, maskarr.ndim-1)
+    reshaped_shape = maskarr_reshaped.shape
+    if smooth_parms['op_type'].lower() == 'gaussian':
+        fwhm = smooth_parms['window_size']
+        x_sigma = fwhm / (2.0 * NP.sqrt(2.0 * NP.log(2.0)))
+        kernel1D = CONV.Gaussian1DKernel(x_sigma)
+    elif smooth_parms['op_type'].lower() == 'tophat':
+        if smooth_parms['window_size'] % 2 == 0:
+            smooth_parms['window_size'] += 1
+        kernel1D = CONV.Box1DKernel(smooth_parms['window_size'])
+    kernel = CONV.CustomKernel(kernel1D.array[NP.newaxis,:]) # Make a 2D kernel from the 1D kernel where it spans only one element in the new axis
+    if NP.iscomplexobj(maskarr):
+        maskarr_smoothed = CONV.convolve(maskarr_reshaped.real.reshape(-1,reshaped_shape[-1]), kernel, boundary='extend', fill_value=NP.nan, nan_treatment='interpolate') + 1j * CONV.convolve(maskarr_reshaped.imag.reshape(-1,reshaped_shape[-1]), kernel, boundary='extend', fill_value=NP.nan, nan_treatment='interpolate')
+    else:
+        maskarr_smoothed = CONV.convolve(maskarr_reshaped.reshape(-1,reshaped_shape[-1]), kernel, boundary='extend', fill_value=NP.nan, nan_treatment='interpolate')
+    maskarr_smoothed = maskarr_smoothed.reshape(reshaped_shape)
+    maskarr_smoothed = NP.moveaxis(maskarr_smoothed, maskarr.ndim-1, axis)
+
+    if isinstance(maskarr, MA.MaskedArray):
+        mask = NP.isnan(maskarr_smoothed)
+        return MA.array(maskarr_smoothed, mask=mask, fill_value=NP.nan)
+    else:
+        return maskarr_smoothed
+
+#################################################################################
+
+def phase_unwrap_1D(phase, axis=-1, wrap_around=False, seed=None, tol=NP.pi):
+
+    """
+    -----------------------------------------------------------------------------
+    Unwrap the phases of a multi-dimensional array along the specified axis. 
+    Wrapper to skimage.restoration.unwrap_phase() to take care of certain 
+    inconsistencies (large jumps) and also to numpy.unwrap while handling masked 
+    arrays. 
+
+    Inputs:
+
+    phase       [numpy array or masked array] Multi-dimensional numpy or masked 
+                array containing phases (in radians).
+
+    axis        [integer] Axis along which unwrapping is to be done. Must be an 
+                integer. Default=-1 (last axis)
+
+    tol         [scalar] Tolerance (in radians) to check for smoothness. If the
+                the unwrapped phases are not smooth to this level of tolerance,
+                those pixels are masked in the output. Default=pi.
+
+    wrap_around [bool or sequence of bool (optional)] When an element of the 
+                sequence is  `True`, the unwrapping process will regard the 
+                edges along the corresponding axis of the image to be connected 
+                and use this connectivity to guide the phase unwrapping process. 
+                If only a single boolean is given, it will apply to all axes. 
+                Wrap around is not supported for 1D arrays.
+
+    seed        [int (optional)] Unwrapping 2D or 3D images uses random 
+                initialization. This sets the seed of the PRNG to achieve 
+                deterministic behavior.
+
+    Output:
+
+    Masked array containing the unwrapped phase array, with same shape as input
+    array phase. Besides the original mask (if present), any unsmooth behavior 
+    as dictated by input tol will also be masked. See documentation of 
+    skimage.restoration.unwrap_phase() and numpy.unwrap() for more details. 
+    -----------------------------------------------------------------------------
+    """
+
+    if not isinstance(phase, (NP.ndarray,MA.MaskedArray)):
+        raise TypeError('Input phase data type is invalid')
+    if tol is None:
+        tol = NP.pi
+    elif not isinstance(tol, (int,float)):
+        raise TypeError('Input tol must be a scalar')
+    else:
+        if tol <= 0.0:
+            raise ValueError('Input tol must be positive')
+
+    phase_reshaped = NP.moveaxis(phase, axis, phase.ndim-1)
+    reshaped_shape = phase_reshaped.shape
+    phase_reshaped = phase_reshaped.reshape(-1, reshaped_shape[-1])
+
+    if isinstance(phase, MA.MaskedArray):
+        phase_unwrapped = unwrap_phase(phase_reshaped,
+                                       wrap_around=wrap_around, seed=seed)
+    else:
+        phase_unwrapped = NP.unwrap(phase, discont=NP.pi, axis=axis)
+        # phase_unwrapped = NP.apply_along_axis(NP.unwrap, axis, phase)
+        
+    smooth_phase_unwrapped = smooth_masked_array_1D(phase_unwrapped,
+                                                    {'op_type': 'tophat',
+                                                     'window_size': 7},
+                                                    axis=-1, boundary='extend',
+                                                    fill_value=NP.nan,
+                                                    nan_treatment='interpolate')
+
+    if isinstance(phase, MA.MaskedArray):
+        diff_phase_unwrapped = smooth_phase_unwrapped.data - phase_unwrapped.data
+    else:
+        diff_phase_unwrapped = smooth_phase_unwrapped.data - phase_unwrapped
+    largediff_loc = NP.abs(diff_phase_unwrapped) >= tol
+    if isinstance(phase, MA.MaskedArray):
+        if NP.any(largediff_loc):
+            phase_unwrapped.mask = NP.logical_or(phase_unwrapped.mask,
+                                                 largediff_loc)
+    else:
+        mask = NP.zeros(phase.shape, dtype=NP.bool)
+        mask[NP.isnan(phase)] = True
+        if NP.any(largediff_loc):
+            mask[largediff_loc] = True
+        phase_unwrapped = MA.MaskedArray(phase_unwrapped, mask=mask)
+
+    return phase_unwrapped
+        
+#################################################################################
+
