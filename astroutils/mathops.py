@@ -686,8 +686,9 @@ def smooth_masked_array_1D(maskarr, smooth_parms, axis=-1, boundary='fill',
     """
     -----------------------------------------------------------------------------
     Smooth a multi-dimensional array including masked arrays or arrays with 
-    missing (NaN) values along a specified axis. It is a wrapper for 
-    astropy.convolution module but along a single specified axis.
+    missing (NaN) values along a specified axis. It can work on complex valued 
+    arrays as well. It is a wrapper for astropy.convolution module but along a 
+    single specified axis.
 
     Inputs:
 
@@ -1068,9 +1069,9 @@ def interpolate_phase_1D(phase, wts, axis, interp_parms, collapse_axes=None,
 
 ################################################################################
 
-def interpolate_complex_array_1D(cmplxarr, wts, axis, interp_parms, 
-                                 fix_ampl=None, collapse_axes=None,
-                                 collapse_stat='median'):
+def interpolate_masked_array_1D(arr, wts, axis, interp_parms, 
+                                fix_ampl=None, collapse_axes=None,
+                                collapse_stat='median'):
 
     """
     ----------------------------------------------------------------------------
@@ -1083,11 +1084,10 @@ def interpolate_complex_array_1D(cmplxarr, wts, axis, interp_parms,
 
     Inputs:
 
-    cmplxarr
-            [Masked array] Complex masked array
+    arr     [Masked array] Complex masked array
 
     wts     [Maksed array] Maksed array containing weights corresponding to
-            number of measurements. It has same shape as input cmplxarr
+            number of measurements. It has same shape as input arr
 
     axis    [integer] Axis along which input array is to be interpolated. Must 
             be an integer.
@@ -1136,23 +1136,23 @@ def interpolate_complex_array_1D(cmplxarr, wts, axis, interp_parms,
     Outputs:
 
     Tuple consisting of two elements. First element is a masked array of 
-    interpolated complex array. It has same shape as input cmplxarr except 
+    interpolated complex array. It has same shape as input arr except 
     along the axes which were collapsed. Second element is a masked array of 
     interpolated weights of same shape as the interpolated complex array output
     ----------------------------------------------------------------------------
     """
 
-    if not isinstance(cmplxarr, MA.MaskedArray):
-        raise TypeError('Input cmplxarr must be a numpy masked array')
+    if not isinstance(arr, MA.MaskedArray):
+        raise TypeError('Input arr must be a numpy masked array')
     if not isinstance(wts, MA.MaskedArray):
         raise TypeError('Input wts must be a numpy masked array')
-    if cmplxarr.shape != wts.shape:
-        raise ValueError('Inputs cmplxarr and wts must have the same shape')
+    if arr.shape != wts.shape:
+        raise ValueError('Inputs arr and wts must have the same shape')
     if not isinstance(axis, int):
         raise TypeError('Input axis must be an integer')
-    if axis >= cmplxarr.ndim:
+    if axis >= arr.ndim:
         raise ValueError('Input axis out of bounds')
-    nchan = cmplxarr.shape[axis]
+    nchan = arr.shape[axis]
     if fix_ampl is not None:
         if not isinstance(fix_ampl, (int,float)):
             raise TypeError('Input fix_ampl must be a scalar')
@@ -1169,16 +1169,16 @@ def interpolate_complex_array_1D(cmplxarr, wts, axis, interp_parms,
         if collapse_stat.lower() not in ['mean', 'median']:
             raise ValueError('Invalid input for collapse_stat') 
         if collapse_stat.lower() == 'mean':
-            cmplxarr_collapsed = MA.sum(cmplxarr*wts, axis=tuple(collapse_axes), keepdims=True) / MA.sum(wts, axis=tuple(collapse_axes), keepdims=True)
+            arr_collapsed = MA.sum(arr*wts, axis=tuple(collapse_axes), keepdims=True) / MA.sum(wts, axis=tuple(collapse_axes), keepdims=True)
         elif collapse_stat.lower() == 'median':
-            cmplxarr_collapsed = MA.median(cmplxarr.real, axis=tuple(collapse_axes), keepdims=True) +1j * MA.median(cmplxarr.imag, axis=tuple(collapse_axes), keepdims=True)
+            arr_collapsed = MA.median(arr.real, axis=tuple(collapse_axes), keepdims=True) +1j * MA.median(arr.imag, axis=tuple(collapse_axes), keepdims=True)
         wts_collapsed = MA.sum(wts, axis=tuple(collapse_axes), keepdims=True)
     else:
         wts_collapsed = MA.copy(wts)
-        cmplxarr_collapsed = MA.copy(cmplxarr)
+        arr_collapsed = MA.copy(arr)
     if fix_ampl is not None:
-        if NP.iscomplexobj(cmplxarr):
-            cmplxarr_collapsed *= fix_ampl / NP.abs(cmplxarr_collapsed) # Renormalize to fix_ampl
+        if NP.iscomplexobj(arr):
+            arr_collapsed *= fix_ampl / NP.abs(arr_collapsed) # Renormalize to fix_ampl
         
     if not isinstance(interp_parms, dict):
         raise TypeError('Input interp_parms must be a dictionary')
@@ -1194,52 +1194,52 @@ def interpolate_complex_array_1D(cmplxarr, wts, axis, interp_parms,
     if interp_parms['op_type'].lower() == 'interp1d':
         if 'interp_kind' not in interp_parms:
             interp_parms['interp_kind'] = 'linear'
-    mask_in = cmplxarr.mask
-    if NP.iscomplexobj(cmplxarr):
-        cmplxarr_filled = MA.filled(cmplxarr_collapsed.real, fill_value=NP.nan) + 1j * MA.filled(cmplxarr_collapsed.imag, fill_value=NP.nan) # Both real and imaginary parts need to contain NaN for interpolation to work later separately on these parts
+    mask_in = arr.mask
+    if NP.iscomplexobj(arr):
+        arr_filled = MA.filled(arr_collapsed.real, fill_value=NP.nan) + 1j * MA.filled(arr_collapsed.imag, fill_value=NP.nan) # Both real and imaginary parts need to contain NaN for interpolation to work later separately on these parts
     else:
-        cmplxarr_filled = MA.filled(cmplxarr_collapsed, fill_value=NP.nan)
+        arr_filled = MA.filled(arr_collapsed, fill_value=NP.nan)
     wts_filled = MA.filled(wts_collapsed, fill_value=0.0)
     if interp_parms['op_type'].lower() == 'interp1d':
         wts_reshaped = NP.moveaxis(wts_collapsed, axis, wts_collapsed.ndim-1) # axis is the last dimension
         wts_reshaped_shape = wts_reshaped.shape
         wts_reshaped = wts_reshaped.reshape(-1,wts_reshaped_shape[-1]) # 2D array with axis to be interpolated as last dimension
         mask_reshaped = NP.moveaxis(wts_collapsed.mask, axis, wts_collapsed.ndim-1).reshape(-1,wts_reshaped_shape[-1]) # axis is the last dimension
-        cmplxarr_reshaped = NP.moveaxis(cmplxarr_collapsed, axis, cmplxarr_collapsed.ndim-1).reshape(-1,wts_reshaped_shape[-1]) # 2D array with axis to be interpolated as the last dimension
+        arr_reshaped = NP.moveaxis(arr_collapsed, axis, arr_collapsed.ndim-1).reshape(-1,wts_reshaped_shape[-1]) # 2D array with axis to be interpolated as the last dimension
         wts_interped = MA.copy(wts_reshaped)
-        cmplxarr_interped = MA.copy(cmplxarr_reshaped)
-        for ax0ind in NP.arange(cmplxarr_reshaped.shape[0]):
+        arr_interped = MA.copy(arr_reshaped)
+        for ax0ind in NP.arange(arr_reshaped.shape[0]):
             inpind = NP.where(NP.logical_not(mask_reshaped[ax0ind,:]))[0]
             outind = NP.where(mask_reshaped[ax0ind,:])[0]
             if (inpind.size > 1) and (outind.size > 0):
                 inpwts = wts_reshaped[ax0ind,inpind]
-                inparr = cmplxarr_reshaped[ax0ind,inpind]
+                inparr = arr_reshaped[ax0ind,inpind]
                 interpfunc_wts = interpolate.interp1d(inpind, inpwts, kind=interp_parms['interp_kind'], axis=-1, bounds_error=False, fill_value=NP.nan)
                 outwts = interpfunc_wts(outind)
-                if NP.iscomplexobj(cmplxarr):
-                    interpfunc_cmplxarr_real = interpolate.interp1d(inpind, inparr.real, kind=interp_parms['interp_kind'], axis=-1, bounds_error=False, fill_value=NP.nan)
-                    interpfunc_cmplxarr_imag = interpolate.interp1d(inpind, inparr.imag, kind=interp_parms['interp_kind'], axis=-1, bounds_error=False, fill_value=NP.nan)
-                    outarr = interpfunc_cmplxarr_real(outind) + 1j * interpfunc_cmplxarr_imag(outind)
+                if NP.iscomplexobj(arr):
+                    interpfunc_arr_real = interpolate.interp1d(inpind, inparr.real, kind=interp_parms['interp_kind'], axis=-1, bounds_error=False, fill_value=NP.nan)
+                    interpfunc_arr_imag = interpolate.interp1d(inpind, inparr.imag, kind=interp_parms['interp_kind'], axis=-1, bounds_error=False, fill_value=NP.nan)
+                    outarr = interpfunc_arr_real(outind) + 1j * interpfunc_arr_imag(outind)
                 else:
-                    interpfunc_cmplxarr = interpolate.interp1d(inpind, inparr, kind=interp_parms['interp_kind'], axis=-1, bounds_error=False, fill_value=NP.nan)
-                    outarr = interpfunc_cmplxarr(outind)
+                    interpfunc_arr = interpolate.interp1d(inpind, inparr, kind=interp_parms['interp_kind'], axis=-1, bounds_error=False, fill_value=NP.nan)
+                    outarr = interpfunc_arr(outind)
                 wts_interped[ax0ind,outind] = NP.copy(outwts)
-                cmplxarr_interped[ax0ind,outind] = NP.copy(outarr)
+                arr_interped[ax0ind,outind] = NP.copy(outarr)
     else:
         wts_reshaped = NP.moveaxis(wts_filled, axis, wts_collapsed.ndim-1) # axis is the last dimension
         wts_reshaped_shape = wts_reshaped.shape
         mask_reshaped = NP.moveaxis(wts_collapsed.mask, axis, wts_collapsed.ndim-1) # axis is the last dimension
-        cmplxarr_reshaped = NP.moveaxis(cmplxarr_filled, axis, cmplxarr_collapsed.ndim-1) # axis is the last dimension
+        arr_reshaped = NP.moveaxis(arr_filled, axis, arr_collapsed.ndim-1) # axis is the last dimension
         
         if interp_parms['op_type'].lower() == 'median': # Always typecasts to int which is a problem!!! Needs to be fixed.
             kernel = morphology.rectangle(1, interp_parms['window_size'], dtype=NP.float64)
             maxval = NP.nanmax(NP.abs(wts_reshaped)) 
             wts_interped = maxval * mean(img_as_float(wts_reshaped.reshape(-1,wts_reshaped_shape[-1])/maxval), kernel, mask=mask_reshaped.reshape(-1,wts_reshaped_shape[-1])) # shape=(-1,nchan), use mean not median for weights, array must be normalized to lie inside [-1,1]
-            maxval = NP.nanmax(NP.abs(cmplxarr_reshaped))
-            if NP.iscomplexobj(cmplxarr):
-                cmplxarr_interped = maxval * (median(img_as_float(cmplxarr_reshaped.real.reshape(-1,wts_reshaped_shape[-1])/maxval), kernel, mask=mask_reshaped.reshape(-1,wts_reshaped_shape[-1])) + 1j * median(img_as_float(cmplxarr_reshaped.imag.reshape(-1,wts_reshaped_shape[-1])/maxval), kernel, mask=mask_reshaped.reshape(-1,wts_reshaped_shape[-1]))) # input array must be normalized to lie inside [-1,1]
+            maxval = NP.nanmax(NP.abs(arr_reshaped))
+            if NP.iscomplexobj(arr):
+                arr_interped = maxval * (median(img_as_float(arr_reshaped.real.reshape(-1,wts_reshaped_shape[-1])/maxval), kernel, mask=mask_reshaped.reshape(-1,wts_reshaped_shape[-1])) + 1j * median(img_as_float(arr_reshaped.imag.reshape(-1,wts_reshaped_shape[-1])/maxval), kernel, mask=mask_reshaped.reshape(-1,wts_reshaped_shape[-1]))) # input array must be normalized to lie inside [-1,1]
             else:
-                cmplxarr_interped = maxval * median(img_as_float(cmplxarr_reshaped.reshape(-1,wts_reshaped_shape[-1])/maxval), kernel, mask=mask_reshaped.reshape(-1,wts_reshaped_shape[-1])) # input array must be normalized to lie inside [-1,1]
+                arr_interped = maxval * median(img_as_float(arr_reshaped.reshape(-1,wts_reshaped_shape[-1])/maxval), kernel, mask=mask_reshaped.reshape(-1,wts_reshaped_shape[-1])) # input array must be normalized to lie inside [-1,1]
         else:
             wts_filled = MA.filled(wts_collapsed, fill_value=NP.nan)
             wts_reshaped = NP.moveaxis(wts_filled, axis, wts_collapsed.ndim-1) # axis is the last dimension
@@ -1253,18 +1253,18 @@ def interpolate_complex_array_1D(cmplxarr, wts, axis, interp_parms,
                 kernel1D = CONV.Box1DKernel(interp_parms['window_size'])
             kernel = CONV.CustomKernel(kernel1D.array[NP.newaxis,:]) # Make a 2D kernel from the 1D kernel where it spans only one element in the new axis
             wts_interped = CONV.interpolate_replace_nans(wts_reshaped.reshape(-1,wts_reshaped_shape[-1]), kernel)
-            if NP.iscomplexobj(cmplxarr):
-                cmplxarr_interped = CONV.interpolate_replace_nans(cmplxarr_reshaped.real.reshape(-1,wts_reshaped_shape[-1]), kernel) + 1j * CONV.interpolate_replace_nans(cmplxarr_reshaped.imag.reshape(-1,wts_reshaped_shape[-1]), kernel)
+            if NP.iscomplexobj(arr):
+                arr_interped = CONV.interpolate_replace_nans(arr_reshaped.real.reshape(-1,wts_reshaped_shape[-1]), kernel) + 1j * CONV.interpolate_replace_nans(arr_reshaped.imag.reshape(-1,wts_reshaped_shape[-1]), kernel)
             else:
-                cmplxarr_interped = CONV.interpolate_replace_nans(cmplxarr_reshaped.reshape(-1,wts_reshaped_shape[-1]), kernel)
+                arr_interped = CONV.interpolate_replace_nans(arr_reshaped.reshape(-1,wts_reshaped_shape[-1]), kernel)
         
     wts_interped = wts_interped.reshape(wts_reshaped_shape) # back to intermediate shape with axis as the last dimension
     wts_interped = NP.moveaxis(wts_interped, wts_collapsed.ndim-1, axis) # Original shape
-    cmplxarr_interped = cmplxarr_interped.reshape(wts_reshaped_shape) # back to intermediate shape with axis as the last dimension
-    cmplxarr_interped = NP.moveaxis(cmplxarr_interped, cmplxarr_collapsed.ndim-1, axis) # Original shape
+    arr_interped = arr_interped.reshape(wts_reshaped_shape) # back to intermediate shape with axis as the last dimension
+    arr_interped = NP.moveaxis(arr_interped, arr_collapsed.ndim-1, axis) # Original shape
     if fix_ampl is not None:
-        if NP.iscomplexobj(cmplxarr):
-            cmplxarr_interped *= fix_ampl / NP.abs(cmplxarr_interped)
+        if NP.iscomplexobj(arr):
+            arr_interped *= fix_ampl / NP.abs(arr_interped)
 
     eps = 1e-10
     if isinstance(wts_interped, MA.MaskedArray):
@@ -1272,8 +1272,8 @@ def interpolate_complex_array_1D(cmplxarr, wts, axis, interp_parms,
     else:
         mask_out = NP.logical_or(wts_interped < eps, NP.isnan(wts_interped)) # Mask small, negative, and NaN weights
     wts_interped = MA.array(wts_interped, mask=mask_out)
-    cmplxarr_interped = MA.array(cmplxarr_interped, mask=mask_out)
+    arr_interped = MA.array(arr_interped, mask=mask_out)
 
-    return (cmplxarr_interped, wts_interped)
+    return (arr_interped, wts_interped)
 
 ################################################################################

@@ -1,3 +1,10 @@
+From 238ba01 (phases):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Update docstring of function smooth_masked_array_1D()
+
 From 5f1bce3 (phases):
 =====================
 
