@@ -1,3 +1,13 @@
+From 556081a (phases):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Add function interpolate_complex_array_1D() along with docstring
+to interpolate complex arrays or complex exponentials constrained to
+unit amplitude that are masked arrays which contain missing values
+along a specified axis
+
 From 27f3a7b (master):
 =====================
 
