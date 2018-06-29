@@ -1,3 +1,20 @@
+From 5f1bce3 (phases):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Rename function interpolate_complex_array_1D() to
+interpolate_masked_array_1D()
+(*) Rename and replace input variable containing 'cmplxarr' with 'arr'
+(*) Update docstring of function interpolate_masked_array_1D().
+(*) In function interpolate_masked_array_1D(), check for complex
+data type before applying fix_ampl
+(*) In function interpolate_masked_array_1D(), update functionality
+to handle both complex and real array inputs
+(*) In function interpolate_masked_array_1D(), update functionality
+to use scipy.interpolate.interp1d() even if masked values are not
+aligned across the array along the specified interpolation axis
+
 From 098d6f0 (phases):
 =====================
 
