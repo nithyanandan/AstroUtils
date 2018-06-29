@@ -1,3 +1,18 @@
+From 098d6f0 (phases):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Import modules from skimage
+(*) Add function interpolate_phase_1D() along with docstring to unwrap
+and interpolate phases along a specified axis that are input as masked
+arrays which contain missing values
+(*) In function phase_unwrap_1D(), reshape the output to match the
+input array shape
+(*) In function interpolate_complex_array_1D(), replace
+collapsed_freq_mask variable with axis_mask, and minor change to
+comments
+
 From 556081a (phases):
 =====================
 

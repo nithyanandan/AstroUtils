@@ -2,6 +2,10 @@ import numpy as NP
 import numpy.ma as MA
 import scipy as SP
 from scipy import interpolate
+from skimage import img_as_float
+import skimage.morphology as morphology
+from skimage.filters import median
+from skimage.filters.rank import mean
 from skimage.restoration import unwrap_phase
 import astropy.convolution as CONV
 import healpy as HP
@@ -884,9 +888,185 @@ def phase_unwrap_1D(phase, axis=-1, wrap_around=False, seed=None, tol=NP.pi):
             mask[largediff_loc] = True
         phase_unwrapped = MA.MaskedArray(phase_unwrapped, mask=mask)
 
+    phase_unwrapped = phase_unwrapped.reshape(reshaped_shape)
+    phase_unwrapped = NP.moveaxis(phase_unwrapped, phase.ndim-1, axis)
+
     return phase_unwrapped
         
 #################################################################################
+
+def interpolate_phase_1D(phase, wts, axis, interp_parms, collapse_axes=None,
+                         collapse_stat='median'):
+
+    """
+    ----------------------------------------------------------------------------
+    Interpolate closure phase spectrum and fill values where values are not 
+    available. 
+
+    Inputs:
+
+    phase      [Masked array] Masked array containing closure phases (in radians). 
+            Usually, it has shape (nlst, ndays, ntriads, nchan)
+
+    wts     [Maksed array] Maksed array containing weights corresponding to
+            number of measurements. It has same shape as input phase, which is 
+            usually (nlst, ndays, ntriads, nchan)
+
+    axis [integer] Axis containing frequency spectra corresponding to nchan. 
+            Must be an integer.
+
+    interp_parms
+            [dictionary] Dictionary specifying interpolation parameters. It has
+            the following keys and values:
+            'op_type'       [string] Specifies the interpolating operation.
+                            Must be specified (no default). Accepted values are
+                            'interp1d' (scipy.interpolate), 'median' 
+                            (skimage.filters), 'tophat' (astropy.convolution) 
+                            and 'gaussian' (astropy.convolution)
+            'interp_kind'   [string (optional)] Specifies the interpolation 
+                            kind (if 'op_type' is set to 'interp1d'). For
+                            accepted values, see scipy.interpolate.interp1d()
+            'window_size'   [integer (optional)] Specifies the size of the
+                            interpolating/smoothing kernel. Only applies when
+                            'op_type' is set to 'median', 'tophat' or 'gaussian'
+                            The kernel is a tophat function when 'op_type' is 
+                            set to 'median' or 'tophat'. If refers to FWHM when
+                            'op_type' is set to 'gaussian'
+    collapse_axes
+            [Nonetype, int, tuple, list, or numpy array] Axes to collapse the
+            data along before interpolation. If set to None (default), no
+            collapse is performed. Otherwise, the axes specified here will be
+            collapsed in the data using statistic specified in input
+            collapse_stat. Usually, these axes are those along which closure 
+            phases can be assumed to be coherent.
+
+    collapse_stat
+            [string (optional)] Statistic used to collapse the input data along
+            the axes specified in input collapse_axes. Only applies if input
+            collapse_axes is not set to None. Accepted values are 'mean' and
+            'median' (default)
+
+    Outputs:
+
+    Tuple consisting of two elements. First element is a masked array of 
+    interpolated closure phases (in radians) of shape (nlst, ndays, 
+    ntriads, nchan) except along the axes which were collapsed. Second element
+    is a masked array of interpolated weights of same shape as the interpolated
+    closure phases.
+    ----------------------------------------------------------------------------
+    """
+
+    if not isinstance(phase, MA.MaskedArray):
+        raise TypeError('Input phase must be a numpy masked array')
+    if not isinstance(wts, MA.MaskedArray):
+        raise TypeError('Input wts must be a numpy masked array')
+    if phase.shape != wts.shape:
+        raise ValueError('Inputs phase and wts must have the same shape')
+    if not isinstance(axis, int):
+        raise TypeError('Input axis must be an integer')
+    if axis >= phase.ndim:
+        raise ValueError('Input axis out of bounds')
+    nchan = phase.shape[axis]
+    if collapse_axes is not None:
+        if not isinstance(collapse_axes, (int,tuple,list,NP.ndarray)):
+            raise TypeError('Input collapse_axes must be an integer, list, tuple, or numpy array')
+        collapse_axes = NP.asarray(collapse_axes).ravel()
+        if NP.sum(NP.in1d(axis, collapse_axes)) > 0:
+            raise ValueError('axis must not be included in collapse_axes')
+        if not isinstance(collapse_stat, str):
+            raise TypeError('Input collapse_stat must be a string')
+        if collapse_stat.lower() not in ['mean', 'median']:
+            raise ValueError('Invalid input for collapse_stat') 
+        ceip = NP.exp(1j*phase)
+        if collapse_stat.lower() == 'mean':
+            ceip_collapsed = MA.sum(ceip*wts, axis=tuple(collapse_axes), keepdims=True) / MA.sum(wts, axis=tuple(collapse_axes), keepdims=True)
+        elif collapse_stat.lower() == 'median':
+            ceip_collapsed = MA.median(ceip.real, axis=tuple(collapse_axes), keepdims=True) +1j * MA.median(ceip.imag, axis=tuple(collapse_axes), keepdims=True)
+        wts_collapsed = MA.sum(wts, axis=tuple(collapse_axes), keepdims=True)
+        ceip_collapsed /= NP.abs(ceip_collapsed) # Renormalize to unit amplitude
+        phase_collapsed = NP.angle(ceip_collapsed) 
+    else:
+        phase_collapsed = MA.copy(phase)
+        wts_collapsed = MA.copy(wts)
+
+    # Perform phase unwrapping
+    
+    phase_unwrapped = phase_unwrap_1D(phase_collapsed, axis=axis, seed=200,
+                                      tol=NP.pi)
+    wts_collapsed.mask = phase_unwrapped.mask
+
+    if not isinstance(interp_parms, dict):
+        raise TypeError('Input interp_parms must be a dictionary')
+    if 'op_type' not in interp_parms:
+        raise KeyError('Key "op_type" not found in input interp_parms')
+    if interp_parms['op_type'].lower() not in ['median', 'gaussian', 'tophat', 'interp1d']:
+        raise ValueError('op_type specified in interp_parms currently not supported')
+    if interp_parms['op_type'].lower() in ['median', 'gaussian', 'tophat']:
+        if 'window_size' not in interp_parms:
+            raise KeyError('Input "window_size" not found in interp_parms')
+        if interp_parms['window_size'] <= 0:
+            raise ValueError('Spectral filter window size must be positive')
+    if interp_parms['op_type'].lower() == 'interp1d':
+        if 'interp_kind' not in interp_parms:
+            interp_parms['interp_kind'] = 'linear'
+
+    mask_in = phase_unwrapped.mask
+    phase_filled = MA.filled(phase_unwrapped, fill_value=NP.nan) # Fill with NaN for missing values
+    wts_filled = MA.filled(wts_collapsed, fill_value=0.0) # Fill with 0.0 for missing values
+
+    if interp_parms['op_type'].lower() == 'interp1d':
+        other_axes = NP.where(NP.arange(phase_unwrapped.ndim) != axis)[0]
+        axis_mask = NP.sum(mask_in, axis=tuple(other_axes)) # shape=(nchan,)
+        if NP.sum(axis_mask.astype(NP.bool)) > 1.0/3 * axis_mask.size:
+            raise ValueError('More than 1/3 of channels are flagged at some point or another. This will lead to failure of interp1d method. Try other interpolation options.')
+        masked_chans = NP.arange(phase_unwrapped.shape[axis])[axis_mask.astype(NP.bool)]
+        unmasked_chans = NP.arange(phase_unwrapped.shape[axis])[NP.logical_not(axis_mask.astype(NP.bool))]
+        unmasked_phase = NP.take(phase_filled, unmasked_chans, axis=axis, mode='clip')
+        unmasked_wts = NP.take(wts_filled, unmasked_chans, axis=axis, mode='clip')
+        phase_interpfunc = interpolate.interp1d(unmasked_chans, unmasked_phase, kind=interp_parms['interp_kind'], axis=axis, bounds_error=False, fill_value=NP.nan)
+        wts_interpfunc = interpolate.interp1d(unmasked_chans, unmasked_wts, kind=interp_parms['interp_kind'], axis=axis, bounds_error=False, fill_value=0.0)
+        wts_interped = wts_interpfunc(NP.arange(phase_unwrapped.shape[axis]))
+        phase_interped = phase_interpfunc_real(NP.arange(phase_unwrapped.shape[axis]))
+    else:
+        wts_reshaped = NP.moveaxis(wts_filled, axis, wts_collapsed.ndim-1) # axis is the last dimension
+        wts_reshaped_shape = wts_reshaped.shape
+        mask_reshaped = NP.moveaxis(wts_collapsed.mask, axis, wts_collapsed.ndim-1) # axis is the last dimension
+        phase_reshaped = NP.moveaxis(phase_filled, axis, phase_unwrapped.ndim-1) # axis is the last dimension
+
+        if interp_parms['op_type'].lower() == 'median': # Always typecasts to int which is a problem!!! Needs to be fixed.
+            kernel = morphology.rectangle(1, interp_parms['window_size'], dtype=NP.float64)
+            maxval = NP.nanmax(NP.abs(wts_reshaped)) 
+            wts_interped = maxval * mean(img_as_float(wts_reshaped.reshape(-1,wts_reshaped_shape[-1])/maxval), kernel, mask=mask_reshaped.reshape(-1,wts_reshaped_shape[-1])) # shape=(-1,nchan), use mean not median for weights, array must be normalized to lie inside [-1,1]
+            maxval = NP.nanmax(NP.abs(ceip_reshaped))
+            phase_interped = maxval * median(img_as_float(phase_reshaped.real.reshape(-1,wts_reshaped_shape[-1])/maxval), kernel, mask=mask_reshaped.reshape(-1,wts_reshaped_shape[-1])) # array must be normalized to lie inside [-1,1]
+        else:
+            wts_filled = MA.filled(wts_collapsed, fill_value=NP.nan)
+            wts_reshaped = NP.moveaxis(wts_filled, axis, wts_collapsed.ndim-1) # axis is the last dimension
+            if interp_parms['op_type'].lower() == 'gaussian':
+                fwhm = interp_parms['window_size']
+                x_sigma = fwhm / (2.0 * NP.sqrt(2.0 * NP.log(2.0)))
+                kernel1D = CONV.Gaussian1DKernel(x_sigma)
+            elif interp_parms['op_type'].lower() == 'tophat':
+                if interp_parms['window_size'] % 2 == 0:
+                    interp_parms['window_size'] += 1
+                kernel1D = CONV.Box1DKernel(interp_parms['window_size'])
+            kernel = CONV.CustomKernel(kernel1D.array[NP.newaxis,:]) # Make a 2D kernel from the 1D kernel where it spans only one element in the new axis
+            wts_interped = CONV.interpolate_replace_nans(wts_reshaped.reshape(-1,wts_reshaped_shape[-1]), kernel)
+            phase_interped = CONV.interpolate_replace_nans(phase_reshaped.reshape(-1,wts_reshaped_shape[-1]), kernel)
+        
+        wts_interped = wts_interped.reshape(wts_reshaped_shape) # back to intermediate shape with axis as the last dimension
+        wts_interped = NP.moveaxis(wts_interped, wts_collapsed.ndim-1, axis) # Original shape
+        phase_interped = phase_interped.reshape(wts_reshaped_shape) # back to intermediate shape with axis as the last dimension
+        phase_interped = NP.moveaxis(phase_interped, phase_collapsed.ndim-1, axis) # Original shape
+
+    eps = 1e-10
+    mask_out = NP.logical_or(wts_interped < eps, NP.isnan(wts_interped))
+    wts_interped = MA.array(wts_interped, mask=mask_out)
+    phase_interped = MA.array(phase_interped, mask=mask_out)
+
+    return (phase_interped, wts_interped)
+
+################################################################################
 
 def interpolate_complex_array_1D(cmplxarr, wts, axis, interp_parms, 
                                  fix_ampl=None, collapse_axes=None,
@@ -1016,11 +1196,11 @@ def interpolate_complex_array_1D(cmplxarr, wts, axis, interp_parms,
     wts_filled = MA.filled(wts_collapsed, fill_value=0.0)
     if interp_parms['op_type'].lower() == 'interp1d':
         other_axes = NP.where(NP.arange(cmplxarr_collapsed.ndim) != axis)[0]
-        collapsed_freq_mask = NP.sum(mask_in, axis=tuple(other_axes)) 
-        if NP.sum(collapsed_freq_mask.astype(NP.bool)) > 1.0/3 * collapsed_freq_mask.size:
-            raise ValueError('More than 1/3 of channels are flagged at some point or another. This will lead to failure of interp1d method. Try other interpolation options.')
-        masked_chans = NP.arange(cmplxarr_collapsed.shape[axis])[collapsed_freq_mask.astype(NP.bool)]
-        unmasked_chans = NP.arange(cmplxarr_collapsed.shape[axis])[NP.logical_not(collapsed_freq_mask.astype(NP.bool))]
+        axis_mask = NP.sum(mask_in, axis=tuple(other_axes)) 
+        if NP.sum(axis_mask.astype(NP.bool)) > 1.0/3 * axis_mask.size:
+            raise ValueError('More than 1/3 of axis is flagged at some point or another. This will lead to failure of interp1d method. Try other interpolation options.')
+        masked_chans = NP.arange(cmplxarr_collapsed.shape[axis])[axis_mask.astype(NP.bool)]
+        unmasked_chans = NP.arange(cmplxarr_collapsed.shape[axis])[NP.logical_not(axis_mask.astype(NP.bool))]
         unmasked_cmplxarr = NP.take(cmplxarr_filled, unmasked_chans, axis=axis, mode='clip')
         unmasked_wts = NP.take(wts_filled, unmasked_chans, axis=axis, mode='clip')
         cmplxarr_interpfunc_real = interpolate.interp1d(unmasked_chans, unmasked_cmplxarr.real, kind=interp_parms['interp_kind'], axis=axis, bounds_error=False, fill_value=NP.nan)
@@ -1029,10 +1209,10 @@ def interpolate_complex_array_1D(cmplxarr, wts, axis, interp_parms,
         wts_interped = wts_interpfunc(NP.arange(cmplxarr_collapsed.shape[axis]))
         cmplxarr_interped = cmplxarr_interpfunc_real(NP.arange(cmplxarr_collapsed.shape[axis])) + 1j * cmplxarr_interpfunc_imag(NP.arange(cmplxarr_collapsed.shape[axis]))
     else:
-        wts_reshaped = NP.moveaxis(wts_filled, axis, wts_collapsed.ndim-1) # axis is the last axis
+        wts_reshaped = NP.moveaxis(wts_filled, axis, wts_collapsed.ndim-1) # axis is the last dimension
         wts_reshaped_shape = wts_reshaped.shape
-        mask_reshaped = NP.moveaxis(wts_collapsed.mask, axis, wts_collapsed.ndim-1) # axis is the last axis
-        cmplxarr_reshaped = NP.moveaxis(cmplxarr_filled, axis, cmplxarr_collapsed.ndim-1) # axis is the last axis
+        mask_reshaped = NP.moveaxis(wts_collapsed.mask, axis, wts_collapsed.ndim-1) # axis is the last dimension
+        cmplxarr_reshaped = NP.moveaxis(cmplxarr_filled, axis, cmplxarr_collapsed.ndim-1) # axis is the last dimension
         
         if interp_parms['op_type'].lower() == 'median': # Always typecasts to int which is a problem!!! Needs to be fixed.
             kernel = morphology.rectangle(1, interp_parms['window_size'], dtype=NP.float64)
@@ -1042,7 +1222,7 @@ def interpolate_complex_array_1D(cmplxarr, wts, axis, interp_parms,
             cmplxarr_interped = maxval * (median(img_as_float(cmplxarr_reshaped.real.reshape(-1,wts_reshaped_shape[-1])/maxval), kernel, mask=mask_reshaped.reshape(-1,wts_reshaped_shape[-1])) + 1j * median(img_as_float(cmplxarr_reshaped.imag.reshape(-1,wts_reshaped_shape[-1])/maxval), kernel, mask=mask_reshaped.reshape(-1,wts_reshaped_shape[-1]))) # array must be normalized to lie inside [-1,1]
         else:
             wts_filled = MA.filled(wts_collapsed, fill_value=NP.nan)
-            wts_reshaped = NP.moveaxis(wts_filled, axis, wts_collapsed.ndim-1) # axis is the last axis
+            wts_reshaped = NP.moveaxis(wts_filled, axis, wts_collapsed.ndim-1) # axis is the last dimension
             if interp_parms['op_type'].lower() == 'gaussian':
                 fwhm = interp_parms['window_size']
                 x_sigma = fwhm / (2.0 * NP.sqrt(2.0 * NP.log(2.0)))
@@ -1055,9 +1235,9 @@ def interpolate_complex_array_1D(cmplxarr, wts, axis, interp_parms,
             wts_interped = CONV.interpolate_replace_nans(wts_reshaped.reshape(-1,wts_reshaped_shape[-1]), kernel)
             cmplxarr_interped = CONV.interpolate_replace_nans(cmplxarr_reshaped.real.reshape(-1,wts_reshaped_shape[-1]), kernel) + 1j * CONV.interpolate_replace_nans(cmplxarr_reshaped.imag.reshape(-1,wts_reshaped_shape[-1]), kernel)
         
-        wts_interped = wts_interped.reshape(wts_reshaped_shape) # back to intermediate shape with axis as the last axis
+        wts_interped = wts_interped.reshape(wts_reshaped_shape) # back to intermediate shape with axis as the last dimension
         wts_interped = NP.moveaxis(wts_interped, wts_collapsed.ndim-1, axis) # Original shape
-        cmplxarr_interped = cmplxarr_interped.reshape(wts_reshaped_shape) # back to intermediate shape with axis as the last axis
+        cmplxarr_interped = cmplxarr_interped.reshape(wts_reshaped_shape) # back to intermediate shape with axis as the last dimension
         cmplxarr_interped = NP.moveaxis(cmplxarr_interped, cmplxarr_collapsed.ndim-1, axis) # Original shape
         if fix_ampl is not None:
             cmplxarr_interped *= fix_ampl / NP.abs(cmplxarr_interped)
