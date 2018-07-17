@@ -1,3 +1,12 @@
+From 3d39189 (master):
+=====================
+
+In setup.py,
+
+(*) Add version range for package dependency Astropy. Astropy version
+can now range from >=1.0 to <3.0. It avoids requirement of Astropy
+version that requires Python 3.
+
 From 238ba01 (phases):
 =====================
 
