@@ -1,3 +1,14 @@
+From 3d39189 (master):
+=====================
+
+(*) Add retrieve_image_cutouts.py in scripts/
+(*) Add image_cutout/image_cutout_parms.yaml in astroutils/examples/
+
+In setup.py,
+
+(*) Add packages astroquery and beautifulsoup4 under install_requires
+and setup_requires
+
 From 238ba01 (phases):
 =====================
 
