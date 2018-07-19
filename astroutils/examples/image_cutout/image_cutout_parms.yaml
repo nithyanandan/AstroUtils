@@ -1,0 +1,124 @@
+########## Directory Structure information #########
+
+dirStruct   :
+                                # Directory information
+
+    projectdir  : '/path/to/project/'
+                                # Project folder
+
+    outdir      : 'images/'
+                                # Output images directory
+
+########## Coordinate parser ############
+
+coordinates :
+                                # Coordinates information
+
+    infile      : '/path/to/catalog/file'
+                                # Text file containing RA and Dec
+                                # information
+
+    RA_colname  : 'R.A.'
+                                # Column name containing RA
+
+    Dec_colname : 'Decl.'
+                                # Column name containing Declination
+
+    RA_units    : 'hms'
+                                # Units of RA. Accepted values are
+                                # 'deg' and 'hms' (HH:MM:SS.S or
+                                # similar). The former is in floating
+                                # point (units of degrees) and the
+                                # latter is a string
+
+    Dec_units   : 'dms'
+                                # Units of Declination. Accepted
+                                # values are 'deg' and 'dms'
+                                # (DD:MM:SS.S or similar). The
+                                # former is in floating point
+                                # (units of degrees) and the latter
+                                # is a string
+
+    epoch       : 'J2000'
+                                # Epoch of the coordinates. Accepted
+                                # values are 'J2000' and 'B1950'
+
+########## Subset Selection ############
+
+subset      :
+                                # Parameters to select subset
+
+    parmnames   : ['redshift']
+                                # List of parameter values based on
+                                # which the subsets will be found.
+                                # These parameters must be found
+                                # as column names in the input file.
+                                # The ranges/selections on the
+                                # parameter files are specified in
+                                # parselect
+
+    parmrange   : [
+                   [0.0, 10.0]
+                  ]
+                                # One line for each element specified
+                                # in parmnames. If parmnames is empty
+                                # or null, no subselection is
+                                # performed. If parmnames stores a
+                                # number, the parmrange should be a
+                                # list of [min, max]. If parmnames
+                                # holds a string, the parmrange must
+                                # be a list of strings such as
+                                # ['incl', '!excl'] where all data
+                                # with the specified parmnames that
+                                # contain the string 'incl' will be
+                                # included and those that contain
+                                # 'excl' with be excluded.
+
+########### Image Cutout parameters ##########
+
+image       :
+                                # Parameters to retrieve image
+                                # cutouts
+
+    survey      : 'Survey Name'
+                                # Survey name. Must be one of the
+                                # surveys made available in NASA
+                                # SkyView
+
+    projection  : 'Sin'
+                                # Image projection to retrieve the
+                                # FITS files in. Must be one of the
+                                # accepted values in SkyView. Some
+                                # accepted values are 'Sin'
+                                # (Orthographic), 'Tan' (Gnomonic),
+                                # 'Ait' (Aitoff), 'Car' (Cartesian),
+                                # etc.
+
+    pixels      : [300, 300]
+                                # Number of pixels [width, height] 
+                                # of the image
+
+    overwrite   : false
+                                # If set to false (do not overwrite)
+                                # if image file found to exist already
+                                # If set to true, then overwrite.
+
+########### Failure Handling ##########
+
+failure     :
+                                # Info on how to handle failure if
+                                # any of the images could not be
+                                # retrieved
+
+    failurefile : '/path/to/dir/containing/failed_to_retrieve.txt'
+                                # File in which the coordinate
+                                # locations of the failed retrieval
+                                # will be listed
+
+    retry       : 1
+                                # Number of times to retry fetching
+                                # a failed image retrieval
+
+    
+
+

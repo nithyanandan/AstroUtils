@@ -1,3 +1,8 @@
+From daf34bf (master), 3e44666 (imgcutout):
+==========================================
+
+(*) Merge imgcutout branch onto master
+
 From 3d39189 (master):
 =====================
 
@@ -6,6 +11,17 @@ In setup.py,
 (*) Add version range for package dependency Astropy. Astropy version
 can now range from >=1.0 to <3.0. It avoids requirement of Astropy
 version that requires Python 3.
+
+From 3d39189 (master):
+=====================
+
+(*) Add retrieve_image_cutouts.py in scripts/
+(*) Add image_cutout/image_cutout_parms.yaml in astroutils/examples/
+
+In setup.py,
+
+(*) Add packages astroquery and beautifulsoup4 under install_requires
+and setup_requires
 
 From 238ba01 (phases):
 =====================
