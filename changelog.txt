@@ -1,3 +1,12 @@
+From 340d1cd (imgcutout):
+========================
+
+In scripts/retrieve_image_cutouts.py,
+
+(*) Issue warning instead of aborting when non-standard FITS keywords
+are found.
+(*) Remove import of copy module
+
 From daf34bf (master), 3e44666 (imgcutout):
 ==========================================
 

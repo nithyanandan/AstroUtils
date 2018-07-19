@@ -2,7 +2,7 @@
 
 import os.path
 import numpy as NP
-import yaml, argparse, warnings, copy
+import yaml, argparse, warnings
 from astroquery.skyview import SkyView
 from astropy.coordinates import SkyCoord
 from astropy import units as U
@@ -79,9 +79,10 @@ if __name__ == '__main__':
             try:
                 paths = SkyView.get_images(radec_hmsdms, survey=survey, pixels=pixels, coordinates=coordinfo['epoch'], projection=projection)
                 hdulist = paths[0][0]
-                hdulist.writeto(outfname, overwrite=True)
+                hdulist.writeto(outfname, overwrite=True, output_verify='warn')
+                print('Saved {0}'.format(outfname))
             except Exception as err:
-                warnings.warn('Problem with retrieving image at {0}.\nEncountered error: {1}.\nProceeding to the next object...\n'.format(radec_hmsdms, err.message))
+                warnings.warn('Problem with retrieving image at {0}.\nEncountered error: {1}.\nProceeding to the next object...\n'.format(radec_hmsdms, err.message), Warning)
 
                 if isinstance(err, AttributeError):
                     # For some reason, timeouts come under Attribute Error.
@@ -106,9 +107,9 @@ if __name__ == '__main__':
                             try:
                                 paths = SkyView.get_images(failcoord, survey=survey, pixels=pixels, coordinates=coordinfo['epoch'], projection=projection)
                                 hdulist = paths[0][0]
-                                hdulist.writeto(outfname, overwrite=True)
+                                hdulist.writeto(outfname, overwrite=True, output_verify='warn')
                             except Exception as err:
-                                warnings.warn('Problem with retrieving image at {0}.\nEncountered error: {1}.\nProceeding to the next object...\n'.format(failcoord, err.message))
+                                warnings.warn('Problem with retrieving image at {0}.\nEncountered error: {1}.\nProceeding to the next object...\n'.format(failcoord, err.message), Warning)
                             else: # Successful retrieval
                                 failure_count -= 1
                                 success_coords += [failcoord]
