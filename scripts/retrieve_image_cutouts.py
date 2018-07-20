@@ -72,7 +72,7 @@ if __name__ == '__main__':
 
     failure_count = 0
     failed_coords = []
-    for ind in select_ind:
+    for ii,ind in enumerate(select_ind):
         radec_hmsdms = coords[ind].to_string('hmsdms')
         outfname = outdir + '{0}_{1[0]:0d}x{1[1]:0d}.fits'.format(radec_hmsdms.replace(' ',''), pixels)
         if (not os.path.isfile(outfname)) or overwrite:
@@ -80,7 +80,7 @@ if __name__ == '__main__':
                 paths = SkyView.get_images(radec_hmsdms, survey=survey, pixels=pixels, coordinates=coordinfo['epoch'], projection=projection)
                 hdulist = paths[0][0]
                 hdulist.writeto(outfname, overwrite=True, output_verify='warn')
-                print('Saved {0}'.format(outfname))
+                print('Successfully saved {0} [{1:0d}/{2:0d}]'.format(outfname, ii+1, select_ind.size))
             except Exception as err:
                 warnings.warn('Problem with retrieving image at {0}.\nEncountered error: {1}.\nProceeding to the next object...\n'.format(radec_hmsdms, err.message), Warning)
 

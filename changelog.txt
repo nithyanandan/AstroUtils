@@ -1,3 +1,10 @@
+From 7bd579c (imgcutout):
+========================
+
+In scripts/retrieve_image_cutouts.py,
+
+(*) Print useful progress messages
+
 From 340d1cd (imgcutout):
 ========================
 
