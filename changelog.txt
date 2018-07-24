@@ -1,3 +1,14 @@
+From d2c4a67 (imgcutout):
+========================
+
+In scripts/retrieve_image_cutouts.py,
+
+(*) Add option to query or download image cutouts
+
+In astroutils/examples/image_cutout/image_cutout_parms.yaml,
+
+(*) Add action parameter to be set to query or download
+
 From 7bd579c (imgcutout):
 ========================
 

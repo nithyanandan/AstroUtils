@@ -98,10 +98,19 @@ image       :
                                 # Number of pixels [width, height] 
                                 # of the image
 
+    action      : 'query'
+                                # If set to 'query' it simply queries
+                                # the database for the list of paths
+                                # that can be used later with wget.
+                                # If set to 'download' it downloads
+                                # the FITS files
+
     overwrite   : false
                                 # If set to false (do not overwrite)
                                 # if image file found to exist already
-                                # If set to true, then overwrite.
+                                # If set to true, then overwrite. It
+                                # only applies when action is set to
+                                # 'download'
 
 ########### Failure Handling ##########
 
