@@ -33,6 +33,7 @@ if __name__ == '__main__':
     refcat = parms['refcat']
     refcatfile = refcat['catfile']
     reftable = ascii.read(refcatfile)
+    obj_colname = refcat['obj_colname']
     ra_colname = refcat['RA_colname']
     dec_colname = refcat['Dec_colname']
     if refcat['RA_units'] == 'hms':
@@ -42,6 +43,7 @@ if __name__ == '__main__':
 
     refRA = reftable[ra_colname]
     refDec = reftable[dec_colname]
+    refObj = reftable[obj_colname]
     refcoords = SkyCoord(refRA, refDec, unit=(ra_units, dec_units), equinox=refcat['epoch'], frame='icrs')
 
     subsetinfo = parms['subset']
@@ -168,6 +170,7 @@ if __name__ == '__main__':
                 matchinfo[radcatkey]['freq'] = radiocats[radcatkey]['freq']
                 matchinfo[radcatkey]['iref'] = mref
                 matchinfo[radcatkey]['icat'] = ind_flux_cut[mrad]
+                matchinfo[radcatkey]['objname'] = refObj.data[mref].data
                 matchinfo[radcatkey]['refRA'] = refcoords.ra.deg[mref]
                 matchinfo[radcatkey]['refDec'] = refcoords.dec.deg[mref]
                 matchinfo[radcatkey]['catRA'] = ra_deg_radcat[mrad]

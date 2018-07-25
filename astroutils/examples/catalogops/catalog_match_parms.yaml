@@ -23,6 +23,9 @@ refcat      :
                                 # or CDS format that Astropy can
                                 # readily read in
 
+    obj_colname : 'Quasar'
+                                # Column containing object name
+
     RA_colname  : 'R.A.'
                                 # Column name containing RA
 

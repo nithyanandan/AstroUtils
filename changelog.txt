@@ -1,3 +1,15 @@
+From 81fa063 (imgcutout):
+========================
+
+In astroutils/examples/catalogops/catalog_match_parms.yaml,
+
+(*) Add option to load object name from input reference catalog
+
+In scripts/match_catalogs.py,
+
+(*) Add option to read and save object name from input reference
+catalog into the output HDF5 file
+
 From 3321bdb (imgcutout):
 ========================
 
