@@ -16,10 +16,10 @@ if __name__ == '__main__':
     
     ## Parse input arguments
     
-    parser = argparse.ArgumentParser(description='Program to retrieve TGSS image cutouts')
+    parser = argparse.ArgumentParser(description='Program to retrieve image cutouts')
     
     input_group = parser.add_argument_group('Input parameters', 'Input specifications')
-    input_group.add_argument('-i', '--infile', dest='infile', default=astroutils_path+'examples/cosmotile/cosmotile_parms.yaml', type=str, required=False, help='File specifying input parameters for retrieving image cutouts')
+    input_group.add_argument('-i', '--infile', dest='infile', default=astroutils_path+'examples/image_cutout/image_cutout_parms.yaml', type=str, required=False, help='File specifying input parameters for retrieving image cutouts')
 
     args = vars(parser.parse_args())
     

@@ -1,3 +1,14 @@
+From 3321bdb (imgcutout):
+========================
+
+(*) Add scripts/retrieve_image_cutouts.py to repo
+(*) Add astroutils/examples/catalogops/catalog_match_parms.yaml to
+repo
+
+In scripts/retrieve_image_cutouts.py,
+
+(*) Minor changes to comments and descriptions
+
 From d2c4a67 (imgcutout):
 ========================
 
