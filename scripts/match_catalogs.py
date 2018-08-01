@@ -65,8 +65,8 @@ if __name__ == '__main__':
                         select = NP.logical_and(select, NP.asarray([pstr in subdat[j] for j in range(len(subdat))]))
 
     select_ind = NP.where(select)[0]
-    reftable = reftable[select_ind]
-    refcoords = refcoords[select_ind]
+    select_reftable = reftable[select_ind]
+    select_refcoords = refcoords[select_ind]
     
     radiocats = parms['radiocats']
 
@@ -156,7 +156,7 @@ if __name__ == '__main__':
             nnearest = radiocats[radcatkey]['nnearest']
             maxmatches = radiocats[radcatkey]['maxmatches']
 
-            mref, mrad, d12 = GEOM.spherematch(refcoords.ra.deg, refcoords.dec.deg, ra_deg_radcat, dec_deg_radcat, matchrad=matchrad/3.6e3, nnearest=nnearest, maxmatches=maxmatches)
+            mref, mrad, d12 = GEOM.spherematch(select_refcoords.ra.deg, select_refcoords.dec.deg, ra_deg_radcat, dec_deg_radcat, matchrad=matchrad/3.6e3, nnearest=nnearest, maxmatches=maxmatches)
 
             matchinfo[radcatkey] = {}
             matchinfo[radcatkey]['radius'] = matchrad
@@ -168,11 +168,11 @@ if __name__ == '__main__':
                 mrad = NP.asarray(mrad)
     
                 matchinfo[radcatkey]['freq'] = radiocats[radcatkey]['freq']
-                matchinfo[radcatkey]['iref'] = mref
+                matchinfo[radcatkey]['iref'] = select_ind[mref]
                 matchinfo[radcatkey]['icat'] = ind_flux_cut[mrad]
-                matchinfo[radcatkey]['objname'] = refObj.data[mref].data
-                matchinfo[radcatkey]['refRA'] = refcoords.ra.deg[mref]
-                matchinfo[radcatkey]['refDec'] = refcoords.dec.deg[mref]
+                matchinfo[radcatkey]['objname'] = refObj.data[select_ind[mref]].data
+                matchinfo[radcatkey]['refRA'] = select_refcoords.ra.deg[mref]
+                matchinfo[radcatkey]['refDec'] = select_refcoords.dec.deg[mref]
                 matchinfo[radcatkey]['catRA'] = ra_deg_radcat[mrad]
                 matchinfo[radcatkey]['catDec'] = dec_deg_radcat[mrad]
                 matchinfo[radcatkey]['dist'] = d12 * 3.6e3

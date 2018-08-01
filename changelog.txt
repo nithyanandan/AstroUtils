@@ -1,3 +1,10 @@
+From 66c3c11 (imgcutout):
+========================
+
+In scripts/match_catalogs.py,
+
+(*) Fix indexing error at the time of writing out HDF5 file
+
 From 81fa063 (imgcutout):
 ========================
 
