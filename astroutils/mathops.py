@@ -1277,3 +1277,104 @@ def interpolate_masked_array_1D(arr, wts, axis, interp_parms,
     return (arr_interped, wts_interped)
 
 ################################################################################
+
+def array_trace(inparr, offsets=None, axis1=0, axis2=1, outaxis='axis1',
+                dtype=None):
+
+    """
+    ----------------------------------------------------------------------------
+    A generalized array trace estimator which is a wrapper around numpy.trace()
+    but produces multiple traces at once. Read documentation of numpy.trace()
+    to fully comprehend this docstring
+
+    Inputs:
+
+    inparr      [numpy array] Input array (possibly multi-dimensional)
+
+    offsets     [NoneType or numpy array] If set to None (default), traces along
+                all possible offsets are computed. If set to numpy array, it 
+                must be an array of integers, and traces along these offsets
+                are only computed.
+
+    axis1       [integer] Axes to be used as the first axis of the 2-D 
+                sub-arrays from which the diagonals should be taken. Default=0 
+                (first axis of inparr)
+
+    axis2       [integer] Axes to be used as the second axis of the 2-D 
+                sub-arrays from which the diagonals should be taken. Default=0 
+                (second axis of inparr)
+
+    outaxis     [string] Output axis specification where the traces will be
+                placed. Accepted values are 'axis1' (default) and 'axis2' and
+                that corresponding axis will serve as the primary axis based
+                on which offsets are calculated. For example, if 
+                outaxis='axis1', then offsets can range from -naxis1+1 to 
+                naxis2+1. if outaxis='axis2', then offsets can range from 
+                -naxis2+1 to naxis1+1. In the output, naxis1=len(offsets) 
+                and axis2 is removed if outaxis='axis1', and vice versa.
+
+    dtype       [NoneType or numpy datatype] Determines the data-type of the 
+                returned array and of the accumulator where the elements are 
+                summed. If dtype has the value None and a is of integer type of 
+                precision less than the default integer precision, then the 
+                default integer precision is used. Otherwise, the precision is 
+                the same as that of inparr
+
+    Outputs:
+
+    A two-element tuple. The first element contains the trace(s). If inparr is 
+    of shape (...,naxis1,...,naxis2,...), the output is of shape 
+    (...,len(offsets),...,[],...) or (...,[],...,len(offsets),...). The second 
+    element is a numpy array of offsets to indicate the signed offsets of the
+    traces computed.
+    ----------------------------------------------------------------------------
+    """
+
+    if not isinstance(inparr, NP.ndarray):
+        raise TypeError('Input inparr must be a numpy array')
+
+    if not isinstance(axis1, int):
+        raise TypeError('Input axis1 must be an integer')
+    if not isinstance(axis2, int):
+        raise TypeError('Input axis2 must be an integer')
+
+    if not isinstance(outaxis, str):
+        raise TypeError('Input outaxis must be a string')
+    if outaxis.lower() not in ['axis1', 'axis2']:
+        raise ValueError('Invalid input specified in outaxis')
+
+    inpshape = NP.asarray(inparr.shape)
+    if (axis1 >= inparr.ndim) or (axis2 >= inparr.ndim):
+        raise ValueError('Input axes exceed the dimensions of the input array')
+
+    if offsets is None:
+        offsets = NP.arange(-inpshape[axis1]+1, inpshape[axis2])
+        if outaxis.lower() == 'axis2':
+            offsets = offsets[::-1]
+    elif isinstance(offsets, int):
+        offsets = NP.asarray(offsets).ravel()
+    else:
+        raise TypeError('Input offsets must be NoneType or integer')
+
+    if outaxis.lower() == 'axis1':
+        if NP.any(NP.logical_or(offsets < -inpshape[axis1]+1, offsets > inpshape[axis2]-1)):
+            raise ValueError('One or more diagonal offsets exceed the dimensions of the array')
+    else:
+        if NP.any(NP.logical_or(offsets < -inpshape[axis2]+1, offsets > inpshape[axis1]-1)):
+            raise ValueError('One or more diagonal offsets exceed the dimensions of the array')
+
+    outarr = []
+
+    for oind,offset in enumerate(offsets):
+        outarr += [NP.trace(inparr, offset=offset, axis1=axis1, axis2=axis2, dtype=dtype, out=None)]
+
+    outarr = NP.asarray(outarr)
+    if outaxis.lower() == 'axis1':
+        outarr = NP.moveaxis(outarr, 0, axis1)
+    else:
+        outarr = NP.moveaxis(outarr, 0, axis2)
+
+    return (outarr, offsets)
+
+################################################################################
+

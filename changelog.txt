@@ -1,3 +1,10 @@
+From 98a51ca (master):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Add function array_trace() along with docstring
+
 From 66c3c11 (imgcutout):
 ========================
 
