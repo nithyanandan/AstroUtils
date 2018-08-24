@@ -1,3 +1,10 @@
+From fe60fc4 (master):
+=====================
+
+In astroutils/lookup_operations.py,
+
+(*) Update docstring of function find_1NN()
+
 From 98a51ca (master):
 =====================
 

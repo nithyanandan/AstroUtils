@@ -767,14 +767,15 @@ def find_1NN(ref, inp, distance_ULIM=NP.inf, remove_oob=True):
     inp     [numpy array] Input locations for which nearest neighbours will be
             searched in reference locations specified in ref. MxK numpy array
             representing M points in K-dimensional coordinates. Must have same
-            number of columns as input parameter ref.
+            number of columns as input parameter ref. Must be in same units as
+            ref
 
     distance_ULIM
             [scalar] A positive number for the upper bound on distance while
             searching for nearest neighbours. Neighbours outside of this upper
             bound are not searched for. Default = NP.inf (infinite distance upper 
             bound means nearest neighbours will be searched all the way out to 
-            infinite distance). Should be in the same units as x, y, xin and yin
+            infinite distance). Should be in the same units as ref and inp
 
     remove_oob
             [boolean] If set to True, results of nearest neighbour search and 
@@ -789,11 +790,9 @@ def find_1NN(ref, inp, distance_ULIM=NP.inf, remove_oob=True):
     Outputs: 
 
     Returns a tuple in the following order:
-    index of input location (inpind), nearest neighbour distance in the lookup 
-    table (distNN), and the index of the nearest neighbour in the lookup table 
-    (refind).
-    The number of pairs matched will be the lesser of those determined by distNN
-    and maxmatch
+    index of input location (inpind), the index of the nearest neighbour in the 
+    lookup table (refind), and the nearest neighbour distance in the lookup 
+    table (distNN). The number of pairs matched will be at most 1
 
     inpind  [numpy vector] indices of the input locations for which nearest 
             neighbours were found from the lookup table. If remove_oob is 
@@ -804,16 +803,15 @@ def find_1NN(ref, inp, distance_ULIM=NP.inf, remove_oob=True):
             found within the distance upper bound from the lookup table. The
             corresponding values in distNN are returned as inf or NP.inf
 
-    distNN  [numpy vector] distance to the nearest neighbour in the lookup table
-            for the given input locations. If remove_oob is not set to True, size 
-            of distNN is equal to size of xin or yin, otherwise size of distNN is 
-            less than or equal to size of xin or yin. In such a case, out of 
-            bound locations are filled with inf or NP.inf. 
-
     refind  [numpy vector] indices of the nearest neighbours in the reference 
             lookup table. i.e., ref[refind,:] are the nearest neighbours of 
             inp[inpind] with distances distNN.
 
+    distNN  [numpy vector] distance to the nearest neighbour in the lookup table
+            for the given input locations. If remove_oob is not set to True, 
+            size of distNN is equal to number of points in inp, otherwise size 
+            of distNN is less than or equal to number of points in inp. In the
+            former case, out of bound locations are filled with inf or NP.inf. 
     -----------------------------------------------------------------------------
     """
 
