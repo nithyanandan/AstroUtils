@@ -1,3 +1,10 @@
+From ad045b4 (mathops):
+======================
+
+In astroutils/mathops.py,
+
+(*) Remove commented block in function interpolate_masked_array_1D()
+
 From 7089a3a (master):
 =====================
 
