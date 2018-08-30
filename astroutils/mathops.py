@@ -1069,8 +1069,8 @@ def interpolate_phase_1D(phase, wts, axis, interp_parms, collapse_axes=None,
 
 ################################################################################
 
-def interpolate_masked_array_1D(arr, wts, axis, interp_parms, 
-                                fix_ampl=None, collapse_axes=None,
+def interpolate_masked_array_1D(arr, wts, axis, interp_parms, inploc=None,
+                                outloc=None, fix_ampl=None, collapse_axes=None,
                                 collapse_stat='median'):
 
     """
@@ -1080,7 +1080,11 @@ def interpolate_masked_array_1D(arr, wts, axis, interp_parms,
     with fixed amplitude such as complex exponentials where amplitude is 
     constrained to be unity. This is a masked (complex) array wrapper to 
     scipy.interpolate.interp1d(), astropy.convolution.convolve() but 
-    interpolates along the specified dimension
+    interpolates along the specified dimension. It can also use the interpolated
+    array to further predict the array at arbitrary locations.
+
+    CAUTION: Except for op_type='interp1d', it assumes the locations along the 
+    axis are monotonic and uniformly spaced
 
     Inputs:
 
@@ -1092,6 +1096,18 @@ def interpolate_masked_array_1D(arr, wts, axis, interp_parms,
     axis    [integer] Axis along which input array is to be interpolated. Must 
             be an integer.
 
+    inploc  [NoneType or numpy array] Input locations along interpolation axis 
+            where the input array is provided. If outloc is not set to None, 
+            then this parameter also has to be set. If set to a numpy array, 
+            interp_kind in interp_parms must be set. 
+
+    outloc  [NoneType or numpy array] Output locations along interpolation axis 
+            where the interpolated values are to be resampled. If set to None, 
+            the interpolation is used to predict only the missing values. If set 
+            to a numpy array, it must be an array of locations along axis to be
+            interpolated, and inploc as well as interp_kind in interp_parms must 
+            be set. 
+
     interp_parms
             [dictionary] Dictionary specifying interpolation parameters. It has
             the following keys and values:
@@ -1101,8 +1117,9 @@ def interpolate_masked_array_1D(arr, wts, axis, interp_parms,
                             (skimage.filters), 'tophat' (astropy.convolution) 
                             and 'gaussian' (astropy.convolution)
             'interp_kind'   [string (optional)] Specifies the interpolation 
-                            kind (if 'op_type' is set to 'interp1d'). For
-                            accepted values, see scipy.interpolate.interp1d()
+                            kind (if 'op_type' is set to 'interp1d' or if 
+                            'outloc' is not None). For accepted values, see 
+                            scipy.interpolate.interp1d()
             'window_size'   [integer (optional)] Specifies the size of the
                             interpolating/smoothing kernel. Only applies when
                             'op_type' is set to 'median', 'tophat' or 'gaussian'
@@ -1191,7 +1208,19 @@ def interpolate_masked_array_1D(arr, wts, axis, interp_parms,
             raise KeyError('Input "window_size" not found in interp_parms')
         if interp_parms['window_size'] <= 0:
             raise ValueError('Spectral filter window size must be positive')
-    if interp_parms['op_type'].lower() == 'interp1d':
+    if inploc is not None:
+        if not isinstance(inploc, NP.ndarray):
+            raise TypeError('Input inploc must be a numpy array')
+        inploc = inploc.ravel()
+        if inploc.size != arr.shape[axis]:
+            raise ValueError('Input inploc incompatible with dimensions of input arr along the specified axis')
+    if outloc is not None:
+        if not isinstance(outloc, NP.ndarray):
+            raise TypeError('Input outloc must be a numpy array')
+        if inploc is None:
+            raise ValueError('For outloc to be used, inploc must be set')
+        outloc = outloc.ravel()
+    if (interp_parms['op_type'].lower() == 'interp1d') or (outloc is not None):
         if 'interp_kind' not in interp_parms:
             interp_parms['interp_kind'] = 'linear'
     mask_in = arr.mask
@@ -1206,25 +1235,42 @@ def interpolate_masked_array_1D(arr, wts, axis, interp_parms,
         wts_reshaped = wts_reshaped.reshape(-1,wts_reshaped_shape[-1]) # 2D array with axis to be interpolated as last dimension
         mask_reshaped = NP.moveaxis(wts_collapsed.mask, axis, wts_collapsed.ndim-1).reshape(-1,wts_reshaped_shape[-1]) # axis is the last dimension
         arr_reshaped = NP.moveaxis(arr_collapsed, axis, arr_collapsed.ndim-1).reshape(-1,wts_reshaped_shape[-1]) # 2D array with axis to be interpolated as the last dimension
-        wts_interped = MA.copy(wts_reshaped)
-        arr_interped = MA.copy(arr_reshaped)
+        if outloc is None:
+            wts_interped = MA.copy(wts_reshaped)
+            arr_interped = MA.copy(arr_reshaped)
+        else:
+            wts_interped = MA.array(NP.full((wts_reshaped.shape[0],outloc.size), dtype=NP.float, fill_value=NP.nan), mask=NP.full((wts_reshaped.shape[0],outloc.size), dtype=NP.bool, fill_value=False))
+            arr_interped = MA.array(NP.full((arr_reshaped.shape[0],outloc.size), dtype=NP.float, fill_value=NP.nan), mask=NP.full((arr_reshaped.shape[0],outloc.size), dtype=NP.bool, fill_value=False))
+            if NP.iscomplexobj(arr):
+                arr_interped = arr_interped.astype(NP.complex)
+                arr_interped += 1j * NP.full((wts_reshaped.shape[0],outloc.size), dtype=NP.float, fill_value=NP.nan)
         for ax0ind in NP.arange(arr_reshaped.shape[0]):
             inpind = NP.where(NP.logical_not(mask_reshaped[ax0ind,:]))[0]
-            outind = NP.where(mask_reshaped[ax0ind,:])[0]
-            if (inpind.size > 1) and (outind.size > 0):
+            if outloc is None:
+                outind = NP.where(mask_reshaped[ax0ind,:])[0]
+                inlocs = NP.copy(inpind)
+                outlocs = NP.copy(outind)
+            else:
+                inlocs = inploc[inpind]
+                outlocs = NP.copy(outloc)
+            if (inpind.size > 1) and (outlocs.size > 0):
                 inpwts = wts_reshaped[ax0ind,inpind]
                 inparr = arr_reshaped[ax0ind,inpind]
-                interpfunc_wts = interpolate.interp1d(inpind, inpwts, kind=interp_parms['interp_kind'], axis=-1, bounds_error=False, fill_value=NP.nan)
-                outwts = interpfunc_wts(outind)
+                interpfunc_wts = interpolate.interp1d(inlocs, inpwts, kind=interp_parms['interp_kind'], axis=-1, bounds_error=False, fill_value=NP.nan)
+                outwts = interpfunc_wts(outlocs)
                 if NP.iscomplexobj(arr):
-                    interpfunc_arr_real = interpolate.interp1d(inpind, inparr.real, kind=interp_parms['interp_kind'], axis=-1, bounds_error=False, fill_value=NP.nan)
-                    interpfunc_arr_imag = interpolate.interp1d(inpind, inparr.imag, kind=interp_parms['interp_kind'], axis=-1, bounds_error=False, fill_value=NP.nan)
-                    outarr = interpfunc_arr_real(outind) + 1j * interpfunc_arr_imag(outind)
+                    interpfunc_arr_real = interpolate.interp1d(inlocs, inparr.real, kind=interp_parms['interp_kind'], axis=-1, bounds_error=False, fill_value=NP.nan)
+                    interpfunc_arr_imag = interpolate.interp1d(inlocs, inparr.imag, kind=interp_parms['interp_kind'], axis=-1, bounds_error=False, fill_value=NP.nan)
+                    outarr = interpfunc_arr_real(outlocs) + 1j * interpfunc_arr_imag(outlocs)
                 else:
-                    interpfunc_arr = interpolate.interp1d(inpind, inparr, kind=interp_parms['interp_kind'], axis=-1, bounds_error=False, fill_value=NP.nan)
-                    outarr = interpfunc_arr(outind)
-                wts_interped[ax0ind,outind] = NP.copy(outwts)
-                arr_interped[ax0ind,outind] = NP.copy(outarr)
+                    interpfunc_arr = interpolate.interp1d(inlocs, inparr, kind=interp_parms['interp_kind'], axis=-1, bounds_error=False, fill_value=NP.nan)
+                    outarr = interpfunc_arr(outlocs)
+                if outloc is None:
+                    wts_interped[ax0ind,outind] = NP.copy(outwts)
+                    arr_interped[ax0ind,outind] = NP.copy(outarr)
+                else:
+                    wts_interped[ax0ind,:] = NP.copy(outwts)
+                    arr_interped[ax0ind,:] = NP.copy(outarr)
     else:
         wts_reshaped = NP.moveaxis(wts_filled, axis, wts_collapsed.ndim-1) # axis is the last dimension
         wts_reshaped_shape = wts_reshaped.shape
@@ -1258,10 +1304,40 @@ def interpolate_masked_array_1D(arr, wts, axis, interp_parms,
             else:
                 arr_interped = CONV.interpolate_replace_nans(arr_reshaped.reshape(-1,wts_reshaped_shape[-1]), kernel)
         
-    wts_interped = wts_interped.reshape(wts_reshaped_shape) # back to intermediate shape with axis as the last dimension
+    # if outloc is not None:
+    #     # Resample at requested locations by interpolating the already
+    #     # interpolated or smoothed results by further interpolation
+        
+    #     for ax0ind in NP.arange(arr_reshaped.shape[0]):
+    #         inpind = NP.where(NP.logical_not(mask_reshaped[ax0ind,:]))[0]
+    #         outind = NP.copy(outloc)
+    #         if (inpind.size > 1) and (outind.size > 0):
+    #             inpwts = wts_interped[ax0ind,inpind]
+    #             inparr = arr_interped[ax0ind,inpind]
+    #             # interpfunc_wts = interpolate.interp1d(inpind, inpwts, kind=interp_parms['interp_kind'], axis=-1, bounds_error=False, fill_value=NP.nan)
+    #             # outwts = interpfunc_wts(outind)
+    #             outwts = interpolate_array(inpwts, inpind, outind, axis=-1, kind=interp_parms['interp_kind'])
+    #             if NP.iscomplexobj(arr):
+    #                 # interpfunc_arr_real = interpolate.interp1d(inpind, inparr.real, kind=interp_parms['interp_kind'], axis=-1, bounds_error=False, fill_value=NP.nan)
+    #                 # interpfunc_arr_imag = interpolate.interp1d(inpind, inparr.imag, kind=interp_parms['interp_kind'], axis=-1, bounds_error=False, fill_value=NP.nan)
+    #                 # outarr = interpfunc_arr_real(outind) + 1j * interpfunc_arr_imag(outind)
+    #                 outarr = interpolate_array(inparr.real, inpind, outind, axis=-1, kind=interp_parms['interp_kind']) + 1j * interpolate_array(inparr.imag, inpind, outind, axis=-1, kind=interp_parms['interp_kind'])
+    #             else:
+    #                 # interpfunc_arr = interpolate.interp1d(inpind, inparr, kind=interp_parms['interp_kind'], axis=-1, bounds_error=False, fill_value=NP.nan)
+    #                 # outarr = interpfunc_arr(outind)
+    #                 outarr = interpolate_array(inparr, inpind, outind, axis=-1, kind=interp_parms['interp_kind'])
+    #             wts_interped[ax0ind,outind] = NP.copy(outwts)
+    #             arr_interped[ax0ind,outind] = NP.copy(outarr)
+        
+    if outloc is None:
+        wts_interped = wts_interped.reshape(wts_reshaped_shape) # back to intermediate shape with axis as the last dimension
+        arr_interped = arr_interped.reshape(wts_reshaped_shape) # back to intermediate shape with axis as the last dimension
+    else:
+        wts_interped = wts_interped.reshape(tuple(wts_reshaped_shape[:-1])+(wts_interped.shape[-1],)) # back to intermediate shape with axis as the last dimension
+        arr_interped = arr_interped.reshape(tuple(wts_reshaped_shape[:-1])+(arr_interped.shape[-1],)) # back to intermediate shape with axis as the last dimension
     wts_interped = NP.moveaxis(wts_interped, wts_collapsed.ndim-1, axis) # Original shape
-    arr_interped = arr_interped.reshape(wts_reshaped_shape) # back to intermediate shape with axis as the last dimension
     arr_interped = NP.moveaxis(arr_interped, arr_collapsed.ndim-1, axis) # Original shape
+
     if fix_ampl is not None:
         if NP.iscomplexobj(arr):
             arr_interped *= fix_ampl / NP.abs(arr_interped)

@@ -1,3 +1,11 @@
+From 7089a3a (master):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Update inputs and processing under function
+interpolate_masked_array_1D(). Update function docstring accordingly
+
 From fe60fc4 (master):
 =====================
 
