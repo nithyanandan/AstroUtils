@@ -1,3 +1,10 @@
+From c83304b (master):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Minor changes in docstrings throughout
+
 From edaf9d9 (mathops):
 ======================
 

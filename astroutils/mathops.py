@@ -923,20 +923,20 @@ def interpolate_phase_1D(phase, wts, axis, interp_parms, collapse_axes=None,
 
     """
     ----------------------------------------------------------------------------
-    Interpolate closure phase spectrum and fill values where values are not 
+    Interpolate phase array (spectrum) and fill values where values are not 
     available. 
 
     Inputs:
 
-    phase      [Masked array] Masked array containing closure phases (in radians). 
+    phase   [Masked array] Masked array containing closure phases (in radians). 
             Usually, it has shape (nlst, ndays, ntriads, nchan)
 
-    wts     [Maksed array] Maksed array containing weights corresponding to
+    wts     [Masked array] Masked array containing weights corresponding to
             number of measurements. It has same shape as input phase, which is 
             usually (nlst, ndays, ntriads, nchan)
 
-    axis [integer] Axis containing frequency spectra corresponding to nchan. 
-            Must be an integer.
+    axis    [integer] Axis along which interpolation occurs. It corresponds to 
+            nchan. Must be an integer.
 
     interp_parms
             [dictionary] Dictionary specifying interpolation parameters. It has
@@ -1112,23 +1112,11 @@ def interpolate_masked_array_1D(arr, wts, axis, interp_parms, inploc=None,
 
     arr     [Masked array] Complex masked array
 
-    wts     [Maksed array] Maksed array containing weights corresponding to
+    wts     [Masked array] Masked array containing weights corresponding to
             number of measurements. It has same shape as input arr
 
     axis    [integer] Axis along which input array is to be interpolated. Must 
             be an integer.
-
-    inploc  [NoneType or numpy array] Input locations along interpolation axis 
-            where the input array is provided. If outloc is not set to None, 
-            then this parameter also has to be set. If set to a numpy array, 
-            interp_kind in interp_parms must be set. 
-
-    outloc  [NoneType or numpy array] Output locations along interpolation axis 
-            where the interpolated values are to be resampled. If set to None, 
-            the interpolation is used to predict only the missing values. If set 
-            to a numpy array, it must be an array of locations along axis to be
-            interpolated, and inploc as well as interp_kind in interp_parms must 
-            be set. 
 
     interp_parms
             [dictionary] Dictionary specifying interpolation parameters. It has
@@ -1148,6 +1136,18 @@ def interpolate_masked_array_1D(arr, wts, axis, interp_parms, inploc=None,
                             The kernel is a tophat function when 'op_type' is 
                             set to 'median' or 'tophat'. If refers to FWHM when
                             'op_type' is set to 'gaussian'
+
+    inploc  [NoneType or numpy array] Input locations along interpolation axis 
+            where the input array is provided. If outloc is not set to None, 
+            then this parameter also has to be set. If set to a numpy array, 
+            interp_kind in interp_parms must be set. 
+
+    outloc  [NoneType or numpy array] Output locations along interpolation axis 
+            where the interpolated values are to be resampled. If set to None, 
+            the interpolation is used to predict only the missing values. If set 
+            to a numpy array, it must be an array of locations along axis to be
+            interpolated, and inploc as well as interp_kind in interp_parms must 
+            be set. 
 
     fix_ampl
             [NoneType or scalar] If set to None (default), amplitudes are not
