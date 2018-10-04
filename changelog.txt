@@ -1,3 +1,10 @@
+From edaf9d9 (mathops):
+======================
+
+In astroutils/mathops.py,
+
+(*) Add function is_broadcastable() along with docstring
+
 From ad045b4 (mathops):
 ======================
 

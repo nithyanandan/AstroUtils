@@ -161,6 +161,28 @@ def reverse(inp, axis=0, ind_range=None):
 
 #################################################################################
 
+def is_broadcastable(shp1, shp2):
+
+    """
+    -----------------------------------------------------------------------------
+    Check if two shapes are compatible for numpy braodcasting
+
+    Inputs:
+
+    shp1    [tuple] Shape tuple of first array
+
+    shp2    [tuple] Shape tuple of second array
+
+    Output:
+
+    True if shapes are compatible for numpy broadcasting, False otherwise
+    -----------------------------------------------------------------------------
+    """
+
+    return all((m == n) or (m == 1) or (n == 1) for m, n in zip(shp1[::-1], shp2[::-1]))
+
+#################################################################################
+
 def binned_statistic(x, values=None, statistic='mean', bins=10, range=None):
 
     """
