@@ -1158,12 +1158,13 @@ def enu2ecef(enu, ref_info):
             [dictionary] contains information about the reference point relative 
             to which all the ECEF coordinates will be estimated. It consists of 
             the following keys and information:
-            'xyz'   [3-element numpy array] ECEF XYZ location of the reference
-                    point
             'lat'   [scalar] geodetic latitude (in radians or degrees as 
                     specified by key 'units') of reference point 
             'lon'   [scalar] geodetic longitude (in radians or degrees as 
                     specified by key 'units') of reference point 
+            'alt'   [scalar] Altitude (in same units as ENU coordinates) of 
+                    reference point. If none specified, it is assumed to be
+                    0.0 (default)
             'units' [string] Specifies units of lat and lon of reference point. 
                     Accepted values are 'radians' (default) or 'degrees'
 
@@ -1192,28 +1193,27 @@ def enu2ecef(enu, ref_info):
         raise ValueError('Input enu must be a 2D 3-column array')
 
     if isinstance(ref_info, dict):
-        if 'xyz' in ref_info:
-            if isinstance(ref_info['xyz'], NP.ndarray):
-                if ref_info['xyz'].size != 3:
-                    raise ValueError('Value under key "xyz" in input ref_info must be a 3-element numpy array')
-                ref_info['xyz'] = ref_info['xyz'].ravel()
-            else:
-                raise TypeError('Value under key "xyz" in input ref_info must be a numpy array')
-        else:
-            raise KeyError('Key "xyz" not found in input ref_info')
-
         if 'lat' in ref_info:
             if not isinstance(ref_info['lat'], (int,float)):
                 raise TypeError('Value under key "lat" in input ref_info must be a scalar number')
             ref_info['lat'] = float(ref_info['lat'])
         else:
             raise KeyError('Key "lat" not found in input ref_info')
+
         if 'lon' in ref_info:
             if not isinstance(ref_info['lon'], (int,float)):
                 raise TypeError('Value under key "lon" in input ref_info must be a scalar number')
             ref_info['lon'] = float(ref_info['lon'])
         else:
             raise KeyError('Key "lon" not found in input ref_info')
+
+        if 'alt' in ref_info:
+            if not isinstance(ref_info['alt'], (int,float)):
+                raise TypeError('Value under key "alt" in input ref_info must be a scalar number')
+            ref_info['alt'] = float(ref_info['alt'])
+        else:
+            ref_info['alt'] = 0.0
+            
         if 'units' in ref_info:
             if ref_info['units'] not in ['degrees', 'radians']:
                 raise ValueError('Invalid specification for value under key "units" in input ref_info')
@@ -1224,14 +1224,17 @@ def enu2ecef(enu, ref_info):
 
     ref_lat = ref_info['lat']
     ref_lon = ref_info['lon']
+    ref_alt = ref_info['alt']
     if ref_info['units'] != 'radians':
         ref_lat = NP.radians(ref_lat)
         ref_lon = NP.radians(ref_lon)
+    ref_x, ref_y, ref_z = lla2ecef(ref_lat, ref_lon, alt=ref_alt, units='radians')
+    ref_xyz = NP.hstack((ref_x.reshape(-1,1), ref_y.reshape(-1,1), ref_z.reshape(-1,1)))
 
     rot_matrix = NP.asarray([[-NP.sin(ref_lon), -NP.sin(ref_lat)*NP.cos(ref_lon), NP.cos(ref_lat)*NP.cos(ref_lon)],
                              [NP.cos(ref_lon), -NP.sin(ref_lat)*NP.sin(ref_lon), NP.cos(ref_lat)*NP.sin(ref_lon)],
                              [0.0, NP.cos(ref_lat), NP.sin(ref_lat)]])
-    xyz = NP.dot(enu, rot_matrix.T) + ref_info['xyz'].reshape(1,-1)
+    xyz = NP.dot(enu, rot_matrix.T) + ref_xyz
     return xyz
 
 #################################################################################
