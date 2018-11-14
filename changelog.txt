@@ -1,3 +1,11 @@
+From 6e4ce32 (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Fix bug in function enu2ecef() by rectifying keys of input
+dictionary ref_info
+
 From c83304b (master):
 =====================
 

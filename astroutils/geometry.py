@@ -1192,15 +1192,15 @@ def enu2ecef(enu, ref_info):
         raise ValueError('Input enu must be a 2D 3-column array')
 
     if isinstance(ref_info, dict):
-        if 'enu' in ref_info:
-            if isinstance(ref_info['enu'], NP.ndarray):
-                if ref_info['enu'].size != 3:
-                    raise ValueError('Value under key "enu" in input ref_info must be a 3-element numpy array')
-                ref_info['enu'] = ref_info['enu'].ravel()
+        if 'xyz' in ref_info:
+            if isinstance(ref_info['xyz'], NP.ndarray):
+                if ref_info['xyz'].size != 3:
+                    raise ValueError('Value under key "xyz" in input ref_info must be a 3-element numpy array')
+                ref_info['xyz'] = ref_info['xyz'].ravel()
             else:
-                raise TypeError('Value under key "enu" in input ref_info must be a numpy array')
+                raise TypeError('Value under key "xyz" in input ref_info must be a numpy array')
         else:
-            raise KeyError('Key "enu" not found in input ref_info')
+            raise KeyError('Key "xyz" not found in input ref_info')
 
         if 'lat' in ref_info:
             if not isinstance(ref_info['lat'], (int,float)):
