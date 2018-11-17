@@ -634,18 +634,18 @@ def interpolate_array(inparray, inploc, outloc, axis=-1, kind='linear'):
     
         outarray = None
         if inbound_ind.size > 0:
-            interpfunc = interpolate.interp1d(inploc, inparray, kind=kind, axis=axis, copy=False, assume_sorted=True)
+            interpfunc = interpolate.interp1d(inploc, inparray, kind=kind, axis=axis, copy=False, assume_sorted=False)
             outarray = interpfunc(outloc[inbound_ind])
         if outbound_low_ind.size > 0:
             if outarray is None:
-                outarray = NP.repeat(NP.take(inparray, [0], axis=axis), outbound_low_ind.size, axis=axis)
+                outarray = NP.repeat(NP.take(inparray, [NP.argmin(inploc)], axis=axis), outbound_low_ind.size, axis=axis)
             else:
-                outarray = NP.concatenate((NP.repeat(NP.take(inparray, [0], axis=axis), outbound_low_ind.size, axis=axis), outarray), axis=axis)
+                outarray = NP.concatenate((NP.repeat(NP.take(inparray, [NP.argmin(inploc)], axis=axis), outbound_low_ind.size, axis=axis), outarray), axis=axis)
         if outbound_high_ind.size > 0:
             if outarray is None:
-                outarray = NP.repeat(NP.take(inparray, [-1], axis=axis), outbound_high_ind.size, axis=axis)
+                outarray = NP.repeat(NP.take(inparray, [NP.argmax(inploc)], axis=axis), outbound_high_ind.size, axis=axis)
             else:
-                outarray = NP.concatenate((outarray, NP.repeat(NP.take(inparray, [0], axis=axis), outbound_high_ind.size, axis=axis)), axis=axis)
+                outarray = NP.concatenate((outarray, NP.repeat(NP.take(inparray, [NP.argmax(inploc)], axis=axis), outbound_high_ind.size, axis=axis)), axis=axis)
     
         return outarray
 

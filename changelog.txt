@@ -1,3 +1,10 @@
+From 922bc14 (master):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Fix sorting bug in function interpolate_array()
+
 From 046b67f (master):
 =====================
 
