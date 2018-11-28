@@ -1,3 +1,14 @@
+From d979f46 (master):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Fix assertion bug in function interpolate_array()
+
+In astroutils/DSP_modules.py,
+
+(*) Change call to interpolation in function downsampler()
+
 From 922bc14 (master):
 =====================
 
