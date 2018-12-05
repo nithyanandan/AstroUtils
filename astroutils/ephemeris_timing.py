@@ -6,6 +6,34 @@ import ephem as EP
 
 ################################################################################
 
+def equation_of_equinoxes(jd):
+    """
+    ----------------------------------------------------------------------------
+    Inputs:
+
+    jd      [numpy array] Julian date at which nutation is to be estimated and
+            the equation of equinoxes returned. 
+
+    Output:
+
+    Equation of the equinoxes (in hours) that should be used to correct the 
+    Greenwich Mean Sidereal Time to obtain the Greenwich Apparent Sidereal Time
+    ----------------------------------------------------------------------------
+    """
+
+    d = jd - 2451545.0 # Days since 2000 January 1, 12h UT, Julian date 2451545.0
+    omega = 125.04 - 0.052954 * d # Longitude of the ascending node of the Moon in degrees
+    l = 280.47 + 0.98565 * d # Mean Longitude of the Sun in degrees
+    obliquity = 23.4393-- 0.0000004 * d # in degrees
+
+    nutation = -0.000319 * NP.sin(NP.radians(omega)) - 0.000024 * NP.sin(NP.radians(2*l))  # in hours
+    eqeq = nutation * NP.cos(NP.radians(obliquity)) # Equation of the equinoxes in hours
+    # t = d / 36525 # number of centuries since 2000 January 1, 12h UT, Julian date 2451545.0
+
+    return eqeq
+
+################################################################################
+
 def gmst2gps(day, GMST, type='mean', iterations=10, precision=1e-14):
 
     """

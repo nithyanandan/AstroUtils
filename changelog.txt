@@ -1,3 +1,10 @@
+From a9bfc25 (master):
+=====================
+
+In astroutils/ephemeris_timing.py,
+
+(*) Add function equation_of_equinoxes() with docstring
+
 From d979f46 (master):
 =====================
 
