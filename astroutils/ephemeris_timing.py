@@ -3,6 +3,7 @@ from astropy.coordinates import Longitude
 import numpy as NP
 from astropy import units as u
 import ephem as EP
+import constants as CNST
 
 ################################################################################
 
@@ -78,28 +79,41 @@ def julian_date_from_LAST(last, jd0, longitude, tol=1e-6):
     longitude = NP.asarray(longitude).ravel()
 
     jd = NP.copy(jd0)
-    gast = last + longitude
+    gast = last - longitude
+    d0 = jd0 - 2451545.0
 
     if gast < 0.0:
         gast += 24.0
     if gast >= 24.0:
         gast -= 24.0
 
+    gmst0 = 18.697374558 + 24.06570982441908 * d0 # Accurate to 0.1s per century
+    gmst0 = gmst0 % 24
+    if gmst0 < 0.0:
+        gmst0 += 24.0
+    if gmst0 >= 24.0:
+        gmst0 -= 24.0
+        
     dev = 100 * tol
-    while (iter < 1000) and (NP.abs(dev) > tol):
-        d = jd - 2451545.0
-        t = d / 36525.0
+    iternum = 0
+    hr = None
+    while (iternum < 1000) and (NP.abs(dev) > tol):
         eqeq = equation_of_equinoxes(jd)
         gmst = gast - eqeq
+        gmst = gmst % 24
         if gmst < 0.0:
             gmst += 24.0
         if gmst >= 24.0:
             gmst -= 24.0
         
-        newhr = (gmst - 6.697374558 - 0.06570982441908 - 0.000026 * t**2) / 1.00273790935
-        dev = (newhr - hr) / hr
+        newhr = gmst - gmst0
+        newhr *= CNST.sday
+    
+        if hr is not None:
+            dev = (newhr - hr) / hr
         hr = NP.copy(newhr)
         jd = jd0 + hr/24.0
+        iternum += 1
 
     return jd
 

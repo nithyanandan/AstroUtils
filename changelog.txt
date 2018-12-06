@@ -1,5 +1,12 @@
-From e1af3b1 (ephermeris):
-=========================
+From 29c310a (ephemeris):
+========================
+
+In astroutils/ephemeris_timing.py,
+
+(*) Fix bug in julian_date_from_LAST()
+
+From e1af3b1 (ephemeris):
+========================
 
 In astroutils/ephemeris_timing.py,
 
