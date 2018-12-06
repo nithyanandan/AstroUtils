@@ -1,3 +1,11 @@
+From e1af3b1 (ephermeris):
+=========================
+
+In astroutils/ephemeris_timing.py,
+
+(*) Add function julian_date_from_LAST() with docstring
+(*) Update docstring of function equation_of_equinoxes()
+
 From a9bfc25 (master):
 =====================
 
