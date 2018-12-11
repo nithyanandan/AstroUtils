@@ -1,3 +1,12 @@
+From df9477f (master):
+=====================
+
+In astroutils/catalog.py,
+
+(*) Read and write attribute frequency from/to HDF5 skymodel file
+(*) In case of functional spectral form, use key 'freq-ref' in the
+HDF5 file for the attribute spec_parms['freq-ref']
+
 From 29c310a (ephemeris):
 ========================
 

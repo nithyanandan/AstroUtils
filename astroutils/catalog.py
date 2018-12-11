@@ -439,15 +439,16 @@ class SkyModel(object):
                         else:
                             self.src_shape = None
                     if key == 'spectral_info':
+                        self.frequency = grp['freq'].value.reshape(1,-1)
                         self.spec_parms = {}
                         if self.spec_type == 'func':
                             self.spec_parms['name'] = grp['func-name'].value
-                            self.spec_parms['freq-ref'] = grp['freq'].value
+                            self.spec_parms['freq-ref'] = grp['freq-ref'].value
                             self.spec_parms['flux-scale'] = grp['flux_density'].value
                             if 'spindex' in grp:
                                 self.spec_parms['power-law-index'] = grp['spindex'].value
                         else:
-                            self.frequency = grp['freq'].value.reshape(1,-1)
+                            # self.frequency = grp['freq'].value.reshape(1,-1)
                             self.spectrum = grp['spectrum'].value
         elif (init_parms is None):
             raise ValueError('In the absence of init_file, init_parms must be provided for initialization')
@@ -1067,18 +1068,18 @@ class SkyModel(object):
                     src_shape_dset.attrs['units'] = 'degrees'
 
                 spec_group = fileobj.create_group('spectral_info')
+                freq_range_dset = spec_group.create_dataset('freq', (self.frequency.size,), maxshape=(None,), data=self.frequency.ravel(), compression='gzip', compression_opts=9)
+                freq_range_dset.attrs['units'] = 'Hz'
                 if self.spec_type == 'func':
                     # spec_group['func-name'] = self.spec_parms['name']
                     func_name_dset = spec_group.create_dataset('func-name', self.spec_parms['name'].shape, maxshape=(None,), data=self.spec_parms['name'])
-                    freq_dset = spec_group.create_dataset('freq', self.spec_parms['freq-ref'].shape, maxshape=(None,), data=self.spec_parms['freq-ref'], compression='gzip', compression_opts=9)
-                    freq_dset.attrs['units'] = 'Hz'
+                    freq_ref_dset = spec_group.create_dataset('freq-ref', self.spec_parms['freq-ref'].shape, maxshape=(None,), data=self.spec_parms['freq-ref'], compression='gzip', compression_opts=9)
+                    freq_ref_dset.attrs['units'] = 'Hz'
                     flux_dset = spec_group.create_dataset('flux_density', self.spec_parms['flux-scale'].shape, maxshape=(None,), data=self.spec_parms['flux-scale'], compression='gzip', compression_opts=9)
                     flux_dset.attrs['units'] = 'Jy'
                     if NP.all(self.spec_parms['name'] == 'power-law'):
                         spindex_dset = spec_group.create_dataset('spindex', self.spec_parms['power-law-index'].shape, maxshape=(None,), data=self.spec_parms['power-law-index'], compression='gzip', compression_opts=9)
                 else:
-                    freq_dset = spec_group.create_dataset('freq', (self.frequency.size,), maxshape=(None,), data=self.frequency.ravel(), compression='gzip', compression_opts=9)
-                    freq_dset.attrs['units'] = 'Hz'
                     spectrum_dset = spec_group.create_dataset('spectrum', self.spectrum.shape, maxshape=(None,None), data=self.spectrum, compression='gzip', compression_opts=9)
         else:
             outfile = outfile + '.txt'
