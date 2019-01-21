@@ -1,3 +1,12 @@
+From cd243a5 (master):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Add function tile() along with docstring to perform a
+generalized version of numpy.tile() including mirrored repeats of
+specified axes and non-integer number of tiles.
+
 From df9477f (master):
 =====================
 

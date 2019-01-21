@@ -1451,3 +1451,85 @@ def array_trace(inparr, offsets=None, axis1=0, axis2=1, outaxis='axis1',
 
 ################################################################################
 
+def tile(inparr, reps, mirror_axes=None):
+
+    """
+    ----------------------------------------------------------------------------
+    A generalized version of numpy.tile. It allows for non-integer values for
+    repetitions. It also allows for tiling of selected axes in a mirrored
+    fashion rather than periodic fashion thus providing smooth transitions 
+    at the boundaries.
+
+    Inputs:
+
+    inparr  [numpy array] An N-dimensional numpy array which is to be tiled
+
+    reps    [list or numpy array] Number of repeats along various axis. It can 
+            contain non-integers but they have to be positive. Check numpy.tile
+            behavior for when reps.size < inparr.ndim and 
+            reps.size > inparr.ndim
+
+    mirror_axes
+            [list or numpy array] The axes which are to be mirrored first 
+            and then repeated. The axes specified here should be present in
+            inparr. If set to None (default), no mirroring is performed and
+            the axes to be repeated are repeated periodically
+
+    Output:
+
+    Numpy array after tiling (and after possibly mirroring)
+    ----------------------------------------------------------------------------
+    """
+
+    if not isinstance(inparr, NP.ndarray):
+        raise TypeError('Input inparr must be a numpy array')
+    if not isinstance(reps, (list, tuple, NP.ndarray)):
+        raise TypeError('Input reps must be a list, tuple, or numpy array')
+    else:
+        reps = NP.asarray(reps).ravel()
+    if mirror_axes is not None:
+        if not isinstance(mirror_axes, (list, tuple, NP.ndarray)):
+            raise TypeError('Input mirror_axes must be a list, tuple, or numpy array')
+        else:
+            mirror_axes = NP.asarray(mirror_axes).ravel()
+            if mirror_axes.dtype != NP.int:
+                raise TypeError('Input mirror_axes must consist of integers')
+            mirror_axes = NP.unique(mirror_axes)
+
+    inpshape = NP.asarray(inparr.shape)
+    inp_ndim = inparr.ndim
+
+    if NP.any(reps <= 0.0):
+        raise ValueError('Input reps must be positive')
+
+    if mirror_axes is not None:
+        if NP.any(mirror_axes < 0) or NP.any(mirror_axes >= inp_ndim):
+            raise ValueError('mirror_axes contains axes not present in input inparr')
+
+    if inp_ndim < reps.size:
+        for i in range(reps.size - inp_ndim):
+            inparr = inparr[NP.newaxis,...]
+            if mirror_axes is not None:
+                mirror_axes += 1
+        inp_ndim = inparr.ndim
+        inpshape = NP.asarray(inparr.shape)
+
+    if inp_ndim > reps.size:
+        reps = NP.insert(reps, 0, NP.ones(inp_ndim-reps.size), axis=None)
+
+    if mirror_axes is not None:
+        for mirrorax in mirror_axes:
+            inparr = NP.concatenate((inparr, NP.flip(inparr, mirrorax)), axis=mirrorax)
+            inpshape[mirrorax] *= 2
+            reps[mirrorax] /= 2
+        
+    outshape = NP.floor(inpshape * reps).astype(int)
+    outarr = NP.tile(inparr, NP.ceil(reps).astype(int))
+
+    idx_grid = NP.ix_(*[NP.arange(n) for n in outshape])
+
+    outarr = outarr[idx_grid]
+
+    return outarr
+
+################################################################################
