@@ -1,3 +1,11 @@
+From 2182a2f (master):
+=====================
+
+In astroutils/mathops.py,
+
+(*) In function tile(), typecast input reps to floating point to
+avoid rounding errors
+
 From cd243a5 (master):
 =====================
 

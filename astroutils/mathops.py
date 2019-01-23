@@ -1486,7 +1486,7 @@ def tile(inparr, reps, mirror_axes=None):
     if not isinstance(reps, (list, tuple, NP.ndarray)):
         raise TypeError('Input reps must be a list, tuple, or numpy array')
     else:
-        reps = NP.asarray(reps).ravel()
+        reps = NP.asarray(reps).ravel().astype(float)
     if mirror_axes is not None:
         if not isinstance(mirror_axes, (list, tuple, NP.ndarray)):
             raise TypeError('Input mirror_axes must be a list, tuple, or numpy array')
