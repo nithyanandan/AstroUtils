@@ -1,3 +1,12 @@
+From bb6acdb (master):
+=====================
+
+In astroutils/mathops.py,
+
+(*) In function array_trace(), output now also contains the weights
+of the offset diagonals over which trace was computed. Update function
+docstring accordingly
+
 From 2182a2f (master):
 =====================
 

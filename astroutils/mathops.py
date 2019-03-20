@@ -1395,11 +1395,13 @@ def array_trace(inparr, offsets=None, axis1=0, axis2=1, outaxis='axis1',
 
     Outputs:
 
-    A two-element tuple. The first element contains the trace(s). If inparr is 
-    of shape (...,naxis1,...,naxis2,...), the output is of shape 
+    A three-element tuple. The first element contains the trace(s). If inparr 
+    is of shape (...,naxis1,...,naxis2,...), the output is of shape 
     (...,len(offsets),...,[],...) or (...,[],...,len(offsets),...). The second 
     element is a numpy array of offsets to indicate the signed offsets of the
-    traces computed.
+    traces computed. The third element is a numpy array of weights indicating
+    the number of elements that went into the trace along the specified 
+    diagonal offset
     ----------------------------------------------------------------------------
     """
 
@@ -1437,17 +1439,23 @@ def array_trace(inparr, offsets=None, axis1=0, axis2=1, outaxis='axis1',
             raise ValueError('One or more diagonal offsets exceed the dimensions of the array')
 
     outarr = []
+    weights = []
 
     for oind,offset in enumerate(offsets):
+        if offset >= 0:
+            weights += [min([inparr.shape[axis1], inparr.shape[axis2]-NP.abs(offset)])]
+        else:
+            weights += [min([inparr.shape[axis1]-NP.abs(offset), inparr.shape[axis2]])]
         outarr += [NP.trace(inparr, offset=offset, axis1=axis1, axis2=axis2, dtype=dtype, out=None)]
 
+    weights = NP.asarray(weights)
     outarr = NP.asarray(outarr)
     if outaxis.lower() == 'axis1':
         outarr = NP.moveaxis(outarr, 0, axis1)
     else:
         outarr = NP.moveaxis(outarr, 0, axis2)
 
-    return (outarr, offsets)
+    return (outarr, offsets, weights)
 
 ################################################################################
 
