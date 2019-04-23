@@ -1,3 +1,12 @@
+From a8c1dde (master):
+=====================
+
+In astroutils/ephemeris_timing.py,
+
+(*) Add functions radec2hadec() and hadec2radec() with docstring to
+convert between RA-Dec and HA-Dec with accurate ephemeris based on
+Astropy routines.
+
 From bb6acdb (master):
 =====================
 
