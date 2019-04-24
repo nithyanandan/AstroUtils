@@ -1,3 +1,20 @@
+From bf49f4a (ephemeris):
+========================
+
+In astroutils/ephemeris_timing.py,
+
+(*) Import warnings
+(*) Add functions radec2altaz() and altaz2radec() with docstring to
+convert between RA-Dec and Alt-Az with accurate ephemeris based on
+Astropy routines.
+(*) In functions hadec2radec() and radec2hadec(), make input epoch_RA
+default to 2000.0 instead of None. Also, adjust the default assignment
+of obstime accordingly. Update docstrings accordingly
+(*) Make minor changes in docstrings of functions hadec2radec() and
+radec2hadec()
+(*) Fix bugs in checking of input time_type in function hadec2radec() 
+and radec2hadec()
+
 From a8c1dde (master):
 =====================
 

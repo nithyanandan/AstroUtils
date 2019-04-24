@@ -1,3 +1,4 @@
+import warnings
 from astropy.time import Time, TimeDelta
 from astropy.coordinates import SkyCoord, AltAz, ICRS, FK5, EarthLocation, Longitude
 from astropy import units as U
@@ -148,7 +149,7 @@ def gmst2gps(day, GMST, type='mean', iterations=10, precision=1e-14):
 
 ################################################################################
 
-def hadec2radec(hadec, lst, obstime=None, epoch_RA=None, time_type=None):
+def hadec2radec(hadec, lst, obstime=None, epoch_RA=2000.0, time_type=None):
 
     """
     ----------------------------------------------------------------------------
@@ -168,9 +169,7 @@ def hadec2radec(hadec, lst, obstime=None, epoch_RA=None, time_type=None):
             or JYear), string (JYear string prefixed with 'J' or ISO or ISOT), 
             or an instance of class astropy.time.Time. The appropriate format 
             must be specified in input time_type. If set to None (default), it 
-            will be set equal to epoch_RA. If both obstime and epoch_RA are set 
-            to None, no ephemeris corrections are made, and a straightforward 
-            computation of radec is returned. 
+            will be set equal to epoch_RA. 
 
     epoch_RA
             [scalar, string, or instance of class astropy.time.Time] The time 
@@ -178,10 +177,9 @@ def hadec2radec(hadec, lst, obstime=None, epoch_RA=None, time_type=None):
             or JYear), string (JYear string prefixed with 'J' or ISO or ISOT), 
             or an instance of class astropy.time.Time. The appropriate format 
             must be specified in input time_type. It must be in the same format 
-            as the one obstime is specified in. If set to None (default), it 
-            will be set equal to obstime. If both obstime and epoch_RA are set 
-            to None, no ephemeris corrections are made, and a straightforward 
-            computation of radec is returned. 
+            as the one obstime is specified in. If set to 2000.0 (default), it 
+            is assumed to be in 'jyear' format. If set to None, will be set 
+            equal to 2000.0 in 'jyear' format. 
 
     time_type
             [string] Specifies the format in which obstime and epoch_RA are
@@ -192,8 +190,8 @@ def hadec2radec(hadec, lst, obstime=None, epoch_RA=None, time_type=None):
 
     Output:
 
-    The output radec as a numpy array of shape (N,2) is returned at the epoch
-    specified in epoch_RA. 
+    The output radec as a numpy array of shape (N,2) in units of degrees is 
+    returned at the epoch specified in epoch_RA. 
     ----------------------------------------------------------------------------
     """
 
@@ -210,57 +208,60 @@ def hadec2radec(hadec, lst, obstime=None, epoch_RA=None, time_type=None):
     if (lst.size != 1) and (lst.size != hadec.shape[0]):
         raise ValueError('Input LST must match the shape of input hadec')
 
-    if obstime is not None:
-        if isinstance(obstime, (int,float)):
-            if (time_type is None) or (time_type.lower() == 'jyear'):
-                equinox_HA = Time(obstime, scale='utc', format=time_type)
-            if time_type.lower() == 'jd':
-                equinox_HA = Time(obstime, scale='utc', format='jd')
-        elif isinstance(obstime, str):
-            if time_type.lower() == 'jyear':
-                equinox_HA = Time(obstime, scale='utc', format='jyear_str')
-            if time_type.lower() == 'iso':
-                equinox_HA = Time(obstime, scale='utc', format='iso')
-            if time_type.lower() == 'isot':
-                equinox_HA = Time(obstime, scale='utc', format='isot')
-        elif isinstance(obstime, Time):
-            equinox_HA = copy.copy(obstime)
-        else:
-            raise TypeError('Input obstime is invalid or currently not accepted')
-
     if epoch_RA is not None:
         if isinstance(epoch_RA, (int,float)):
             if (time_type is None) or (time_type.lower() == 'jyear'):
                 equinox_RA = Time(epoch_RA, scale='utc', format='jyear')
-            if time_type.lower() == 'jd':
+            elif time_type.lower() == 'jd':
                 equinox_RA = Time(epoch_RA, scale='utc', format='jd')
         elif isinstance(epoch_RA, str):
             if time_type.lower() == 'jyear':
-                equinox_RA = Time(epoch_RA, scale='utc', format='jyear_str')
-            if time_type.lower() == 'iso':
-                equinox_RA = Time(epoch_RA, scale='utc', format='iso')
-            if time_type.lower() == 'isot':
-                equinox_RA = Time(epoch_RA, scale='utc', format='isot')
+                equinox_RA = Time('J{0:.9f}'.format(epoch_RA), scale='utc', format='jyear_str')
+            if (time_type.lower() == 'iso') or (time_type.lower() == 'isot'):
+                equinox_RA = Time(epoch_RA, scale='utc', format=time_type.lower())
         elif isinstance(epoch_RA, Time):
             equinox_RA = copy.copy(epoch_RA)
         else:
             raise TypeError('Input epoch_RA is invalid or currently not accepted')
-        
-        if (obstime is None) and (epoch_RA is not None):
-            equinox_HA = copy.copy(equinox_RA)
-        elif (obstime is not None) and (epoch_RA is None):
-            equinox_RA = copy.copy(equinox_HA)
-        elif (obstime is None) and (epoch_RA is None):
-            equinox_HA = None
-            equinox_RA = None
+    else:
+        equinox_RA = Time(2000.0, format='jyear', scale='utc')
+        warnings.warn('No epoch_RA provided. Setting epoch to {0}'.format(equinox_RA.jyear_str))
 
-        radec_obstime = NP.hstack(((lst-hadec[:,0]).reshape(-1,1), hadec[:,1].reshape(-1,1)))
-        if (equinox_HA is None) and (equinox_RA is None):
-            return radec_obstime
+    if obstime is not None:
+        if isinstance(obstime, (int,float)):
+            if (time_type is None) or (time_type.lower() == 'jyear'):
+                equinox_HA = Time(obstime, scale='utc', format='jyear')
+            elif time_type.lower() == 'jd':
+                equinox_HA = Time(obstime, scale='utc', format='jd')
+        elif isinstance(obstime, str):
+            if time_type.lower() == 'jyear':
+                equinox_HA = Time(obstime, scale='utc', format='jyear_str')
+            if (time_type.lower() == 'iso') or (time_type.lower() == 'isot'):
+                equinox_HA = Time(obstime, scale='utc', format=time_type.lower())
+        elif isinstance(obstime, Time):
+            equinox_HA = copy.copy(obstime)
         else:
-            skycoords = SkyCoord(ra=radec_obstime[:,0]*U.deg, dec=radec_obstime[:,1]*U.deg, frame='fk5', equinox=equinox_HA).transform_to(FK5(equinox=equinox_RA))
-            radec = NP.hstack((skycoords.ra.deg.reshape(-1,1), skycoords.dec.deg.reshape(-1,1)))
-            return radec
+            raise TypeError('Input obstime is invalid or currently not accepted')
+        
+    if obstime is None:
+        equinox_HA = copy.copy(equinox_RA)
+        warnings.warn('No obstime provided. Setting obstime to {0}'.format(equinox_HA.jyear_str))
+
+    # if (obstime is None) and (epoch_RA is not None):
+    #     equinox_HA = copy.copy(equinox_RA)
+    # elif (obstime is not None) and (epoch_RA is None):
+    #     equinox_RA = copy.copy(equinox_HA)
+    # elif (obstime is None) and (epoch_RA is None):
+    #     equinox_HA = None
+    #     equinox_RA = None
+
+    radec_obstime = NP.hstack(((lst-hadec[:,0]).reshape(-1,1), hadec[:,1].reshape(-1,1)))
+    if (equinox_HA is None) and (equinox_RA is None):
+        return radec_obstime
+    else:
+        skycoords = SkyCoord(ra=radec_obstime[:,0]*U.deg, dec=radec_obstime[:,1]*U.deg, frame='fk5', equinox=equinox_HA).transform_to(FK5(equinox=equinox_RA))
+        radec = NP.hstack((skycoords.ra.deg.reshape(-1,1), skycoords.dec.deg.reshape(-1,1)))
+        return radec
 
 #################################################################################
 
@@ -284,9 +285,7 @@ def radec2hadec(radec, lst, obstime=None, epoch_RA=None, time_type=None):
             or JYear), string (JYear string prefixed with 'J' or ISO or ISOT), 
             or an instance of class astropy.time.Time. The appropriate format 
             must be specified in input time_type. If set to None (default), it 
-            will be set equal to epoch_RA. If both obstime and epoch_RA are set 
-            to None, no ephemeris corrections are made, and a straightforward 
-            computation of hadec is returned. 
+            will be set equal to epoch_RA. 
 
     epoch_RA
             [scalar, string, or instance of class astropy.time.Time] The time 
@@ -294,10 +293,9 @@ def radec2hadec(radec, lst, obstime=None, epoch_RA=None, time_type=None):
             or JYear), string (JYear string prefixed with 'J' or ISO or ISOT), 
             or an instance of class astropy.time.Time. The appropriate format 
             must be specified in input time_type. It must be in the same format 
-            as the one obstime is specified in. If set to None (default), it 
-            will be set equal to obstime. If both obstime and epoch_RA are set 
-            to None, no ephemeris corrections are made, and a straightforward 
-            computation of hadec is returned. 
+            as the one obstime is specified in. If set to 2000.0 (default), it 
+            is assumed to be in 'jyear' format. If set to None, it will be set 
+            equal to default of 2000.0 in 'jyear' format. 
 
     time_type
             [string] Specifies the format in which obstime and epoch_RA are
@@ -308,8 +306,8 @@ def radec2hadec(radec, lst, obstime=None, epoch_RA=None, time_type=None):
 
     Output:
 
-    The output hadec as a numpy array of shape (N,2) is returned at the epoch
-    specified in obstime.
+    The output hadec as a numpy array of shape (N,2) in units of degrees 
+    is returned at the epoch specified in obstime.
     ----------------------------------------------------------------------------
     """
 
@@ -326,57 +324,279 @@ def radec2hadec(radec, lst, obstime=None, epoch_RA=None, time_type=None):
     if (lst.size != 1) and (lst.size != radec.shape[0]):
         raise ValueError('Input LST must match the shape of input radec')
 
+    if epoch_RA is not None:
+        if isinstance(epoch_RA, (int,float)):
+            if (time_type is None) or (time_type.lower() == 'jyear'):
+                equinox_RA = Time(epoch_RA, scale='utc', format='jyear')
+            elif time_type.lower() == 'jd':
+                equinox_RA = Time(epoch_RA, scale='utc', format='jd')
+        elif isinstance(epoch_RA, str):
+            if time_type.lower() == 'jyear':
+                equinox_RA = Time('J{0:.9f}'.format(epoch_RA), scale='utc', format='jyear_str')
+            if (time_type.lower() == 'iso') or (time_type.lower() == 'isot'):
+                equinox_RA = Time(epoch_RA, scale='utc', format=time_type.lower())
+        elif isinstance(epoch_RA, Time):
+            equinox_RA = copy.copy(epoch_RA)
+        else:
+            raise TypeError('Input epoch_RA is invalid or currently not accepted')
+    else:
+        equinox_RA = Time(2000.0, format='jyear', scale='utc')
+        warnings.warn('No epoch_RA provided. Setting epoch to {0}'.format(equinox_RA.jyear_str))
+
     if obstime is not None:
         if isinstance(obstime, (int,float)):
             if (time_type is None) or (time_type.lower() == 'jyear'):
                 equinox_HA = Time(obstime, scale='utc', format='jyear')
-            if time_type.lower() == 'jd':
+            elif time_type.lower() == 'jd':
                 equinox_HA = Time(obstime, scale='utc', format='jd')
         elif isinstance(obstime, str):
             if time_type.lower() == 'jyear':
-                equinox_HA = Time('J{0:.9f}'.format(obstime), scale='utc', format='jyear_str')
-            if time_type.lower() == 'iso':
-                equinox_HA = Time(obstime, scale='utc', format='iso')
-            if time_type.lower() == 'isot':
-                equinox_HA = Time(obstime, scale='utc', format='isot')
+                equinox_HA = Time(obstime, scale='utc', format='jyear_str')
+            if (time_type.lower() == 'iso') or (time_type.lower() == 'isot'):
+                equinox_HA = Time(obstime, scale='utc', format=time_type.lower())
         elif isinstance(obstime, Time):
             equinox_HA = copy.copy(obstime)
         else:
             raise TypeError('Input obstime is invalid or currently not accepted')
+        
+    if obstime is None:
+        equinox_HA = copy.copy(equinox_RA)
+        warnings.warn('No obstime provided. Setting obstime to {0}'.format(equinox_HA.jyear_str))
+        
+    # if (obstime is None) and (epoch_RA is not None):
+    #     equinox_HA = copy.copy(equinox_RA)
+    # elif (obstime is not None) and (epoch_RA is None):
+    #     equinox_RA = copy.copy(equinox_HA)
+    # elif (obstime is None) and (epoch_RA is None):
+    #     equinox_HA = None
+    #     equinox_RA = None
+
+    # if (equinox_HA is None) and (equinox_RA is None):
+    #     return NP.hstack(((lst - radec[:,0]).reshape(-1,1), radec[:,1].reshape(-1,1)))
+    # else:
+    skycoords = SkyCoord(ra=radec[:,0]*U.deg, dec=radec[:,1]*U.deg, equinox=equinox_RA, frame='fk5').transform_to(FK5(equinox=equinox_HA))
+    hadec = NP.hstack(((lst-skycoords.ra.deg).reshape(-1,1), skycoords.dec.deg.reshape(-1,1)))
+    return hadec
+        
+#################################################################################
+
+def altaz2radec(altaz, location, obstime=None, epoch_RA=2000.0, time_type=None):
+
+    """
+    ----------------------------------------------------------------------------
+    Convert Alt-Az to RA-Dec with accurate ephemeris
+
+    Inputs:
+
+    altaz   [numpy array] Altitude and Azimuth as a Nx2 numpy array. All units 
+            in degrees
+
+    location
+            [instance of class astropy.coordinates.EarthLocation] Location of
+            the observer provided as an instance of class 
+            astropy.coordinates.EarthLocation
+
+    obstime [scalar, string, or instance of class astropy.time.Time] The time 
+            or epoch which applies to input altaz. It can be a scalar (in JD 
+            or JYear), string (JYear string prefixed with 'J' or ISO or ISOT), 
+            or an instance of class astropy.time.Time. The appropriate format 
+            must be specified in input time_type. If set to None (default), it 
+            will be set equal to epoch_RA. 
+
+    epoch_RA
+            [scalar, string, or instance of class astropy.time.Time] The time 
+            or epoch which applies to output radec. It can be a scalar (in JD 
+            or JYear), string (JYear string prefixed with 'J' or ISO or ISOT), 
+            or an instance of class astropy.time.Time. The appropriate format 
+            must be specified in input time_type. It must be in the same format 
+            as the one obstime is specified in. If set to 2000.0 (default), it 
+            is assumed to be in 'jyear' format. If set to None, it will be set 
+            equal to default of 2000.0 in 'jyear' format. 
+
+    time_type
+            [string] Specifies the format in which obstime and epoch_RA are
+            provided. Accepted values are 'jd' (Julian Day), 'jyear' (Julian 
+            year), 'iso' or 'isot'. If set to None (default) and if obstime 
+            and/or epoch_RA is a scalar, the corresponding scalar entries are
+            assumed to be in Julian Year. 
+
+    Output:
+
+    The output radec as a numpy array of shape (N,2) in units of degrees is 
+    returned at the epoch specified in epoch_RA.
+    ----------------------------------------------------------------------------
+    """
+
+    if isinstance(altaz, NP.ndarray):
+        if altaz.size == 2:
+            altaz = altaz.reshape(1,-1)
+        if altaz.ndim != 2:
+            raise ValueError('Input altaz must be a numpy array of shape (N,2)')
+        if altaz.shape[1] != 2:
+            raise ValueError('Input altaz must be a numpy array of shape (N,2)')
+    elif not isinstance(altaz, AltAz):
+        raise TypeError('Input altaz must be a numpy array or an instance of class astropy.coordinates.AltAz')
+
+    if not isinstance(location, EarthLocation):
+        raise TypeError('Input location must be an instance of class astropy.coordinates.EarthLocation')
 
     if epoch_RA is not None:
         if isinstance(epoch_RA, (int,float)):
             if (time_type is None) or (time_type.lower() == 'jyear'):
                 equinox_RA = Time(epoch_RA, scale='utc', format='jyear')
-            if time_type.lower() == 'jd':
+            elif time_type.lower() == 'jd':
                 equinox_RA = Time(epoch_RA, scale='utc', format='jd')
         elif isinstance(epoch_RA, str):
             if time_type.lower() == 'jyear':
                 equinox_RA = Time('J{0:.9f}'.format(epoch_RA), scale='utc', format='jyear_str')
-            if time_type.lower() == 'iso':
-                equinox_RA = Time(epoch_RA, scale='utc', format='iso')
-            if time_type.lower() == 'isot':
-                equinox_RA = Time(epoch_RA, scale='utc', format='isot')
+            elif (time_type.lower() == 'iso') or (time_type.lower() == 'isot'):
+                equinox_RA = Time(epoch_RA, scale='utc', format=time_type.lower())
         elif isinstance(epoch_RA, Time):
             equinox_RA = copy.copy(epoch_RA)
         else:
             raise TypeError('Input epoch_RA is invalid or currently not accepted')
+    else:
+        equinox_RA = Time(2000.0, format='jyear', scale='utc')
+        warnings.warn('No epoch_RA provided. Setting epoch to {0}'.format(equinox_RA.jyear_str))
         
-        if (obstime is None) and (epoch_RA is not None):
-            equinox_HA = copy.copy(equinox_RA)
-        elif (obstime is not None) and (epoch_RA is None):
-            equinox_RA = copy.copy(equinox_HA)
-        elif (obstime is None) and (epoch_RA is None):
-            equinox_HA = None
-            equinox_RA = None
-
-        if (equinox_HA is None) and (equinox_RA is None):
-            return NP.hstack(((lst - radec[:,0]).reshape(-1,1), radec[:,1].reshape(-1,1)))
+    if obstime is not None:
+        if isinstance(obstime, (int,float)):
+            if (time_type is None) or (time_type.lower() == 'jyear'):
+                equinox_altaz = Time(obstime, scale='utc', format='jyear')
+            elif time_type.lower() == 'jd':
+                equinox_altaz = Time(obstime, scale='utc', format='jd')
+        elif isinstance(obstime, str):
+            if time_type.lower() == 'jyear':
+                equinox_altaz = Time('J{0:.9f}'.format(obstime), scale='utc', format='jyear_str')
+            if (time_type.lower() == 'iso') or (time_type.lower() == 'isot'):
+                equinox_altaz = Time(obstime, scale='utc', format=time_type.lower())
+        elif isinstance(obstime, Time):
+            equinox_altaz = copy.copy(obstime)
         else:
-            skycoords = SkyCoord(ra=radec[:,0]*U.deg, dec=radec[:,1]*U.deg, equinox=equinox_RA, frame='fk5').transform_to(FK5(equinox=equinox_HA))
-            hadec = NP.hstack(((lst-skycoords.ra.deg).reshape(-1,1), skycoords.dec.deg.reshape(-1,1)))
-            return hadec
+            raise TypeError('Input obstime is invalid or currently not accepted')
+    else:
+        if isinstance(altaz, AltAz):
+            equinox_altaz = copy.deepcopy(altaz.obstime)
+        else:
+            equinox_altaz = copy.copy(equinox_RA)
+        warnings.warn('No obstime provided. Setting obstime to {0}'.format(equinox_altaz.jyear_str))
         
+    if isinstance(altaz, AltAz):
+        elaz = copy.deepcopy(altaz)
+    else:
+        elaz = AltAz(alt=altaz[:,0]*U.deg, az=altaz[:,1]*U.deg, obstime=equinox_altaz, location=location)
+    coords_radec = elaz.transform_to(FK5(equinox=equinox_RA))
+    radec = NP.hstack((coords_radec.ra.deg.reshape(-1,1), coords_radec.dec.deg.reshape(-1,1)))
+    return radec
+
+#################################################################################
+
+def radec2altaz(radec, location, obstime=None, epoch_RA=2000.0, time_type=None):
+
+    """
+    ----------------------------------------------------------------------------
+    Convert RA-Dec to Alt-Az with accurate ephemeris
+
+    Inputs:
+
+    radec   [numpy array] Altitude and Azimuth as a Nx2 numpy array. All units 
+            in degrees
+
+    location
+            [instance of class astropy.coordinates.EarthLocation] Location of
+            the observer provided as an instance of class 
+            astropy.coordinates.EarthLocation
+
+    obstime [scalar, string, or instance of class astropy.time.Time] The time 
+            or epoch which applies to output altaz. It can be a scalar (in JD 
+            or JYear), string (JYear string prefixed with 'J' or ISO or ISOT), 
+            or an instance of class astropy.time.Time. The appropriate format 
+            must be specified in input time_type. If set to None (default), it 
+            will be set equal to epoch_RA. 
+
+    epoch_RA
+            [scalar, string, or instance of class astropy.time.Time] The time 
+            or epoch which applies to input radec. It can be a scalar (in JD 
+            or JYear), string (JYear string prefixed with 'J' or ISO or ISOT), 
+            or an instance of class astropy.time.Time. The appropriate format 
+            must be specified in input time_type. It must be in the same format 
+            as the one obstime is specified in. If set to 2000.0 (default), it 
+            is assumed to be in 'jyear' format. If set to None, it will be set 
+            equal to default of 2000.0 in 'jyear' format. 
+
+    time_type
+            [string] Specifies the format in which obstime and epoch_RA are
+            provided. Accepted values are 'jd' (Julian Day), 'jyear' (Julian 
+            year), 'iso' or 'isot'. If set to None (default) and if obstime 
+            and/or epoch_RA is a scalar, the corresponding scalar entries are
+            assumed to be in Julian Year. 
+
+    Output:
+
+    The output altaz as a numpy array of shape (N,2) in units of degrees is 
+    returned at the epoch specified in epoch_RA.
+    ----------------------------------------------------------------------------
+    """
+
+    if isinstance(radec, NP.ndarray):
+        if radec.size == 2:
+            radec = radec.reshape(1,-1)
+        if radec.ndim != 2:
+            raise ValueError('Input radec must be a numpy array of shape (N,2)')
+        if radec.shape[1] != 2:
+            raise ValueError('Input radec must be a numpy array of shape (N,2)')
+    elif not isinstance(radec, SkyCoord):
+        raise TypeError('Input radec must be a numpy array or an instance of class astropy.coordinates.SkyCoord')
+
+    if not isinstance(location, EarthLocation):
+        raise TypeError('Input location must be an instance of class astropy.coordinates.EarthLocation')
+
+    if epoch_RA is not None:
+        if isinstance(epoch_RA, (int,float)):
+            if (time_type is None) or (time_type.lower() == 'jyear'):
+                equinox_RA = Time(epoch_RA, scale='utc', format='jyear')
+            elif time_type.lower() == 'jd':
+                equinox_RA = Time(epoch_RA, scale='utc', format='jd')
+        elif isinstance(epoch_RA, str):
+            if time_type.lower() == 'jyear':
+                equinox_RA = Time('J{0:.9f}'.format(epoch_RA), scale='utc', format='jyear_str')
+            elif (time_type.lower() == 'iso') or (time_type.lower() == 'isot'):
+                equinox_RA = Time(epoch_RA, scale='utc', format=time_type.lower())
+        elif isinstance(epoch_RA, Time):
+            equinox_RA = copy.copy(epoch_RA)
+        else:
+            raise TypeError('Input epoch_RA is invalid or currently not accepted')
+    else:
+        equinox_RA = Time(2000.0, format='jyear', scale='utc')
+        warnings.warn('No epoch_RA provided. Setting epoch to {0}'.format(equinox_RA.jyear_str))
+        
+    if obstime is not None:
+        if isinstance(obstime, (int,float)):
+            if (time_type is None) or (time_type.lower() == 'jyear'):
+                equinox_altaz = Time(obstime, scale='utc', format='jyear')
+            elif time_type.lower() == 'jd':
+                equinox_altaz = Time(obstime, scale='utc', format='jd')
+        elif isinstance(obstime, str):
+            if time_type.lower() == 'jyear':
+                equinox_altaz = Time('J{0:.9f}'.format(obstime), scale='utc', format='jyear_str')
+            if (time_type.lower() == 'iso') or (time_type.lower() == 'isot'):
+                equinox_altaz = Time(obstime, scale='utc', format=time_type.lower())
+        elif isinstance(obstime, Time):
+            equinox_altaz = copy.copy(obstime)
+        else:
+            raise TypeError('Input obstime is invalid or currently not accepted')
+    else:
+        equinox_altaz = copy.copy(equinox_RA)
+        warnings.warn('No obstime provided. Setting obstime to {0}'.format(equinox_altaz.jyear_str))
+        
+    if isinstance(radec, SkyCoord):
+        coords_radec = copy.deepcopy(radec)
+    else:
+        coords_radec = SkyCoord(ra=radec[:,0]*U.deg, dec=radec[:,1]*U.deg, equinox=equinox_RA, frame='fk5')
+    elaz = coords_radec.transform_to(AltAz(obstime=equinox_altaz, location=location))
+    altaz = NP.hstack((elaz.alt.deg.reshape(-1,1), elaz.az.deg.reshape(-1,1)))
+    return altaz
+
 #################################################################################
 
 if __name__ == "__main__":
