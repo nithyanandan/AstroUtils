@@ -1,3 +1,10 @@
+From 91ef554 (ephemeris):
+========================
+
+In astroutils/ephemeris_timing.py,
+
+(*) Import copy module
+
 From bf49f4a (ephemeris):
 ========================
 

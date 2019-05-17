@@ -1,4 +1,4 @@
-import warnings
+import warnings, copy
 from astropy.time import Time, TimeDelta
 from astropy.coordinates import SkyCoord, AltAz, ICRS, FK5, EarthLocation, Longitude
 from astropy import units as U
