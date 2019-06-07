@@ -1,3 +1,11 @@
+From 46dda13 (setup):
+====================
+
+In README.rst,
+
+(*) Mention that the dependency scikit-image should be installed
+through conda
+
 From 8053660 (setup):
 ====================
 

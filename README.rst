@@ -25,7 +25,7 @@ It is best to first create a new env:
 
 Then install conda packages:
 
-``conda install mpi4py progressbar psutil pyyaml h5py``
+``conda install mpi4py progressbar psutil pyyaml h5py scikit-image``
 
 Finally, either install AstroUtils directly:
 
