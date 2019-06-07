@@ -49,7 +49,7 @@ setup(name='AstroUtils',
     setup_requires=['astropy>=1.0, <3.0', 'blessings>=1.6', 'ipdb>=0.6.1',
                     'healpy>=1.5.3', 'mpi4py>=1.2.2', 'numpy>=1.8.1',
                     'pyephem>=3.7.5.3', 'pytest-runner', 'scipy>=0.15.1',
-                    'astroquery>=0.3.8', 'beautifulsoup4>=4.6', 'scikit-image'],
+                    'astroquery>=0.3.8', 'beautifulsoup4>=4.6', 'scikit-image<0.15'],
     tests_require=['pytest'],
     zip_safe=False)
 

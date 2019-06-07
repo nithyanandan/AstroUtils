@@ -1,3 +1,10 @@
+From 8053660 (setup):
+====================
+
+In setupy.py,
+
+(*) Update scikit-image version to <0.15 for compatibility
+
 From 53865f0 (master):
 =====================
 
