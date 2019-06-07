@@ -1,3 +1,11 @@
+From acbc92a (setup):
+====================
+
+In README.rst,
+
+(*) Add note that it is essential to install scikit-image directly from
+conda
+
 From 46dda13 (setup):
 ====================
 

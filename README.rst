@@ -27,6 +27,10 @@ Then install conda packages:
 
 ``conda install mpi4py progressbar psutil pyyaml h5py scikit-image``
 
+NOTE: at this time, you *must* install ``scikit-image`` via conda, or else it will
+     try to install packages that are incompatible with python 2. Full python 3
+     support is coming soon.
+     
 Finally, either install AstroUtils directly:
 
 ``pip install git+https://github.com/nithyanandan/AstroUtils.git``
