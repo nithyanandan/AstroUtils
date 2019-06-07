@@ -1,3 +1,10 @@
+From 53865f0 (master):
+=====================
+
+In setupy.py,
+
+(*) Include scikit-image as a dependency
+
 From 91ef554 (ephemeris):
 ========================
 
