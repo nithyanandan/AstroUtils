@@ -1,3 +1,11 @@
+From 948c4d5 (master):
+=====================
+
+In astroutils/__init__.py,
+
+(*) Import os module
+(*) Read and set __githash__
+
 From acbc92a (setup):
 ====================
 
