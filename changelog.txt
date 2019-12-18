@@ -1,3 +1,16 @@
+From 1be7583 (master):
+=====================
+
+(*) Add folders astroutils/examples/codes/lightcone_operations/ and
+its contents to repo
+
+In setup.py,
+
+(*) Make changes to install the example codes listed above in the
+installation
+(*) Make changes to install examples/catalogops/*.yaml during the
+installation
+
 From 948c4d5 (master):
 =====================
 
