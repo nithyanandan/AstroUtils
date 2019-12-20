@@ -1,3 +1,13 @@
+From 6dfe91e (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) In function altaz2hadec(), check for input shape of altaz and
+prepare it to the right shape before the transformation.
+(*) In function hadec2altaz(), check for input shape of hadec and
+prepare it to the right shape before transformation
+
 From 1be7583 (master):
 =====================
 

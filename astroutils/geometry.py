@@ -592,7 +592,7 @@ def hadec2altaz(hadec, latitude, units=None):
             raise TypeError('hadec should be a 2-element tuple, a list of 2-element tuples, a 2-element list of scalars, or a Nx2 numpy array. Check inputs.')
     else:
         if len(hadec.shape) < 2:
-            hadec = NP.asarray(hadec).reshape(-1,hadec.shape[0])
+            hadec = NP.asarray(hadec).reshape(-1,hadec.size)
 
         if hadec.shape[1] < 2:
             raise TypeError('hadec should be a 2-element tuple, a list of 2-element tuples, a 2-element list of scalars, or a Nx2 numpy array. Check inputs.')
@@ -689,6 +689,8 @@ def altaz2hadec(altaz, latitude, units=None):
         elif len(altaz) != 2:
             raise TypeError('altaz should be a 2-element tuple, a list of 2-element tuples, a 2-element list of scalars, or a Nx2 numpy array. Check inputs.')
     else:
+        if altaz.ndim == 1:
+            altaz = altaz.reshape(1,-1)
         if altaz.shape[1] < 2:
             raise TypeError('altaz should be a 2-element tuple, a list of 2-element tuples, a 2-element list of scalars, or a Nx2 numpy array. Check inputs.')
         elif altaz.shape > 2:
