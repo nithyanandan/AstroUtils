@@ -860,6 +860,8 @@ def convert_coevalcubes_to_sphere_surfaces(inpcubes, inpres, nside=None,
     covering the whole sky or just a spherical patch using given theta and phi 
     coordinates with output as stacked lightcone surfaces
 
+    Based on Kittiwisit et al. 2019.
+
     Inputs:
 
     inpcubes    [numpy array] Array of cosmological coeval cubes in which each 
@@ -916,9 +918,17 @@ def convert_coevalcubes_to_sphere_surfaces(inpcubes, inpres, nside=None,
 
     Output:
 
-    Stacked spherical surfaces either covering whole sky (using nside and 
+    Stacked spherical surfaces either covering whole sky (using nside and
     HEALPIX) or a patch at specified theta and phi for each of the redshifts or 
     frequencies. It will be a numpy array of shape nchan x npix
+
+    References:
+
+    .. [1] P. Kittiwisit, J. D. Bowman, D. C. Jacobs, A. P. Beardsley, and
+    N. Thyagarajan, "Sensitivity of the Hydrogen Epoch of Reionization Array
+    and its build-out stages to one-point statistics from redshifted
+    21 cm observations", Monthly Notices of the Royal Astronomical Society,
+    Volume 474, Issue 4, March 2018, Pages 4487-4499, doi:10.1093/mnras/stx3099
     -----------------------------------------------------------------------------
     """
 
