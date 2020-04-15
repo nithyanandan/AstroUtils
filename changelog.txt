@@ -1,3 +1,985 @@
+From b9af280 (master), b254cdb (skymod):
+=======================================
+
+(*) Bring updates in master branch on to skymod branch 
+
+From a431233 (master):
+=====================
+
+(*) Add 21cmforest codes under astroutils/examples/codes/21cmforest/
+
+From 6dfe91e (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) In function altaz2hadec(), check for input shape of altaz and
+prepare it to the right shape before the transformation.
+(*) In function hadec2altaz(), check for input shape of hadec and
+prepare it to the right shape before transformation
+
+From 1be7583 (master):
+=====================
+
+(*) Add folders astroutils/examples/codes/lightcone_operations/ and
+its contents to repo
+
+In setup.py,
+
+(*) Make changes to install the example codes listed above in the
+installation
+(*) Make changes to install examples/catalogops/*.yaml during the
+installation
+
+From 948c4d5 (master):
+=====================
+
+In astroutils/__init__.py,
+
+(*) Import os module
+(*) Read and set __githash__
+
+From acbc92a (setup):
+====================
+
+In README.rst,
+
+(*) Add note that it is essential to install scikit-image directly from
+conda
+
+From 46dda13 (setup):
+====================
+
+In README.rst,
+
+(*) Mention that the dependency scikit-image should be installed
+through conda
+
+From 8053660 (setup):
+====================
+
+In setupy.py,
+
+(*) Update scikit-image version to <0.15 for compatibility
+
+From 53865f0 (master):
+=====================
+
+In setupy.py,
+
+(*) Include scikit-image as a dependency
+
+From 91ef554 (ephemeris):
+========================
+
+In astroutils/ephemeris_timing.py,
+
+(*) Import copy module
+
+From bf49f4a (ephemeris):
+========================
+
+In astroutils/ephemeris_timing.py,
+
+(*) Import warnings
+(*) Add functions radec2altaz() and altaz2radec() with docstring to
+convert between RA-Dec and Alt-Az with accurate ephemeris based on
+Astropy routines.
+(*) In functions hadec2radec() and radec2hadec(), make input epoch_RA
+default to 2000.0 instead of None. Also, adjust the default assignment
+of obstime accordingly. Update docstrings accordingly
+(*) Make minor changes in docstrings of functions hadec2radec() and
+radec2hadec()
+(*) Fix bugs in checking of input time_type in function hadec2radec() 
+and radec2hadec()
+
+From a8c1dde (master):
+=====================
+
+In astroutils/ephemeris_timing.py,
+
+(*) Add functions radec2hadec() and hadec2radec() with docstring to
+convert between RA-Dec and HA-Dec with accurate ephemeris based on
+Astropy routines.
+
+From bb6acdb (master):
+=====================
+
+In astroutils/mathops.py,
+
+(*) In function array_trace(), output now also contains the weights
+of the offset diagonals over which trace was computed. Update function
+docstring accordingly
+
+From 2182a2f (master):
+=====================
+
+In astroutils/mathops.py,
+
+(*) In function tile(), typecast input reps to floating point to
+avoid rounding errors
+
+From cd243a5 (master):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Add function tile() along with docstring to perform a
+generalized version of numpy.tile() including mirrored repeats of
+specified axes and non-integer number of tiles.
+
+From df9477f (master):
+=====================
+
+In astroutils/catalog.py,
+
+(*) Read and write attribute frequency from/to HDF5 skymodel file
+(*) In case of functional spectral form, use key 'freq-ref' in the
+HDF5 file for the attribute spec_parms['freq-ref']
+
+From 29c310a (ephemeris):
+========================
+
+In astroutils/ephemeris_timing.py,
+
+(*) Fix bug in julian_date_from_LAST()
+
+From e1af3b1 (ephemeris):
+========================
+
+In astroutils/ephemeris_timing.py,
+
+(*) Add function julian_date_from_LAST() with docstring
+(*) Update docstring of function equation_of_equinoxes()
+
+From a9bfc25 (master):
+=====================
+
+In astroutils/ephemeris_timing.py,
+
+(*) Add function equation_of_equinoxes() with docstring
+
+From d979f46 (master):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Fix assertion bug in function interpolate_array()
+
+In astroutils/DSP_modules.py,
+
+(*) Change call to interpolation in function downsampler()
+
+From 922bc14 (master):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Fix sorting bug in function interpolate_array()
+
+From 046b67f (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) In input ref_info to function enu2ecef(), replace key 'xyz' with
+'alt'. Calculate ECEF coordinates from this updated information.
+Update docstring accordingly
+
+From 6e4ce32 (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Fix bug in function enu2ecef() by rectifying keys of input
+dictionary ref_info
+
+From c83304b (master):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Minor changes in docstrings throughout
+
+From edaf9d9 (mathops):
+======================
+
+In astroutils/mathops.py,
+
+(*) Add function is_broadcastable() along with docstring
+
+From ad045b4 (mathops):
+======================
+
+In astroutils/mathops.py,
+
+(*) Remove commented block in function interpolate_masked_array_1D()
+
+From 7089a3a (master):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Update inputs and processing under function
+interpolate_masked_array_1D(). Update function docstring accordingly
+
+From fe60fc4 (master):
+=====================
+
+In astroutils/lookup_operations.py,
+
+(*) Update docstring of function find_1NN()
+
+From 98a51ca (master):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Add function array_trace() along with docstring
+
+From 66c3c11 (imgcutout):
+========================
+
+In scripts/match_catalogs.py,
+
+(*) Fix indexing error at the time of writing out HDF5 file
+
+From 81fa063 (imgcutout):
+========================
+
+In astroutils/examples/catalogops/catalog_match_parms.yaml,
+
+(*) Add option to load object name from input reference catalog
+
+In scripts/match_catalogs.py,
+
+(*) Add option to read and save object name from input reference
+catalog into the output HDF5 file
+
+From 3321bdb (imgcutout):
+========================
+
+(*) Add scripts/retrieve_image_cutouts.py to repo
+(*) Add astroutils/examples/catalogops/catalog_match_parms.yaml to
+repo
+
+In scripts/retrieve_image_cutouts.py,
+
+(*) Minor changes to comments and descriptions
+
+From d2c4a67 (imgcutout):
+========================
+
+In scripts/retrieve_image_cutouts.py,
+
+(*) Add option to query or download image cutouts
+
+In astroutils/examples/image_cutout/image_cutout_parms.yaml,
+
+(*) Add action parameter to be set to query or download
+
+From 7bd579c (imgcutout):
+========================
+
+In scripts/retrieve_image_cutouts.py,
+
+(*) Print useful progress messages
+
+From 340d1cd (imgcutout):
+========================
+
+In scripts/retrieve_image_cutouts.py,
+
+(*) Issue warning instead of aborting when non-standard FITS keywords
+are found.
+(*) Remove import of copy module
+
+From daf34bf (master), 3e44666 (imgcutout):
+==========================================
+
+(*) Merge imgcutout branch onto master
+
+From 3d39189 (master):
+=====================
+
+In setup.py,
+
+(*) Add version range for package dependency Astropy. Astropy version
+can now range from >=1.0 to <3.0. It avoids requirement of Astropy
+version that requires Python 3.
+
+From 3d39189 (master):
+=====================
+
+(*) Add retrieve_image_cutouts.py in scripts/
+(*) Add image_cutout/image_cutout_parms.yaml in astroutils/examples/
+
+In setup.py,
+
+(*) Add packages astroquery and beautifulsoup4 under install_requires
+and setup_requires
+
+From 238ba01 (phases):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Update docstring of function smooth_masked_array_1D()
+
+From 5f1bce3 (phases):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Rename function interpolate_complex_array_1D() to
+interpolate_masked_array_1D()
+(*) Rename and replace input variable containing 'cmplxarr' with 'arr'
+(*) Update docstring of function interpolate_masked_array_1D().
+(*) In function interpolate_masked_array_1D(), check for complex
+data type before applying fix_ampl
+(*) In function interpolate_masked_array_1D(), update functionality
+to handle both complex and real array inputs
+(*) In function interpolate_masked_array_1D(), update functionality
+to use scipy.interpolate.interp1d() even if masked values are not
+aligned across the array along the specified interpolation axis
+
+From 098d6f0 (phases):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Import modules from skimage
+(*) Add function interpolate_phase_1D() along with docstring to unwrap
+and interpolate phases along a specified axis that are input as masked
+arrays which contain missing values
+(*) In function phase_unwrap_1D(), reshape the output to match the
+input array shape
+(*) In function interpolate_complex_array_1D(), replace
+collapsed_freq_mask variable with axis_mask, and minor change to
+comments
+
+From 556081a (phases):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Add function interpolate_complex_array_1D() along with docstring
+to interpolate complex arrays or complex exponentials constrained to
+unit amplitude that are masked arrays which contain missing values
+along a specified axis
+
+From 27f3a7b (master):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Import modules numpy.ma, skimage.restoration, and
+astropy.convolution
+(*) Add function smooth_masked_array_1D() along with docstring
+(*) Add function phase_unwrap_1D() along with docstring
+
+From d7c468f (cosmotiling-adv):
+==============================
+
+In astroutils/examples/cosmotile_parms.yaml,
+
+(*) Minor update to description of parameter infile_suffix
+(*) Minor update to description of parameter z_identifier
+
+From 06a9378 (cosmotiling-adv), 971d0be (master):
+================================================
+
+(*) Merge updates on master branch onto cosmotiling-adv branch
+
+From e5e2950 (cosmotiling-adv):
+==============================
+
+In astroutils/nonmathops.py,
+
+(*) Import warnings module
+
+From 23f9521 (cosmotiling-adv):
+==============================
+
+In astroutils/cosmotile.py,
+
+(*) Import time module
+(*) Print status and diagnostic messages including time consumed for
+reading 21cmfast cubes and interpolating coeval cubes
+(*) Add function fastread_21cmfast_cube() along with docstring which
+is a faster routine and a replacement for read_21cmfast_cube()
+
+In scripts/run_cosmotile.py,
+
+(*) Update to use different types of parallelization by binning
+output frequencies into bins of input frequencies. This was supposed
+to have been included in the previous commit but was not. Now uses
+prll_type parameter 
+(*) Import AstroUtils module mathops
+
+From dbddf82 (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) In interp_coevalcubes(), add type checking on input invals
+(*) In interp_coevalcubes(), update comparison of invals and outvals
+to determine if interpolation is required
+(*) In coeval_interp_cube_to_sphere_surface_wrapper(), update to
+process tiling of many cubes in series
+
+In astroutils/examples/cosmotile/cosmotile_parms.yaml,
+
+(*) Add parameter to specify type of parallel processing that is
+called prll_type
+
+In scripts/run_cosmotile.py,
+
+(*) Update to handle different types of parallelization by binning
+output frequencies into bins of input frequencies
+
+In astroutils/mathops.py,
+
+(*) In interpolate_array(), update comparison of inploc and outloc
+to determine if interpolation is required
+
+From 7c5ac03 (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Remove import of ipdb
+
+From f3fb63b (master):
+=====================
+
+In astroutils/DSP_modules.py,
+
+(*) Add parallel processing wrapper functions unwrap_FFT2D() and
+unwrap_IFFT2D() for numpy.fft.fft2() and numpy.fft.ifft2()
+respectively
+
+In changelog.txt,
+
+(*) Correct message of commit ff23f91 (master)
+
+From ff23f91 (master):
+=====================
+
+In astroutils/cosmotile.py,
+
+(*) Minor update to docstring of function write_coeval_cube()
+
+From ad56efa (master):
+=====================
+
+(*) Add astroutils/statistics.py to the repository
+
+From 313beb0 (resize_hdf5):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Update append_lightcone_surfaces() to modify the is_healpix
+value if necessary
+
+In scripts/run_cosmotile.py,
+
+(*) Update to use append functionality in case of large sized light
+cone surfaces
+
+In astroutils/examples/cosmotile/cosmotile_parms.yaml,
+
+(*) Add parameter write_mode to write light cone surfaces all at once
+or append incrementally to HDF5 file
+
+From a24ad0a (resize_hdf5):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Add function append_lightcone_surfaces() along with docstring
+to append light cone surfaces to the one created by
+write_lightcone_surfaces()
+
+From 7a4e052 (resize_hdf5):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Modify function write_lightcone_surfaces() to keep the data in
+the HDF5 file resizeable
+
+From 7764aae (resize_hdf5):
+==========================
+
+In astroutils/catalog.py,
+
+(*) Create function append_SkyModel_file() to append data from an
+instance of class SkyModel to an already existing skymodel file
+
+In scripts/run_cosmotile.py,
+
+(*) Update to use function append_SkyModel_file() in
+astroutils/catalog.py to update an existing sky model file with newer
+instances of class SkyModel
+
+From 664479b (cosmotiling):
+==========================
+
+In astroutils/catalog.py,
+
+(*) Create resizeable data sets when instance of class SkyModel is
+written to HDF5 file
+
+From 9f0ce1b (master):
+=====================
+
+In scripts/run_cosmotile.py,
+
+(*) Import constants from astroutils and astropy
+(*) Introduce the Temperature to flux density scaling factor before
+writing to skymod file
+
+In astroutils/examples/cosmotile/cosmotile_parms.yaml,
+
+(*) Update description for angres
+
+From 39d70c7 (master):
+=====================
+
+In README.rst,
+
+(*) Minor updates to documentation
+
+From f452eaa (master):
+=====================
+
+In README.rst,
+
+(*) Minor updates to documentation
+
+From 13eced4 (master):
+=====================
+
+In setup.py,
+
+(*) Replace README.txt with README.rst
+
+From 80a5fad (master):
+=====================
+
+(*) Rename changelog_general.txt to changelog.txt
+
+From 95b284e (master):
+=====================
+
+(*) Add README.rst to the repo with basic installation and usage
+instructions
+
+From 1149682 (master):
+=====================
+
+(*) Update and add .gitignore to repo
+
+From 82519d5 (master):
+=====================
+
+In astroutils/test/geometry_test.py,
+
+(*) Add test_xyz2sph() to test xyz2sph() in geometry.py
+
+From eb6a5d4 (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Add triangle solving routines along with docstrings -- aaas(),
+sss(), sas(), ssa(), and trisolve()
+(*) Import print_function, absolute_import, sys and warnings
+(*) Insert system-generated tolerance variable called epsilon
+
+From dce1a17 (master):
+=====================
+
+In astroutils/constants.py,
+
+(*) Add rest frame frequencies of CO transitions 1-0, and 2-1. 
+
+From 132a83e (cosmotiling):
+==========================
+
+In astroutils/nonmathops.py,
+
+(*) Import warnings module
+
+From 5db2c3d (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Add input process_stage as a key in input inpdict in
+cube_smooth_downsample_save(). Update docstring accordingly. This will
+determine if processed cube is read from a HDF5 file or a raw cube
+from a binary file
+(*) Add input process_stage as an input in interp_coevalcubes() along
+with docstring. This input will determine if coeval cubes to be read
+are processed HDF5 files or raw binary files
+(*) Add function read_coeval_cube() along with docstring to read
+processed coeval cubes from HDF5 file
+
+In astroutils/examples/cosmotile/cosmotile_parms.yaml,
+
+(*) Add parameter process_stage to determine if input coeval cubes
+are processed or raw
+
+In scripts/run_cosmotile.py,
+
+(*) Read in process_stage parameter and process accordingly
+(*) Change parallel processing from using pool.imap() to pool.map()
+
+From d9230c8 (cosmotiling):
+==========================
+
+(*) Add astroutils/examples/cosmotile/cosmosmooth_parms.yaml to repo
+(*) Add scripts/smooth_cosmocubes.py to repo
+
+In astroutils/cosmotile.py,
+
+(*) Add functions cube_smooth_downsample_save(), write_coeval_cube()
+and smooth_downsample_cube() along with docstrings.
+
+From a90ecf7 (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Add function fastread_21cmfast_cube() that replaces the
+previous and slow read_21cmfast_cube() 
+(*) Import time module to track time consumption in functions 
+interp_coevalcubes() and convert_coevalcube_to_sphere_surface()
+
+In scripts/run_cosmotile.py,
+
+(*) Use multiprocessing.imap() to do parallel processing
+
+From dbddf82 (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) In interp_coevalcubes(), add type checking on input invals
+(*) In interp_coevalcubes(), update comparison of invals and outvals
+to determine if interpolation is required
+
+In astroutils/mathops.py,
+
+(*) In interpolate_array(), update comparison of inploc and outloc
+to determine if interpolation is required
+
+From f9e1560 (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Add input theta_phi and associated docstring in all functions
+wherever healpix nside input was involved.
+(*) Rename convert_coevalcube_to_healpix_arg_splitter() to
+convert_coevalcube_to_sphere_surface_arg_splitter()
+(*) Rename convert_coevalcube_to_healpix_inpdict() to
+convert_coevalcube_to_sphere_surface_inpdict()
+(*) Rename convert_coevalcube_to_healpix() to
+convert_coevalcube_to_sphere_surface()
+(*) Rename convert_coevalcubes_to_healpix_surfaces() to
+convert_coevalcubes_to_sphere_surfaces()
+(*) Rename coevalcube_interp_tile2hpx_wrapper_arg_splitter() to
+coeval_interp_cube_to_sphere_surface_wrapper_arg_splitter()
+(*) Rename coevalcube_interp_tile2hpx_wrapper() to
+coeval_interp_cube_to_sphere_surface_wrapper()
+(*) Update all docstrings to be consistent with these changes
+
+In scripts/run_cosmotile.py,
+
+(*) Add options to specify ranges of theta and phi for generating
+fractional spherical patches instead of using nside and generating
+whole spherical surfaces
+
+In astroutils/examples/cosmotile/cosmotile_parms.yaml,
+
+(*) Add theta_range, phi_range and angres inputs under "output"
+parameters
+
+From ef5df47 (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Add function write_lightcone_catalog() along with docstring to
+write lightcone surfaces to instance of class SkyModel
+
+In scripts/run_cosmotile.py,
+
+(*) Update to save to skymodel file
+
+In astroutils/examples/cosmotile/cosmotile_parms.yaml,
+
+(*) Add parameters to save to skymodel file
+
+In astroutils/catalog.py,
+
+(*) Fix bugs in saving and loading attribute src_shape in member
+functions __init__() and save() of class SkyModel
+
+From 141ff69 (cosmotiling):
+==========================
+
+(*) Add astroutils/examples folder and its contents to git repo
+
+In astroutils/cosmotile.py,
+
+(*) Lots of syntax bug fixes
+(*) Add function write_lightcone_surfaces() along with docstring
+to write light cone surfaces to HDF5 file
+
+In scripts/run_cosmotile.py,
+
+(*) Lots of syntax bug fixes
+(*) Can run in serial or parallel
+
+In setup.py,
+
+(*) Import appropriate modules and include contents of scripts and
+examples folder
+
+In astroutils/mathops.py,
+
+(*) Minor bug fix in interpolate_array() function
+
+From e99ff5c (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Minor change in interp_coevalcubes()
+
+In scripts/run_cosmotile.py,
+
+(*) Update body to run cosmotiling in series or parallel
+
+From dc267b2 (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Add function coevalcube_interp_tile2hpx_wrapper_arg_splitter() for
+parallelizing function coevalcube_interp_tile2hpx_wrapper()
+
+From 74a95d8 (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Add function coevalcube_interp_tile2hpx_wrapper() along with 
+docstring that now takes consolidated dictionary inputs for
+interpolation and tiling and serves as a wrapper for those 
+functionalities by wrapping interp_coevalcubes() and 
+convert_coevalcube_to_healpix()
+
+From 36862cd (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Add function convert_coevalcube_to_healpix_inpdict() along with 
+docstring that now takes a consolidated dictionary input and is a 
+wrapper for convert_coevalcube_to_healpix()
+
+From ef074dd (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Add function interp_coevalcubes_inpdict() along with docstring
+that now takes a consolidated dictionary input.
+(*) Revert function interp_coevalcubes() to its previous version
+where multiple items are given as inputs individually
+
+From 95a22e3 (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Change inputs from multiple items to consolidated dictionary
+inpdict in function interp_coevalcubes(). Update docstring
+accordingly
+
+From 77c0ff5 (cosmotiling):
+==========================
+
+In astroutils/mathops.py,
+
+(*) Check for closeness of inplocs and outlocs in interpolate_array()
+and if they are close, return the inparray without interpolation
+
+In astroutils/cosmotile.py,
+
+(*) Check for closeness of invals and outvals in interp_coevalcubes()
+and if they are close, return the inpcubes without interpolation
+(*) Add function read_21cmfast_cube() along with docstring
+
+From 1827ead (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Add functions interp_coevalcubes_arg_splitter() and
+interp_coevalcubes() along with docstrings. These functions will
+interpolate coeval cosmological cubes at specified parameter values
+such as along redshift or frequency
+(*) Import mathops module from astroutils
+
+In scripts/run_cosmotile.py,
+
+(*) Import glob
+
+From 530f289 (cosmotiling):
+==========================
+
+(*) Add scripts folder and its contents to repo
+
+In setup.py,
+
+(*) Add scripts folder specification
+
+In scripts/
+
+(*) Start working on file run_cosmotile.py
+
+From 60cca6f (cosmotiling):
+==========================
+
+In astroutils/cosmotile.py,
+
+(*) Import warnings module
+(*) Introduce serial processing option in function
+convert_coevalcubes_to_healpix_surfaces(). Update docstring
+accordingly
+
+From 314855a (cosmotiling):
+==========================
+
+In astroutils,
+
+(*) Rename tilesky.py to cosmotile.py
+
+From 6f97d5a (cosmotiling):
+==========================
+
+In astroutils/tilesky.py,
+
+(*) Rename function names convert_cosmocube_to_healpix_arg_splitter()
+to convert_coevalcube_to_healpix_arg_splitter(), 
+convert_cosmocube_to_healpix() to convert_coevalcube_to_healpix() and
+convert_cosmocubes_to_healpix_surfaces() to
+convert_coevalcubes_to_healpix_surfaces(). Update docstrings
+accordingly
+
+From 3e5bc9c (cosmotiling):
+==========================
+
+In astroutils/tilesky.py,
+
+(*) Fix bug in calculating pixel index and its passing to interpn()
+in function convert_cosmocube_to_healpix()
+
+From 6d69062 (cosmotiling):
+==========================
+
+In astroutils/tilesky.py,
+
+(*) Change input from z to redshift in convert_cosmocube_to_healpix()
+(*) Update docstring of convert_cosmocube_to_healpix() to be
+consistent with the change from usage of z to redshift
+(*) Update body of function convert_cosmocube_to_healpix() to be
+consistent with the change from usage of z to redshift
+(*) Update docstring of convert_cosmocubes_to_healpix_surfaces() on
+the different inputs to be consistent with the body of the function
+(*) Update docstring of convert_cosmocubes_to_healpix_surfaces() on
+input los_axis
+
+From a79b456 (cosmotiling):
+==========================
+
+In astroutils/tilesky.py,
+
+(*) Change function names convert_cube_to_healpix_arg_splitter() to
+convert_cosmocube_to_healpix_arg_splitter(), convert_cube_to_healpix()
+to convert_cosmocube_to_healpix() and
+convert_cubes_to_healpix_surfaces() to
+convert_cosmocubes_to_healpix_surfaces()
+
+From 7137f6a (cosmotiling):
+==========================
+
+In astroutils/tilesky.py,
+
+(*) Minor changes to docstrings throughout
+
+From 0111f5b (cosmotiling), 82c61a3 (master):
+============================================
+
+(*) Merge updates from master branch onto cosmotiling branch
+
+From c3b498b (cosmotiling):
+==========================
+
+In astroutils/tilesky.py,
+
+(*) Add function convert_cubes_to_healpix_surfaces() along with
+docstring to convert cubes to healpix surfaces at different redshifts
+
+From 6cba82f (cosmotiling):
+==========================
+
+In astroutils/tilesky.py,
+
+(*) Add function convert_cube_to_healpix_arg_splitter() to parse
+arguments and pass to convert_cube_to_healpix() in preparing to set
+up for parallel processing using multiprocessing
+
+From 69228da (cosmotiling):
+==========================
+
+(*) Add tilesky.py under astroutils/ to repository
+
+In astroutils/tilesky.py,
+
+(*) Add function convert_cube_to_healpix() along with docstring to
+convert a cosmology cube at a given redshift to HEALPIX map at an
+observing frequency
+
+In astroutils/mathops.py,
+
+(*) Update docstring of function interpolate_array() with a
+description of its functionality
+
+From 6e1825b (master):
+=====================
+
+In astroutils/mathops.py,
+
+(*) Add function interpolate_array() along with docstring to 
+interpolate a multi-dimensional array along a given axis (this is 
+essentially a wrapper to scipy.interpolate.interp1d with some 
+modifications for out of bound conditions)
+
+From 06e5b12 (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) Fix bugs in parabola angles in case of non-zero tilt
+
 From e87c485 (skymod), 06e5b12 (master):
 =======================================
 

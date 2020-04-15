@@ -6,6 +6,14 @@ import lookup_operations as LKP
 
 #################################################################################
 
+def unwrap_FFT2D(arg, **kwarg):
+    return NP.fft.fft2(*arg, **kwarg)
+
+def unwrap_IFFT2D(arg, **kwarg):
+    return NP.fft.ifft2(*arg, **kwarg)
+
+#################################################################################
+
 def FT1D(inp, ax=-1, use_real=False, shift=False, inverse=False, verbose=True):
 
     """
@@ -892,9 +900,6 @@ def downsampler(inp, factor, axis=-1, verbose=True, method='interp',
     if factor < 1.0:
         raise ValueError('Downsampling factor must be greater than 1.')
 
-    # if inp.ndim < 2:
-    #     inp = inp.reshape(1,-1)
-
     if (axis < -inp.ndim) or (axis > inp.ndim):
         raise IndexError('The axis specified does not exist in the input. Aborting downsampler().')
 
@@ -987,12 +992,15 @@ def downsampler(inp, factor, axis=-1, verbose=True, method='interp',
         if method == 'interp':
             if verbose:
                 print 'Determining the interpolating function for downsampling.'
-            intpfunc = interpolate.interp1d(NP.arange(inp.shape[axis]), inp,
-                                            kind=kind, fill_value=fill_value,
-                                            axis=axis) 
             tol = 1e-10
             reqd_inds = NP.arange(0, inp.shape[axis]-1+tol, factor)
-            result = intpfunc(reqd_inds)
+
+            # intpfunc = interpolate.interp1d(NP.arange(inp.shape[axis]), inp,
+            #                                 kind=kind, fill_value=fill_value,
+            #                                 axis=axis) 
+            # result = intpfunc(reqd_inds)
+
+            result = OPS.interpolate_array(inp, NP.arange(inp.shape[axis]), reqd_inds, axis=axis, kind=kind)
         elif method in ['FFT', 'fft']:
             nout = NP.round(inp.shape[axis] / factor).astype(int)
             result = signal.resample(inp, nout, t=None, axis=axis, window=None)

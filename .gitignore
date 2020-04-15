@@ -1,0 +1,9 @@
+*~
+main/
+modules/
+astroutils/*~
+astroutils/*.pyc
+astroutils/test/*~
+astroutils/test/*.pyc
+scripts/*~
+scripts/*.pyc

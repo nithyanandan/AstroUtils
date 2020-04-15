@@ -1,0 +1,434 @@
+########## Directory information #########
+
+directory   :
+                                # Directory information
+
+    projectdir      : '/path/to/project/'
+                                # Base project directory
+
+    outfile         : 'filename'
+                                # name of the HDF5 file (.hdf5 will
+                                # be appended automatically) 
+
+########## Catalogs ##########
+
+refcat      :
+                                # Reference catalog that contains
+                                # background objects with redshift
+                                # information
+
+    catfile     : '/path/to/catalogs/reference.ext'
+                                # Full path to catalog file. It is
+                                # assumed to be in ASCII .txt, .csv,
+                                # or CDS format that Astropy can
+                                # readily read in
+
+    obj_colname : 'Quasar'
+                                # Column containing object name
+
+    RA_colname  : 'R.A.'
+                                # Column name containing RA
+
+    Dec_colname : 'Decl.'
+                                # Column name containing Declination
+
+    RA_units    : 'hms'
+                                # Units of RA. Accepted values are
+                                # 'deg' and 'hms' (HH:MM:SS.S or
+                                # similar). The former is in floating
+                                # point (units of degrees) and the
+                                # latter is a string
+
+    Dec_units   : 'dms'
+                                # Units of Declination. Accepted
+                                # values are 'deg' and 'dms'
+                                # (DD:MM:SS.S or similar). The
+                                # former is in floating point
+                                # (units of degrees) and the latter
+                                # is a string
+
+    epoch       : 'J2000'
+                                # Epoch of the coordinates. Accepted
+                                # values are 'J2000' and 'B1950'
+
+########## Reference object Subset Selection ############
+
+subset      :
+                                # Parameters to select subset
+
+    parmnames   : ['redshift']
+                                # List of parameter values based on
+                                # which the subsets will be found.
+                                # These parameters must be found
+                                # as column names in the input file.
+                                # The ranges/selections on the
+                                # parameter files are specified in
+                                # parselect
+
+    parmrange   : [
+                   [6.0, 10.0]
+                  ]
+                                # One line for each element specified
+                                # in parmnames. If parmnames is empty
+                                # or null, no subselection is
+                                # performed. If parmnames stores a
+                                # number, the parmrange should be a
+                                # list of [min, max]. If parmnames
+                                # holds a string, the parmrange must
+                                # be a list of strings such as
+                                # ['incl', '!excl'] where all data
+                                # with the specified parmnames that
+                                # contain the string 'incl' will be
+                                # included and those that contain
+                                # 'excl' with be excluded.
+
+########### Radio catalog information ###########
+
+radiocats   :
+                                # Radio catalogs to match with
+
+    NVSS        : 
+                                # NVSS catalog
+
+        action      : true
+                                # If set to true, use this as a
+                                # radio catalog for matching with
+                                # the background catalog with
+                                # redshifts
+
+        catfile     : '/path/to/catalogs/NVSS_catalog.fits'
+                                # Full path to the NVSS catalog file
+
+        freq        : 1420.0
+                                # Center frequency in MHz
+
+        poserr      : 7.0
+                                # Positional accuracy in arcsec
+
+        psffwhm     : 45.0
+                                # Synthesized beam FWHM (arcsec)
+
+        searchrad   : null
+                                # Search radius (in arcsec). If set to
+                                # null (default), poserr and psffwhm are
+                                # used. Otherwise, this overrides the
+                                # poserr and psffwhm parameters
+
+        min_fpeak   : null
+                                # Minimum Fpeak (mJy/beam) to be used
+                                # for matching. If set to null,
+                                # min_Fpeak = 0 mJy/beam
+
+        max_fpeak   : null
+                                # Maximum Fpeak (mJy/beam) to be used
+                                # for matching. If set to null,
+                                # max_Fpeak will be set to catalog
+                                # maximum
+
+        min_fint    : null
+                                # Minimum Fint (mJy) to be used
+                                # for matching. If set to null,
+                                # min_Fint = 0 mJy
+
+        max_fint    : null
+                                # Maximum Fint (mJy) to be used
+                                # for matching. If set to null,
+                                # max_Fint will be set to catalog
+                                # maximum
+
+        nnearest    : 0
+                                # The nth nearest neighbor to find.
+                                # Default = 0 (if maxmatches >= 0,
+                                # maxmatches is used, else nnearest
+                                # is set to 1 thereby searching for
+                                # the first nearest neighbour)
+        
+        maxmatches  : 0
+                                # Maximum number of matches to
+                                # find. If maxmatches > 0, the code
+                                # finds all matches up to maxmatches
+                                # satisfying matchrad. If
+                                # maxmatches=0, all matches upto
+                                # matchrad are found. And nnearest
+                                # is ignored. Default = -1 (nnearest,
+                                # if positive, is used instead of
+                                # maxmatches. if nnearest is 0, then
+                                # nnearest is set to 1 and the first
+                                # nearest neighbour is searched.)
+
+    FIRST       :
+                                # FIRST catalog
+
+        action      : true
+                                # If set to true, use this as a
+                                # radio catalog for matching with
+                                # the background catalog with
+                                # redshifts
+
+        catfile     : '/path/to/catalogs/first_14dec17.fits'
+                                # Full path to the FIRST catalog file
+
+        freq        : 1420.0
+                                # Center frequency in MHz
+
+        poserr      : 1.0
+                                # Positional accuracy in arcsec
+
+        psffwhm     : 5.4
+                                # Synthesized beam FWHM (arcsec)
+
+        searchrad   : null
+                                # Search radius (in arcsec). If set to
+                                # null (default), poserr and psffwhm are
+                                # used. Otherwise, this overrides the
+                                # poserr and psffwhm parameters
+
+        min_fpeak   : null
+                                # Minimum Fpeak (mJy/beam) to be used
+                                # for matching. If set to null,
+                                # min_Fpeak = 0 mJy/beam
+
+        max_fpeak   : null
+                                # Maximum Fpeak (mJy/beam) to be used
+                                # for matching. If set to null,
+                                # max_Fpeak will be set to catalog
+                                # maximum
+
+        min_fint    : 20.0
+                                # Minimum Fint (mJy) to be used
+                                # for matching. If set to null,
+                                # min_Fint = 0 mJy
+
+        max_fint    : null
+                                # Maximum Fint (mJy) to be used
+                                # for matching. If set to null,
+                                # max_Fint will be set to catalog
+                                # maximum
+
+        nnearest    : 0
+                                # The nth nearest neighbor to find.
+                                # Default = 0 (if maxmatches >= 0,
+                                # maxmatches is used, else nnearest
+                                # is set to 1 thereby searching for
+                                # the first nearest neighbour)
+        
+        maxmatches  : 0
+                                # Maximum number of matches to
+                                # find. If maxmatches > 0, the code
+                                # finds all matches up to maxmatches
+                                # satisfying matchrad. If
+                                # maxmatches=0, all matches upto
+                                # matchrad are found. And nnearest
+                                # is ignored. Default = -1 (nnearest,
+                                # if positive, is used instead of
+                                # maxmatches. if nnearest is 0, then
+                                # nnearest is set to 1 and the first
+                                # nearest neighbour is searched.)
+
+    TGSS        :
+                                # TGSS catalog
+
+        action      : true
+                                # If set to true, use this as a
+                                # radio catalog for matching with
+                                # the background catalog with
+                                # redshifts
+
+        catfile     : '/path/to/catalogs/TGSSADR1_7sigma_catalog.fits'
+                                # Full path to the TGSS catalog file
+
+        freq        : 150.0
+                                # Center frequency in MHz
+
+        poserr      : 3.0
+                                # Positional accuracy in arcsec
+
+        psffwhm     : 25.0
+                                # Synthesized beam FWHM (arcsec)
+
+        searchrad   : null
+                                # Search radius (in arcsec). If set to
+                                # null (default), poserr and psffwhm are
+                                # used. Otherwise, this overrides the
+                                # poserr and psffwhm parameters
+
+        min_fpeak   : null
+                                # Minimum Fpeak (mJy/beam) to be used
+                                # for matching. If set to null,
+                                # min_Fpeak = 0 mJy/beam
+
+        max_fpeak   : null
+                                # Maximum Fpeak (mJy/beam) to be used
+                                # for matching. If set to null,
+                                # max_Fpeak will be set to catalog
+                                # maximum
+
+        min_fint    : null
+                                # Minimum Fint (mJy) to be used
+                                # for matching. If set to null,
+                                # min_Fint = 0 mJy
+
+        max_fint    : null
+                                # Maximum Fint (mJy) to be used
+                                # for matching. If set to null,
+                                # max_Fint will be set to catalog
+                                # maximum
+
+        nnearest    : 0
+                                # The nth nearest neighbor to find.
+                                # Default = 0 (if maxmatches >= 0,
+                                # maxmatches is used, else nnearest
+                                # is set to 1 thereby searching for
+                                # the first nearest neighbour)
+        
+        maxmatches  : 0
+                                # Maximum number of matches to
+                                # find. If maxmatches > 0, the code
+                                # finds all matches up to maxmatches
+                                # satisfying matchrad. If
+                                # maxmatches=0, all matches upto
+                                # matchrad are found. And nnearest
+                                # is ignored. Default = -1 (nnearest,
+                                # if positive, is used instead of
+                                # maxmatches. if nnearest is 0, then
+                                # nnearest is set to 1 and the first
+                                # nearest neighbour is searched.)
+
+    GLEAM       :
+                                # GLEAM catalog
+
+        action      : false
+                                # If set to true, use this as a
+                                # radio catalog for matching with
+                                # the background catalog with
+                                # redshifts
+
+        catfile     : '/path/to/catalogs/GLEAM_EGC.fits'
+                                # Full path to the GLEAM catalog file
+
+        freq        : 151.0
+                                # Center frequency in MHz
+
+        poserr      : 16.0
+                                # Positional accuracy in arcsec
+
+        psffwhm     : 120.0
+                                # Synthesized beam FWHM (arcsec)
+
+        searchrad   : null
+                                # Search radius (in arcsec). If set to
+                                # null (default), poserr and psffwhm are
+                                # used. Otherwise, this overrides the
+                                # poserr and psffwhm parameters
+
+        min_fpeak   : null
+                                # Minimum Fpeak (mJy/beam) to be used
+                                # for matching. If set to null,
+                                # min_Fpeak = 0 mJy/beam
+
+        max_fpeak   : null
+                                # Maximum Fpeak (mJy/beam) to be used
+                                # for matching. If set to null,
+                                # max_Fpeak will be set to catalog
+                                # maximum
+
+        min_fint    : 50.0
+                                # Minimum Fint (mJy) to be used
+                                # for matching. If set to null,
+                                # min_Fint = 0 mJy
+
+        max_fint    : null
+                                # Maximum Fint (mJy) to be used
+                                # for matching. If set to null,
+                                # max_Fint will be set to catalog
+                                # maximum
+
+        nnearest    : 0
+                                # The nth nearest neighbor to find.
+                                # Default = 0 (if maxmatches >= 0,
+                                # maxmatches is used, else nnearest
+                                # is set to 1 thereby searching for
+                                # the first nearest neighbour)
+        
+        maxmatches  : 0
+                                # Maximum number of matches to
+                                # find. If maxmatches > 0, the code
+                                # finds all matches up to maxmatches
+                                # satisfying matchrad. If
+                                # maxmatches=0, all matches upto
+                                # matchrad are found. And nnearest
+                                # is ignored. Default = -1 (nnearest,
+                                # if positive, is used instead of
+                                # maxmatches. if nnearest is 0, then
+                                # nnearest is set to 1 and the first
+                                # nearest neighbour is searched.)
+
+    MWA-EoR     :
+                                # MWA-EoR catalog
+
+        action      : false
+                                # If set to true, use this as a
+                                # radio catalog for matching with
+                                # the background catalog with
+                                # redshifts
+
+        catfile     : '/path/to/catalogs/KGS.fits'
+                                # Full path to the MWA-EoR catalog file
+
+        freq        : 182.0
+                                # Center frequency in MHz
+
+        poserr      : 20.0
+                                # Positional accuracy in arcsec
+
+        psffwhm     : 300.0
+                                # Synthesized beam FWHM (arcsec)
+
+        searchrad   : null
+                                # Search radius (in arcsec). If set to
+                                # null (default), poserr and psffwhm are
+                                # used. Otherwise, this overrides the
+                                # poserr and psffwhm parameters
+
+        min_fpeak   : null
+                                # Minimum Fpeak (mJy/beam) to be used
+                                # for matching. If set to null,
+                                # min_Fpeak = 0 mJy/beam
+
+        max_fpeak   : null
+                                # Maximum Fpeak (mJy/beam) to be used
+                                # for matching. If set to null,
+                                # max_Fpeak will be set to catalog
+                                # maximum
+
+        min_fint    : null
+                                # Minimum Fint (mJy) to be used
+                                # for matching. If set to null,
+                                # min_Fint = 0 mJy
+
+        max_fint    : null
+                                # Maximum Fint (mJy) to be used
+                                # for matching. If set to null,
+                                # max_Fint will be set to catalog
+                                # maximum
+
+        nnearest    : 0
+                                # The nth nearest neighbor to find.
+                                # Default = 0 (if maxmatches >= 0,
+                                # maxmatches is used, else nnearest
+                                # is set to 1 thereby searching for
+                                # the first nearest neighbour)
+        
+        maxmatches  : 0
+                                # Maximum number of matches to
+                                # find. If maxmatches > 0, the code
+                                # finds all matches up to maxmatches
+                                # satisfying matchrad. If
+                                # maxmatches=0, all matches upto
+                                # matchrad are found. And nnearest
+                                # is ignored. Default = -1 (nnearest,
+                                # if positive, is used instead of
+                                # maxmatches. if nnearest is 0, then
+                                # nnearest is set to 1 and the first
+                                # nearest neighbour is searched.)
+

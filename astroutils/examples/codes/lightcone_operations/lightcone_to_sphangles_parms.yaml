@@ -1,0 +1,921 @@
+##### IMPORTANT INFORMATION #####
+##### DO NOT MODIFY THIS FILE #####
+##### MAKE A COPY OF THIS FILE AND CUSTOMIZE #####
+
+########## Directory Structure information #########
+
+dirstruct   :
+                                # Directory information
+
+    indir           : '/data5/t_nithyanandan/data/EoR_models/21cmFAST/Andrei_Mesinger/Faint_galaxies_coldIGM/lightcone/'
+                                # Folder containing cosmological
+                                # lightcone boxes
+
+    infile_prefix   : 'delta_T_v3_no_halos_'
+                                # prefix for selecting infiles. If
+                                # set to null (default), no prefix
+                                # is assumed
+
+    infile_suffix   : 'lighttravel'
+                                # suffix for selecting infiles. If
+                                # set to null (default), no prefix
+                                # is assumed
+
+    interpdir       : null
+                                # Folder to store interpolated
+                                # coeval cubes. If set to nul
+                                # (default), interpolated coeval
+                                # cubes will not be saved
+
+    write           : true
+                                # If set to true (default), write
+                                # the lightcone surfaces to disk
+                                # as specified by outdir and
+                                # outfile_prefix parameters below
+
+    outdir          : '/data5/t_nithyanandan/data/EoR_models/21cmFAST/Andrei_Mesinger/Faint_galaxies_coldIGM/lightcone/sphangles/'
+                                # Output folder to put the angles
+                                # in spherical coordinate system
+
+    outfile_prefix  : null
+                                # Identification string to be
+                                # prefixed to the output file
+                                # which will be saved in HDF5
+                                # format. If the prefix is not null,
+                                # The HDF5 file saved
+                                # will have this prefix appended
+                                # with '_light_cone_sphangles.hdf5',
+                                # otherwise it will just be named
+                                # 'light_cone_sphangles.hdf5'. The
+                                # extension '.hdf5' will be
+                                # automatically specified and should
+                                # not be specified
+
+########## Format specifications ##########
+
+format     :
+                                # Input file format specifications
+
+    delimiter       : '_'
+                                # Delimiter for parameters in the
+                                # filename
+
+    zstart_pos      : 5
+                                # 0-indexed position in the delimited
+                                # filename where starting redshift 
+                                # parameter can be found
+
+    zend_pos        : 6
+                                # 0-indexed position in the delimited
+                                # filename where ending redshift 
+                                # parameter can be found
+
+    zstart_identifier: 'zstart'
+                                # This string is present in the
+                                # delimited filename either before
+                                # or after (see zstart_identifier_pos) the
+                                # starting redshift value. If no such
+                                # identifier string present, set to
+                                # null (default)
+
+    zend_identifier : 'zend'
+                                # This string is present in the
+                                # delimited filename either before
+                                # or after (see zend_identifier_pos) the
+                                # ending redshift value. If no such
+                                # identifier string present, set to
+                                # null (default)
+
+    zstart_identifier_pos: 'before'
+                                # If set to 'before' the zstart_identifier
+                                # string appears before the starting redshift
+                                # value in the delimited string from
+                                # filename. If set to 'after' it lies
+                                # after. It is only applicable if
+                                # zstart_identifier is not null
+
+    zend_identifier_pos: 'before'
+                                # If set to 'before' the zend_identifier
+                                # string appears before the ending redshift
+                                # value in the delimited string from
+                                # filename. If set to 'after' it lies
+                                # after. It is only applicable if
+                                # zend_identifier is not null
+
+########## Action parameters ##########
+
+# actions     :
+#                                 # Actions to be performed
+# 
+#     LC_to_ang   : true
+#                                 # Convert raw lightcone to spherical
+#                                 # angles
+# 
+#     ang_to_hlpx : true
+#                                 # Interpolate spherical angles to
+#                                 # healpix coordinates
+# 
+#     read_LC_raw : false
+#                                 # Read raw lightcone from EoR
+#                                 # simulation
+# 
+#     read_LC_proc: false
+#                                 # Read lightcone processed to
+#                                 # spherical angles
+# 
+#     save_LC_proc: false
+#                                 # Save lightcone processed to
+#                                 # spherical angles
+
+########## Simulation parameters ##########
+
+sim         :
+                                # EoR Simulation/model information
+
+    source      : '21cmfast'
+                                # Source of simulation
+
+    cosmo       :
+                                # Cosmological parameters
+
+            name    : 'custom'
+                                # Name of cosmology. If set to
+                                # 'custom' it will use the
+                                # parameters below. Otherwise
+                                # the name should be a meaningful
+                                # descriptor which can be used
+                                # to load preset cosmology parameters
+                                # from astropy.cosmology (e.g. WMAP9,
+                                # etc.) in which case the following
+                                # parameters will be ignored
+
+            h       : 0.678
+                                # Hubble factor
+
+            Om0     : 0.308
+                                # Matter density
+
+            Ode0    : null
+                                # Dark energy density. If set to
+                                # null, it is 1-Om0, otherwise it
+                                # must be specified
+
+            Ob0     : 0.02226
+                                # Baryon density. The actual baryon
+                                # density is this number divided by
+                                # h**2
+
+            w0      : -1
+                                # Dark energy equation of state
+                                # parameter. Default=-1
+
+            Y_He    : 0.245
+                                # Helium mass fraction
+
+            sigma8  : 0.815
+                                # Linear rms mass fluctuation on
+                                # 8 h/Mpc scales at z=0
+
+            Tcmb0   : 2.725
+                                # CMB temperature (in K) at z=0
+
+    units_in    :
+                                # Units for quantities in simulation
+
+        boxdim      : 'Mpc'
+                                # Units of the box dimensions such as
+                                # cell size and total size. Accepted
+                                # values are distance units (e.g. 'm',
+                                # 'km', 'Mpc', etc.)
+
+        boxval      : 'mK'
+                                # Units for the values filling the
+                                # simulated cube. Usually units of
+                                # temperature ('mK' or 'K')
+
+    rest_freq   : 1420405751.77
+                                # Rest frequency (in Hz). Default is
+                                # for HI spin flip transition
+
+########## Output parameters ##########
+
+output      :
+                                # Output parameters
+
+    zbins           : [
+                       [6.0, 13.5]
+                      ]
+                                # Redshift bins to be used. It must
+                                # be set as a list of lists, where
+                                # each inner list contains two
+                                # elements. If set, this parameter
+                                # will take precedence and the nzbins
+                                # parameter is ignored. If set to
+                                # null, then nzbins parameter will be
+                                # used
+
+    nzbins          : null
+                                # Number of redshift bins to split
+                                # the output into. Will be ignored if
+                                # zbins parameter is set to a non-null
+                                # value. If nzbins is set to null,
+                                # zbins parameter will be used. If
+                                # zbins is also set to null, then
+                                # nzbins will default to 1 and the
+                                # entire range of redshift will be
+                                # used.
+
+    rest_frequency  : 1420405751.77
+                                # Rest frequency (in Hz). Default is
+                                # for HI spin flip transition
+
+########## Processing parameters ##########
+
+actions     :
+                                # Processing parameters
+
+    process_raw_LC  :
+                                # Parameters for converting raw
+                                # lightcones and combine them
+                                # into a consolidated lightcone
+                                # in HDF5 format
+
+        act             : false
+                                # Perform conversion from raw
+                                # lightcone to spherical angles
+
+        cube_source     : '21cmfast'
+                                # Source of the input cube. Currently,
+                                # only accepts '21cmfast'
+
+        input           :
+                                # Input parameters
+
+            indir           : '/lustre/aoc/users/nthyagar/data/EoR_models/21cmFAST/Andrei_Mesinger/Faint_galaxies_fiducial_1024/lightcone/'
+                                # Folder containing cosmological
+                                # lightcone boxes
+
+            infile_prefix   : 'delta_T_v3_no_halos_'
+                                # prefix for selecting infiles. If
+                                # set to null (default), no prefix
+                                # is assumed
+
+            infile_suffix   : 'lighttravel'
+                                # suffix for selecting infiles. If
+                                # set to null (default), no prefix
+                                # is assumed
+
+        parseinfo       :
+                                # Information for parsing input files
+
+            delimiter       : '_'
+                                # Delimiter for parameters in the
+                                # filename
+
+            zstart_pos      : 5
+                                # 0-indexed position in the delimited
+                                # filename where starting redshift 
+                                # parameter can be found
+
+            zend_pos        : 6
+                                # 0-indexed position in the delimited
+                                # filename where ending redshift 
+                                # parameter can be found
+
+            zstart_identifier: 'zstart'
+                                # This string is present in the
+                                # delimited filename either before
+                                # or after (see zstart_identifier_pos) the
+                                # starting redshift value. If no such
+                                # identifier string present, set to
+                                # null (default)
+
+            zend_identifier : 'zend'
+                                # This string is present in the
+                                # delimited filename either before
+                                # or after (see zend_identifier_pos) the
+                                # ending redshift value. If no such
+                                # identifier string present, set to
+                                # null (default)
+
+            zstart_identifier_pos: 'before'
+                                # If set to 'before' the zstart_identifier
+                                # string appears before the starting redshift
+                                # value in the delimited string from
+                                # filename. If set to 'after' it lies
+                                # after. It is only applicable if
+                                # zstart_identifier is not null
+
+            zend_identifier_pos: 'before'
+                                # If set to 'before' the zend_identifier
+                                # string appears before the ending redshift
+                                # value in the delimited string from
+                                # filename. If set to 'after' it lies
+                                # after. It is only applicable if
+                                # zend_identifier is not null
+
+        proc            :
+                                # Processing parameters
+
+            zbins           : [
+                               [5.5, 14.0]
+                              ]
+                                # Redshift bins to be written. It must
+                                # be set as a list of lists, where
+                                # each inner list contains two
+                                # elements. If set to null (default),
+                                # all redshifts will be written into
+                                # one output file. 
+
+        output          :
+                                # Output folder/file structure
+
+            outdir          : '/lustre/aoc/users/nthyagar/data/EoR_models/21cmFAST/Andrei_Mesinger/Faint_galaxies_fiducial_1024/lightcone/combined/'
+                                # Output folder to put the
+                                # consolidated light cone cube
+
+            outfile_prefix  : 'combined'
+                                # Identification string to be
+                                # prefixed to the output file
+                                # which will be saved in HDF5
+                                # format. If the prefix is null,
+                                # the HDF5 file saved
+                                # will have this prefix appended
+                                # before '_light_cone.hdf5',
+                                # otherwise it will just be named
+                                # 'light_cone.hdf5'. The
+                                # extension '.hdf5' will be
+                                # automatically specified and should
+                                # not be specified
+
+    smooth_resample :
+                                # Parameters for smoothing and
+                                # and resampling the lightcone cube
+
+        act             : false
+                                # If set to true, perform smoothing
+                                # and resampling of the lightcone
+                                # cube
+
+        input           :
+                                # Input parameters
+
+            indir           : '/lustre/aoc/users/nthyagar/data/EoR_models/21cmFAST/Andrei_Mesinger/Faint_galaxies_fiducial_1024/lightcone/combined/'
+                                # Folder containing processed 
+                                # cosmological lightcone boxes
+                                # in HDF5 format
+
+            infile_prefix   : 'combined_light_cone_z_5.500-14.000'
+                                # The filename of the consolidated
+                                # lightcone cube in HDF5 format
+
+        output          :
+                                # Output folder/file structure
+
+            outdir          : '/lustre/aoc/users/nthyagar/data/EoR_models/21cmFAST/Andrei_Mesinger/Faint_galaxies_fiducial_1024/lightcone/smooth_resampled/'
+                                # Output folder to put the smoothed
+                                # and resampled lightcone in
+
+            outfile_prefix  : 'smooth_resampled_light_cone'
+                                # Identification string to be
+                                # prefixed to the output file
+                                # which will be saved in HDF5
+                                # format. If the prefix is not null,
+                                # The HDF5 file saved
+                                # will have this prefix appended.
+                                # The extension '.hdf5' will be
+                                # automatically specified and should
+                                # not be specified
+
+        proc            :
+                                # Detailed processing parameters
+
+            zyx_scale       : [null, 17.5, 17.5]
+                                # Smoothing scale for the cube.
+                                # If set to null, no smoothing is done.
+                                # If a scalar value is specified it will
+                                # be assumed to be in Mpc. This scale 
+                                # will be used for all x, y, z axes.
+                                # Otherwise, it must be specified as a
+                                # three element list. Each element in
+                                # the list corresponds to the z-, y-
+                                # and x-axes respectively. The unit
+                                # for z-axis must match what is in
+                                # boxres and must be either
+                                # 'dimensionless' (for redshift),
+                                # 'length' (comoving distance LOS), or
+                                # 'frequency' (proxy for LOS). The unit
+                                # for y- and x- axes could be 'length'
+                                # (for comoving distance) or 'angle'
+                                # (proxy for transverse comoving
+                                # distance). The units will be read
+                                # from zyx_units.
+                                # Examples of valid inputs:
+                                #   null => No smoothing. Check for
+                                #       zangang_scale. 
+                                #   [null, 4.0, null] => Smooth only
+                                #       y-axis to 4 Mpc. 
+                                #   [3.0, 1.0, 1.0] => Smooth z-, y- and
+                                #       x-axes to 3 Mpc, 1 Mpc, 1 Mpc
+                                #       respectively
+                                #   [3.0, 1.0, null] => Smooth z- and y-
+                                #       axes to 3 Mpc and 1 Mpc
+                                #       respectively. No smoothing along
+                                #       x-axis. 
+
+            zyx_units       : [null, 'arcmin', 'arcmin']
+                                # Units of z-, y- and x-axes. Accepted
+                                # values include null (defaults to
+                                # 'Mpc' for all axes) or a single
+                                # string (some unit of length) which
+                                # applies to all axes, or a 3-element
+                                # list. If specified as a list, the
+                                # accepted value for z-axis includes
+                                # null (no smoothing), string
+                                # specifying unit of length (such as
+                                # 'Mpc', 'kpc', etc.), frequency
+                                # (such as 'Hz', 'MHz', etc.), or
+                                # dimensionless quantity for redshift
+                                # (such as or ''). Accepted values for
+                                # y- and x-axes include null (no
+                                # smoothing), string specifying unit
+                                # of length (such as 'Mpc', 'kpc',
+                                # etc.), angle (such as 'arcmin',
+                                # 'degree', etc.)
+
+    los_interp      :
+                                # Parameters for interpolation
+                                # along LOS into uniform frequency
+                                # channels
+
+        act             : false
+                                # If set to true, perform LOS
+                                # interpolation at uniform frequency
+                                # intervals
+
+        input           :
+                                # Input parameters
+
+            indir           : '/lustre/aoc/users/nthyagar/data/EoR_models/21cmFAST/Andrei_Mesinger/Faint_galaxies_fiducial_1024/lightcone/smooth_resampled/'
+                                # Folder containing processed 
+                                # cosmological lightcone boxes
+                                # in HDF5 format
+
+            infile_prefix   : 'smooth_resampled_light_cone_1.1_28.3_28.3_z_5.500-13.991'
+                                # The filename prefix of the 
+                                # consolidated lightcone cube in HDF5
+                                # format
+
+        output          :
+                                # Output folder/file structure
+
+            outdir          : '/lustre/aoc/users/nthyagar/data/EoR_models/21cmFAST/Andrei_Mesinger/Faint_galaxies_fiducial_1024/lightcone/LOS_interp/'
+                                # Output folder to put the LOS
+                                # interpolated light cone in
+
+            outfile_prefix  : 'LOS_interpolated_light_cone_1.1_28.3_28.3'
+                                # Identification string to be
+                                # prefixed to the output file
+                                # which will be saved in HDF5
+                                # format. If the prefix is not null,
+                                # The HDF5 file saved
+                                # will have this prefix appended.
+                                # The extension '.hdf5' will be
+                                # automatically specified and should
+                                # not be specified
+
+        proc            :
+                                # Detailed processing parameters
+
+            los_info        :
+                                # Information to determine output
+                                # LOS axis. Unit type is determined
+                                # by los_type.
+
+                los_type        : 'frequency'
+                                # Output unit type of LOS axis.
+                                # Accepted values are 'frequency',
+                                # 'length' and 'dimensionless'
+                                # (for redshift)
+
+                min_los         : 100000000.0
+                                # Minimum value on LOS axis. Unit
+                                # specified in los_unit and unit
+                                # type determined by los_type
+
+                los_increment   : 97656.25
+                                # Increment along LOS axis. The
+                                # output LOS axis will be uniformly
+                                # incremented by this amount in
+                                # units specified in los_unit and
+                                # unit type specified in los_type
+
+                n_los           : 1024
+                                # Number of intervals in output LOS
+                                # axis.
+
+                los_unit        : 'Hz'
+                                # Unit of LOS axis. Accepted values
+                                # include units of frequency such
+                                # as 'Hz', 'kHz', 'MHz', etc. or
+                                # units of length such as 'Mpc' or
+                                # units of redshift which has no
+                                # dimensions and hence ''
+
+    LC_to_angle     :
+                                # Parameters for converting
+                                # transverse directions of lightcone
+                                # to spherical angles
+
+        act             : false
+                                # Perform conversion from transverse
+                                # directions of lightcone to spherical
+                                # angles
+
+        input           :
+                                # Input parameters
+
+            indir           : '/lustre/aoc/users/nthyagar/data/EoR_models/21cmFAST/Andrei_Mesinger/Faint_galaxies_fiducial_1024/lightcone/LOS_interp/'
+                                # Folder containing processed 
+                                # cosmological lightcone boxes
+                                # in HDF5 format
+
+            infile_prefix   : 'LOS_interpolated_light_cone_1.1_28.3_28.3_1024x97656.2Hz_z_6.105-13.204'
+                                # The filename of the input
+                                # lightcone cube in HDF5 format
+
+        output          :
+                                # Output folder/file structure
+
+            outdir          : '/lustre/aoc/users/nthyagar/data/EoR_models/21cmFAST/Andrei_Mesinger/Faint_galaxies_fiducial_1024/lightcone/sphangles/'
+                                # Output folder to put the angles
+                                # in spherical coordinate system
+
+            outfile_prefix  : 'angular_lightcone'
+                                # Identification string to be
+                                # prefixed to the output file
+                                # which will be saved in HDF5
+                                # format. If the prefix is not null,
+                                # The HDF5 file saved
+                                # will have this prefix appended
+                                # with '_light_cone_sphangles.hdf5',
+                                # otherwise it will just be named
+                                # 'light_cone_sphangles.hdf5'. The
+                                # extension '.hdf5' will be
+                                # automatically specified and should
+                                # not be specified
+
+        proc            :
+                                # Detailed processing parameters
+
+            interp          : 'splinef2d'
+                                # Transverse interpolation to convert
+                                # from constant distance intervals to
+                                # constant angle intervals as a
+                                # function of redshift. If set to
+                                # null, do not trim and interpolate
+                                # but approximate constant distance
+                                # intervals as constant angle intervals
+                                # over redshift. Otherwise, it must be
+                                # set to a string that denotes the
+                                # interpolation method such as 'linear',
+                                # 'splinef2d', 'nearest', etc. Check
+                                # documentation for
+                                # scipy.interpolate.interpn()
+
+    tiling          :
+                                # Perform tiling of the lightcone in
+                                # specified directions by specified
+                                # number of repetitions
+
+        act             : false
+                                # If set to true, perform tiling of
+                                # the lightcone along specified
+                                # directions by specified repetitions
+
+        input           :
+                                # Input parameters
+
+            indir           : '/lustre/aoc/users/nthyagar/data/EoR_models/21cmFAST/Andrei_Mesinger/Faint_galaxies_fiducial_1024/lightcone/sphangles/'
+                                # Folder containing processed 
+                                # cosmological lightcone boxes
+                                # in HDF5 format
+
+            infile_prefix   : 'angular_lightcone_97656.2Hzx14.0arcminx14.0arcmin_z_6.105-13.204'
+                                # The filename of the input
+                                # lightcone cube in HDF5 format
+
+        output          :
+                                # Output folder/file structure
+
+            outdir          : '/lustre/aoc/users/nthyagar/data/EoR_models/21cmFAST/Andrei_Mesinger/Faint_galaxies_fiducial_1024/lightcone/sphangles/'
+                                # Output folder to put the angles
+                                # in spherical coordinate system
+
+            outfile_prefix  : 'tiled_lightcone'
+                                # Identification string to be
+                                # prefixed to the output file
+                                # which will be saved in HDF5
+                                # format. If the prefix is not null,
+                                # The HDF5 file saved
+                                # will have this prefix appended
+                                # with '_light_cone_sphangles.hdf5',
+                                # otherwise it will just be named
+                                # 'light_cone_sphangles.hdf5'. The
+                                # extension '.hdf5' will be
+                                # automatically specified and should
+                                # not be specified
+
+        proc            :
+                                # Detailed processing parameters
+
+            zyx_factor      : [null, 3, 3]
+                                # Factor by which the cube has to be
+                                # tiled. One and only one of
+                                # zyx_factor or zyx_out must be set.
+                                # If specified as scalar, this factor
+                                # will be applied to all axes in the
+                                # lightcone. Otherwise it must be a
+                                # 3-element list, one element each
+                                # for z-, y-, and x-axes respectively.
+                                # If any of the elements is null, no
+                                # tiling is performed along that axis.
+                                # Each element can be a scalar or
+                                # null. The scalar values must be
+                                # greater than 1 for tiling to be
+                                # done. Valid examples are:
+                                # null => no tiling
+                                # 3.2  => tile by a factor (or repeat
+                                #         and truncate after adding
+                                #         2.2 times to original) along
+                                #         all axes
+                                # [null, 2.4, 3.2]
+                                #      => no tiling along z-axis, by
+                                #         factors 2.4 along y-, and
+                                #         3.2 along x-axes
+                                #         respectively
+
+            zyx_out         : null
+                                # Size of output cube. One and only
+                                # one of zyx_out and zyx_factor must
+                                # be set. It must be a 3-element
+                                # list, one element each for z-, y-,
+                                # and x-axes respectively. The units
+                                # must be specified in zyx_units. If 
+                                # any of the elements is null, no 
+                                # tiling is performed along that axis.
+                                # Each element can be a scalar or
+                                # null. Valid examples are:
+                                # null => no tiling
+                                # [null, 2.4, 3.2]
+                                #      => no tiling along z-axis, to
+                                #         2.4 along y-, and 3.2 along
+                                #         x-axes respectively with
+                                #         their respective units in
+                                #         zyx_units
+
+            zyx_units       : [null, 'deg', 'deg']
+                                # Will be used if zyx_out is set.
+                                # Must be a 3-element list. Elements
+                                # can contain null or strings denoting
+                                # valid units. If an element has to
+                                # be dimensionless, it should be set
+                                # to '' (for example, redshift). If an
+                                # element is null, the corresponding
+                                # element in zyx_out should be null
+                                # too. Valid examples are:
+                                # [null, 'deg', 'deg']
+                                #      => no tiling along z-axis, 
+                                #         units of 'deg' along y- and
+                                #         x-axes.
+                                # ['', 'Mpc', 'Mpc']
+                                #      => dimensionless along z-axis,
+                                #         'Mpc' along y- and x-axes
+                                # ['Hz', null, null]
+                                #      => Hz along z-axis, no tiling
+                                #         on y- and x-axes
+
+            mirror_axes     : [1, 2]
+                                # Axes to be mirrored while tiling.
+                                # 0 => z, 1 => y, 2 => x.
+                                # If set to null, no axes are
+                                # mirrored and just regular tiling is
+                                # performed
+
+    LC_to_obscube   :
+                                # Convert lightcone cube to FITS cube
+                                # or SkyModel instance
+
+        act             : true
+                                # If set to true, convert lightcone
+                                # cube to FITS cube
+
+        input           :
+                                # Input parameters
+
+            indir           : '/lustre/aoc/users/nthyagar/data/EoR_models/21cmFAST/Andrei_Mesinger/Faint_galaxies_fiducial_1024/lightcone/sphangles/'
+                                # Folder containing processed 
+                                # cosmological lightcone boxes
+                                # in HDF5 format
+
+            infile_prefix   : 'tiled_lightcone_1024x97656.2Hz_288x5.6arcmin_288x5.6arcmin_z_6.105-13.204'
+                                # The filename of the input
+                                # lightcone cube in HDF5 format
+
+        output          :
+                                # Output folder/file structure
+
+            outdir          : '/lustre/aoc/users/nthyagar/data/EoR_models/21cmFAST/Andrei_Mesinger/Faint_galaxies_fiducial_1024/lightcone/SkyModel/'
+                                # Output folder to store the FITS
+                                # cube
+
+            outfile_prefix  : 'lightcone'
+                                # Identification string to be
+                                # prefixed to the output file
+                                # which will be saved in HDF5
+                                # format. If the prefix is not null,
+                                # The HDF5 file saved
+                                # will have this prefix appended
+                                # with '_light_cone_sphangles.hdf5',
+                                # otherwise it will just be named
+                                # 'light_cone_sphangles.hdf5'. The
+                                # extension '.hdf5' will be
+                                # automatically specified and should
+                                # not be specified
+
+            fits            : true
+                                # If set to true, create a FITS image
+                                # cube file
+
+            skymodel        : true
+                                # If set to true, create an instance of
+                                # class SkyModel and save
+
+        proc            :
+                                # Detailed processing parameters
+
+            wcsinfo         :
+                                # WCS information
+
+                RA_ref          : 50.67375
+                                # RA of the reference object (in
+                                # degrees)
+
+                dec_ref         : -37.20833333
+                                # Dec of the reference object(in
+                                # degrees)
+
+                freq_ref        : 100000000.0
+                                # Frequency at first channel (in Hz)
+
+                projection      : 'ZEA'
+                                # Coordinate projection. Must be a
+                                # string and compatible with FITS
+                                # standard
+
+            hdrinfo         :
+                                # Header information
+
+                radesys         : 'ICRS'
+                                # Coordinate reference frame. Accepted
+                                # values are 'ICRS', 'FK5'
+
+                equinox         : 2000.0
+                                # Coordinate equinox
+
+                specsys         : 'LSRK'
+                                # Spectral axis reference
+
+                obsdate         : '2018/11/23'
+                                # Observation date YYYY/MM/DD
+
+                telescope       : 'hera'
+                                # Telescope name
+
+                latitude        : -30.7224
+                                # Latitude in degrees
+
+                longitude       : +21.4278
+                                # Longitude of observatory (in degrees)
+
+                altitude        : 0.0
+                                # Specify altitude in meters.
+                                # Default = 0
+
+                bunit           : 'K'
+                                # Units of flux in the image. Accepted
+                                # values are 'K' and 'Jy' (for
+                                # Jy/pixel)
+
+    sphang_to_hpx   :
+                                # Parameters for converting spherical
+                                # angles to healpix coordinates
+
+        act             : false
+                                # Perform conversion from spherical
+                                # angles to healpix maps
+
+        infile          : '/data5/t_nithyanandan/data/EoR_models/21cmFAST/Andrei_Mesinger/Faint_galaxies_coldIGM/lightcone/sphangles/light_cone_sphangles_zbin_6.0_26.8.hdf5'
+                                # Identification string to be
+                                # prefixed to the input file
+                                # which will be read in HDF5
+                                # format. If the prefix is not null,
+                                # The HDF5 file read
+                                # will have this prefix appended
+                                # with '_light_cone_sphangles.hdf5',
+                                # otherwise it will just be named
+                                # 'light_cone_sphangles.hdf5'. The
+                                # extension '.hdf5' will be
+                                # automatically assumed and should
+                                # not be specified
+
+        proc            :
+                                # Detailed processing parameters
+
+            nside           : 4096
+                                # nside in the output healpix map
+
+            interp_method   : 'healpix'
+                                # Interpolation method to be used
+                                # in the reprojection. Accepted
+                                # values are 'spline' (default),
+                                # 'nearest', and 'healpix'
+
+            use_specparms   : true
+                                # Parameters along the spectral axis
+                                # in the output to be used (if set to
+                                # true) or to not modify the spectral
+                                # axis (of set to false). If set to
+                                # true, the following parameters will
+                                # be used for the output
+
+            rest_frequency  : 1420405751.77
+                                # Rest frequency (in units specified
+                                # below). Default is for HI spin flip
+                                # transition
+
+            freqs           : null
+                                # Output frequencies (in units
+                                # specified below) as a list. Allows
+                                # specifying arbitrary list of
+                                # frequencies. If null, frequency
+                                # parameters below will be used,
+                                # otherwise they will be ignored
+
+            f0              : 150000000.0
+                                # Center frequency (in units
+                                # specified below)
+
+            freq_res        : 390625.0
+                                # Frequency resolution (in units
+                                # specified below)
+
+            nchan           : 256
+                                # Number of channels
+
+            freq_units      : 'Hz'
+                                # accepted values are 'Hz', 'MHz'
+                                # and 'GHz'
+
+            save_as_skymodel: true
+                                # If set to true (default), save as
+                                # HDF5 file in a format that can be
+                                # read in as an instance of class
+                                # SkyModel.Catalog
+
+#     write_mode      : null
+#                                 # Mode to write data out. If set to
+#                                 # null (default), all surfaces will
+#                                 # be written out at once. If set to
+#                                 # 'append' light cone surfaces will
+#                                 # be appended incrementally.
+#                                 # Currently applies only if parallel
+#                                 # is set to false.
+# 
+#     parallel        : false
+#                                 # If set to true (parallelize using
+#                                 # multiprocessing), otherwise set
+#                                 # to false (default). Setting this
+#                                 # to true does not seem to help. 
+# 
+#     prll_type       : 1
+#                                 # If set to 1 (default), one spherical
+#                                 # patch will be computed per process.
+#                                 # If set to 2, multiple spherical
+#                                 # patches will be computed per process
+# 
+#     nproc           : 16
+#                                 # Number of parallel threads if
+#                                 # parallel is set to true, otherwise
+#                                 # ignored. If set to null, will 
+#                                 # default to number of cores in the
+#                                 # system
+# 
+#     wait_after_run  : true
+#                                 # If true, keep python shell open
+#                                 # after completing the run using
+#                                 # set_trace() of python debugger.
+#                                 # If false, close python shell
+#                                 # and return to command prompt
+#                                 # after successful completion
+

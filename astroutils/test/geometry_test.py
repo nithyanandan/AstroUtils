@@ -60,6 +60,20 @@ def test_sph2xyz():
     xyz = NP.hstack((x.reshape(-1,1), y.reshape(-1,1), z.reshape(-1,1)))
     NP.testing.assert_allclose(xyz, expected_xyz, atol=1e-12)
 
+def test_xyz2sph():
+    expected_r = 1.0 + NP.arange(2)
+    expected_lat = NP.asarray([NP.pi/4, NP.pi/3])
+    expected_lon = NP.asarray([NP.pi/3, 3*NP.pi/2])
+    theta = NP.pi/2 - expected_lat
+    phi = NP.pi/2 - expected_lon
+    x = expected_r * NP.sin(theta) * NP.cos(phi)
+    y = expected_r * NP.sin(theta) * NP.sin(phi)
+    z = expected_r * NP.cos(theta)
+    r, lat, lon = GEOM.xyz2sph(x, y, z, units='radians')
+    r_lat_lon = NP.hstack((r.reshape(-1,1), lat.reshape(-1,1), lon.reshape(-1,1)))
+    expected_r_lat_lon = NP.hstack((expected_r.reshape(-1,1), expected_lat.reshape(-1,1), expected_lon.reshape(-1,1)))
+    NP.testing.assert_allclose(r_lat_lon, expected_r_lat_lon, atol=1e-12)
+
 def test_sphdist():
     lon1 = NP.asarray([0.0, 45.0])
     lat1 = NP.asarray([30.0, 0.0])
