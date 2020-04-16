@@ -1,3 +1,15 @@
+From e20307e (master):
+=====================
+
+In astroutils/ephemeris_timing.py,
+
+(*) Remove import of ephem module
+(*) Remove the __main__() function that used the ephem module
+
+In setup.py,
+
+(*) Remove pyephem requirements in install and setup
+
 From b9af280 (master), b254cdb (skymod):
 =======================================
 

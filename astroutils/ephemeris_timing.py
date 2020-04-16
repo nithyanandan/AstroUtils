@@ -3,7 +3,6 @@ from astropy.time import Time, TimeDelta
 from astropy.coordinates import SkyCoord, AltAz, ICRS, FK5, EarthLocation, Longitude
 from astropy import units as U
 import numpy as NP
-import ephem as EP
 import constants as CNST
 
 ################################################################################
@@ -599,43 +598,3 @@ def radec2altaz(radec, location, obstime=None, epoch_RA=2000.0, time_type=None):
 
 #################################################################################
 
-if __name__ == "__main__":
-
-    # day='2013-08-23'
-    # gmst='00:00:10'
-    # t=gmst2gps(day, gmst)
-    # if t is not None:
-    #     print 'GMST {0} on {1} = {2} GPS seconds'.format(gmst, day, t)
-    # else:
-    #     print 'Failure to converge in Ephemeris/Timing.'
-
-    obsdate = '2013/08/23'
-    LST_given = 21.18331  # in hours
-    latitude = -26.701  # in degrees
-    longitude = 116.670815 # in degrees East
-    
-    lstobj = EP.FixedBody()
-    lstobj._ra = NP.radians(LST_given * 15.0)
-    lstobj._epoch = obsdate
-    
-    obsrvr = EP.Observer()
-    obsrvr.lat = NP.radians(latitude)
-    obsrvr.lon = NP.radians(longitude)
-    obsrvr.date = obsdate
-    
-    lstobj.compute(obsrvr)
-    
-    transitJD = EP.julian_date(obsrvr.next_transit(lstobj))
-    transitDT = str(obsrvr.next_transit(lstobj))
-        
-    transit_instant = Time(transitDT.replace('/', '-'), scale='utc', format='iso')
-    transit_day, transit_time = str(transit_instant).split(' ')
-
-    gmst = LST_given - longitude / 15.0
-    t = gmst2gps(transit_day, gmst)
-    if t is not None:
-        print 'GMST {0} on {1} = {2} GPS seconds'.format(gmst, obsdate, t)
-    else:
-        print 'Failure to converge in Ephemeris/Timing.'
-    
-    # print transitDT
