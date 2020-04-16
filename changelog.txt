@@ -1,3 +1,12 @@
+From ad3cd22 (test):
+===================
+
+(*) Add astroutils/tests/conftest.py to repo
+
+In astroutils/tests/test_geometry.py,
+
+(*) Use pytest parametrize to test_altaz2dircos()
+
 From 34489fc (master):
 =====================
 

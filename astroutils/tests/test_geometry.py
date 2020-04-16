@@ -1,11 +1,18 @@
+import pytest
 from astroutils import geometry as GEOM
 import numpy as NP
 
-def test_altaz2dircos():
-    altaz = NP.asarray([[90.0, 270.0], [0.0, 90.0]]).reshape(-1,2)
-    dircos = NP.asarray([[0.0, 0.0, 1.0],[1.0, 0.0, 0.0]]).reshape(-1,3)
-    expected_dircos = GEOM.altaz2dircos(altaz, units='degrees')
-    NP.testing.assert_allclose(dircos, expected_dircos, atol=1e-12)
+@pytest.mark.parametrize('altaz, lmn', [([90.0, 270.0], [0.0, 0.0, 1.0]),
+                                        ([0.0, 90.0], [1.0, 0.0, 0.0]),
+                                        ([-90.0, 270.0], [0.0, 0.0, -1.0]),
+                                        ([0.0, -90.0], [-1.0, 0.0, 0.0]),
+                                        ([0.0, 180.0], [0.0, -1.0, 0.0]),
+                                        ([0.0, 0.0], [0.0, 1.0, 0.0])])
+def test_altaz2dircos(altaz, lmn):
+    alt_az = NP.asarray(altaz).reshape(1,-1)
+    l_m_n = NP.asarray(lmn).reshape(1,-1)
+    expected_dircos = GEOM.altaz2dircos(alt_az, units='degrees')
+    NP.testing.assert_allclose(l_m_n, expected_dircos, atol=1e-12)
 
 def test_dircos2altaz():
     dircos = NP.asarray([[NP.cos(NP.radians(60.0)), 0.0, NP.cos(NP.radians(30.0))],[1.0, 0.0, 0.0]]).reshape(-1,3)
