@@ -1,3 +1,14 @@
+From 34489fc (master):
+=====================
+
+(*) Rename astroutils/test/ to astroutils/tests/
+(*) Rename astroutils/tests/geometry_test.py to
+astroutils/tests/test_geometry.py
+(*) Rename astroutils/tests/mathops_test.py to
+astroutils/tests/test_mathops.py
+(*) Rename astroutils/tests/nonmathops_test.py to
+astroutils/tests/test_nonmathops.py
+
 From e20307e (master):
 =====================
 
