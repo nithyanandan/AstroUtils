@@ -1,3 +1,18 @@
+From 2c3a326 (master):
+=====================
+
+In astroutils/tests/conftest.py,
+
+(*) Add values of hadec and latitude
+(*) Add fixture altaz_to_dircos()
+(*) Update values of altaz and dircos
+(*) Update fixtures altaz_to_dircos() and dircos_to_altaz()
+
+In astroutils/tests/test_geometry.py,
+
+(*) Update test_altaz2hadec() with pytest's fixture-based
+test_altaz2hadec()
+
 From e09bcbc (geometry):
 =======================
 

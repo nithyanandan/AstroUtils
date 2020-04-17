@@ -31,6 +31,15 @@ def test_dircos2altaz(dircos_to_altaz):
     else:
         NP.testing.assert_allclose(altaz, expected_altaz, atol=1e-12)
 
+def test_altaz2hadec(altaz_to_hadec):
+    altaz, hadec, latitude = altaz_to_hadec
+    hadec = NP.asarray(hadec).reshape(-1)
+    altaz = NP.asarray(altaz).reshape(1,-1)
+    expected_hadec = GEOM.altaz2hadec(altaz, latitude=latitude, units='degrees').ravel()
+    if NP.abs(NP.abs(expected_hadec[0] - hadec[0]) - 360.0) <= 1e-10:
+        expected_hadec = NP.asarray([hadec[0], expected_hadec[1]])
+    NP.testing.assert_allclose(hadec, expected_hadec, atol=1e-12)
+
 def test_hadec2altaz():
     hadec = NP.asarray([[30.0, 0.0], [-90.0, 0.0]]).reshape(-1,2)
     latitude = 0.0
@@ -38,13 +47,6 @@ def test_hadec2altaz():
     altaz = GEOM.hadec2altaz(hadec, latitude, units='degrees')
     NP.testing.assert_allclose(altaz, expected_altaz, atol=1e-12)
 
-def test_altaz2hadec():
-    altaz = NP.asarray([[60.0, 270.0], [0.0, 90.0]]).reshape(-1,2)
-    expected_hadec = NP.asarray([[30.0, 0.0], [270.0, 0.0]]).reshape(-1,2)
-    latitude = 0.0
-    hadec = GEOM.altaz2hadec(altaz, latitude, units='degrees')
-    NP.testing.assert_allclose(hadec, expected_hadec, atol=1e-12)
-    
 def test_enu2xyz():
     enu = NP.asarray([[1.0, 0.0, 0.0],
                       [0.0, 1.0, 0.0],
