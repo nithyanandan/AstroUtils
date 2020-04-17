@@ -727,14 +727,15 @@ def altaz2hadec(altaz, latitude, units=None):
         if NP.abs(arg).max() - 1.0 > eps:
             raise valueError('Non-physical angles found')
         else:
-            arg = NP.clip(arg, -1.0, 1.0)            
-    if NP.abs(NP.sin(NP.abs(latitude)) - 1.0) < 1e-12: # When the telescope is located at the poles
-        zenith_ind = NP.abs(NP.abs(NP.sin(dec))-1.0) < eps # When the telescope is pointed at the poles
-        arg[zenith_ind] = NP.sign(dec[zenith_ind]) + 0.0 # Assign HA = 0 or 180 deg
+            arg = NP.clip(arg, -1.0, 1.0)
+
+    pole_ind = NP.abs(NP.abs(NP.sin(dec)*NP.sin(latitude))-1.0) < eps # When the telescope is pointed at the poles while located at the poles
+    arg[pole_ind] = NP.sign(dec[pole_ind]) + 0.0 # Assign HA = 0 or 180 deg
+    
     ha = NP.arccos(arg)
  
     # Make sure the conventions are taken into account
-    ha = NP.where(NP.sin(altaz[:,1])<0.0, ha, 2.0*NP.pi-ha)
+    ha = NP.where(NP.sin(altaz[:,1])<0.0, ha, -ha)
 
     if units == 'degrees':
         ha *= 180.0/NP.pi
