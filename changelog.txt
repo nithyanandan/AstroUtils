@@ -1,3 +1,12 @@
+From 60223f0 (geometry):
+=======================
+
+In astroutils/geometry.py,
+
+(*) In function altaz2hadec(), fix indeterminate value for HA when
+both latitude and dec are pointed at the poles.
+(*) Replace calls to NP.absolute() with NP.abs()
+
 From a385a37 (master):
 =====================
 

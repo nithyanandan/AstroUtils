@@ -606,10 +606,10 @@ def hadec2altaz(hadec, latitude, units=None):
         hadec = NP.radians(hadec)
         latitude = NP.radians(latitude)
 
-    if NP.any(NP.absolute(hadec[:,1]) > NP.pi/2):
+    if NP.any(NP.abs(hadec[:,1]) > NP.pi/2):
         raise ValueError('Declination(s) should lie between -90 and 90 degrees. Check inputs and units.')
 
-    if NP.absolute(latitude) > NP.pi/2:
+    if NP.abs(latitude) > NP.pi/2:
         raise ValueError('Latitude should lie between -90 and 90 degrees. Check inputs and units.')
 
     eps = 1e-10
@@ -709,7 +709,7 @@ def altaz2hadec(altaz, latitude, units=None):
     if NP.any(NP.abs(altaz[:,0]) > NP.pi/2):
         raise ValueError('Altitude(s) magnitude should be <= 90 degrees. Check inputs and units.')
     
-    if NP.absolute(latitude) > NP.pi/2:
+    if NP.abs(latitude) > NP.pi/2:
         raise ValueError('Latitude should lie between -90 and 90 degrees. Check inputs and units.')
 
     eps = 1e-10
@@ -727,7 +727,10 @@ def altaz2hadec(altaz, latitude, units=None):
         if NP.abs(arg).max() - 1.0 > eps:
             raise valueError('Non-physical angles found')
         else:
-            arg = NP.clip(arg, -1.0, 1.0)
+            arg = NP.clip(arg, -1.0, 1.0)            
+    if NP.abs(NP.sin(NP.abs(latitude)) - 1.0) < 1e-12: # When the telescope is located at the poles
+        zenith_ind = NP.abs(NP.abs(NP.sin(dec))-1.0) < eps # When the telescope is pointed at the poles
+        arg[zenith_ind] = NP.sign(dec[zenith_ind]) + 0.0 # Assign HA = 0 or 180 deg
     ha = NP.arccos(arg)
  
     # Make sure the conventions are taken into account
