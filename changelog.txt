@@ -1,3 +1,15 @@
+From 0826a8a (test):
+===================
+
+In astroutils/tests/conftest.py,
+
+(*) Add fixture hadec_to_altaz()
+
+In astroutils/tests/test_geometry.py,
+
+(*) Update test_hadec2altaz() with pytest's fixture-based
+test_hadec2altaz()
+
 From 2c3a326 (master):
 =====================
 

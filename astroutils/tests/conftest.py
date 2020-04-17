@@ -17,4 +17,8 @@ def dircos_to_altaz(request):
 def altaz_to_hadec(request):
     return request.param
 
+@pytest.fixture(scope='module', params=zip(hadec, altaz, latitude))
+def hadec_to_altaz(request):
+    return request.param
+
 
