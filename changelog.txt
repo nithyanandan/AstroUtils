@@ -1,3 +1,12 @@
+From a385a37 (master):
+=====================
+
+In astroutils/geometry.py,
+
+(*) In function altaz2hadec(), comment out the condition that
+altitude needs to be positive and instead add the condition that
+absolute value of altitude should be <= 90 deg.
+
 From d77f2cf (test):
 ===================
 

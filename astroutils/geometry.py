@@ -703,9 +703,12 @@ def altaz2hadec(altaz, latitude, units=None):
         altaz = NP.radians(altaz)
         latitude = NP.radians(latitude)
 
-    if (NP.any(altaz[:,0] > NP.pi/2)) or (NP.any(altaz[:,0] < 0.0)):
-        raise ValueError('Altitude(s) should lie between 0 and 90 degrees. Check inputs and units.')
+    # if (NP.any(altaz[:,0] > NP.pi/2)) or (NP.any(altaz[:,0] < 0.0)):
+    #     raise ValueError('Altitude(s) should lie between 0 and 90 degrees. Check inputs and units.')
 
+    if NP.any(NP.abs(altaz[:,0]) > NP.pi/2):
+        raise ValueError('Altitude(s) magnitude should be <= 90 degrees. Check inputs and units.')
+    
     if NP.absolute(latitude) > NP.pi/2:
         raise ValueError('Latitude should lie between -90 and 90 degrees. Check inputs and units.')
 
