@@ -2,23 +2,34 @@ import pytest
 from astroutils import geometry as GEOM
 import numpy as NP
 
-@pytest.mark.parametrize('altaz, lmn', [([90.0, 270.0], [0.0, 0.0, 1.0]),
-                                        ([0.0, 90.0], [1.0, 0.0, 0.0]),
-                                        ([-90.0, 270.0], [0.0, 0.0, -1.0]),
-                                        ([0.0, -90.0], [-1.0, 0.0, 0.0]),
-                                        ([0.0, 180.0], [0.0, -1.0, 0.0]),
-                                        ([0.0, 0.0], [0.0, 1.0, 0.0])])
-def test_altaz2dircos(altaz, lmn):
-    alt_az = NP.asarray(altaz).reshape(1,-1)
-    l_m_n = NP.asarray(lmn).reshape(1,-1)
-    expected_dircos = GEOM.altaz2dircos(alt_az, units='degrees')
-    NP.testing.assert_allclose(l_m_n, expected_dircos, atol=1e-12)
+# @pytest.mark.parametrize('altaz, lmn', [([90.0, 270.0], [0.0, 0.0, 1.0]),
+#                                         ([0.0, 90.0], [1.0, 0.0, 0.0]),
+#                                         ([-90.0, 270.0], [0.0, 0.0, -1.0]),
+#                                         ([0.0, -90.0], [-1.0, 0.0, 0.0]),
+#                                         ([0.0, 180.0], [0.0, -1.0, 0.0]),
+#                                         ([0.0, 0.0], [0.0, 1.0, 0.0])])
+# def test_altaz2dircos(altaz, lmn):
+#     alt_az = NP.asarray(altaz).reshape(1,-1)
+#     l_m_n = NP.asarray(lmn).reshape(1,-1)
+#     expected_dircos = GEOM.altaz2dircos(alt_az, units='degrees')
+#     NP.testing.assert_allclose(l_m_n, expected_dircos, atol=1e-12)
 
-def test_dircos2altaz():
-    dircos = NP.asarray([[NP.cos(NP.radians(60.0)), 0.0, NP.cos(NP.radians(30.0))],[1.0, 0.0, 0.0]]).reshape(-1,3)
-    altaz = NP.asarray([[60.0, 90.0], [0.0, 90.0]]).reshape(-1,2)
-    expected_altaz = GEOM.dircos2altaz(dircos, units='degrees')
-    NP.testing.assert_allclose(altaz, expected_altaz, atol=1e-12)
+def test_altaz2dircos(altaz_to_dircos):
+    altaz, expected_dircos = altaz_to_dircos
+    altaz = NP.asarray(altaz).reshape(1,-1)
+    expected_dircos = NP.asarray(expected_dircos).reshape(-1)
+    dircos = GEOM.altaz2dircos(altaz, units='degrees').ravel()
+    NP.testing.assert_allclose(dircos, expected_dircos, atol=1e-12)
+
+def test_dircos2altaz(dircos_to_altaz):
+    dircos, altaz = dircos_to_altaz
+    altaz = NP.asarray(altaz).reshape(-1)
+    dircos = NP.asarray(dircos).reshape(1,-1)
+    expected_altaz = GEOM.dircos2altaz(dircos, units='degrees').ravel()
+    if (NP.abs(expected_altaz[0]) - 90.0) <= 1e-10:
+        NP.testing.assert_allclose(altaz[0], expected_altaz[0], atol=1e-12)
+    else:
+        NP.testing.assert_allclose(altaz, expected_altaz, atol=1e-12)
 
 def test_hadec2altaz():
     hadec = NP.asarray([[30.0, 0.0], [-90.0, 0.0]]).reshape(-1,2)

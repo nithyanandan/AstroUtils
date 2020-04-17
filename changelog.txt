@@ -1,3 +1,16 @@
+From d77f2cf (test):
+===================
+
+In astroutils/tests/conftest.py,
+
+(*) Add pytest's parametrized fixtures altaz_to_dircos() and
+dircos_to_altaz()
+
+In astroutils/tests/test_geometry.py,
+
+(*) Comment out earlier pytest's parametrization test_altaz2dircos()
+and alter test_altaz2dircos() and test_dircos2altaz()
+
 From ad3cd22 (test):
 ===================
 
