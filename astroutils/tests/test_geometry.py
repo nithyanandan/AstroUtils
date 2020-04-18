@@ -49,28 +49,20 @@ def test_hadec2altaz(hadec_to_altaz):
         expected_altaz = NP.asarray([expected_altaz[0], altaz[1]])
     NP.testing.assert_allclose(altaz, expected_altaz, atol=1e-12)
 
-def test_enu2xyz():
-    enu = NP.asarray([[1.0, 0.0, 0.0],
-                      [0.0, 1.0, 0.0],
-                      [0.0, 0.0, 1.0]]).reshape(-1,3)
-    latitude = 45.0
-    expected_xyz = NP.asarray([[0.0, 1.0, 0.0],
-                               [-1/NP.sqrt(2.0), 0.0, 1/NP.sqrt(2.0)],
-                               [1/NP.sqrt(2.0), 0.0, 1/NP.sqrt(2.0)]]).reshape(-1,3)
-    xyz = GEOM.enu2xyz(enu, latitude, units='degrees')
+def test_enu2xyz(enu_to_xyz):
+    enu, xyz, latitude = enu_to_xyz # Read from fixture in conftest.py
+    xyz = NP.asarray(xyz).reshape(-1)
+    enu = NP.asarray(enu).reshape(1,-1)
+    expected_xyz = GEOM.enu2xyz(enu, latitude, units='degrees').ravel()
     NP.testing.assert_allclose(xyz, expected_xyz, atol=1e-12)
 
-def test_xyz2enu():
-    xyz = NP.asarray([[1.0, 0.0, 0.0],
-                      [0.0, 1.0, 0.0],
-                      [0.0, 0.0, 1.0]]).reshape(-1,3)
-    latitude = 45.0
-    expected_enu = NP.asarray([[0.0, -1/NP.sqrt(2.0), 1/NP.sqrt(2.0)],
-                               [1.0, 0.0, 0.0],
-                               [0.0, 1/NP.sqrt(2.0), 1/NP.sqrt(2.0)]]).reshape(-1,3)
-    enu = GEOM.xyz2enu(xyz, latitude, units='degrees')
+def test_xyz2enu(xyz_to_enu):
+    xyz, enu, latitude = xyz_to_enu # Read from fixture in conftest.py
+    xyz = NP.asarray(xyz).reshape(1,-1)
+    enu = NP.asarray(enu).reshape(-1)
+    expected_enu = GEOM.xyz2enu(xyz, latitude, units='degrees').ravel()
     NP.testing.assert_allclose(enu, expected_enu, atol=1e-12)
-    
+
 def test_sph2xyz():
     lon = NP.asarray([0.0, 45.0])
     lat = NP.asarray([30.0, 0.0])

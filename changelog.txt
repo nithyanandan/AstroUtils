@@ -1,3 +1,16 @@
+From 814b251 (test):
+===================
+
+In astroutils/tests/conftest.py,
+
+(*) Add enu and xyz values
+(*) Add fixtures enu_to_xyz() and xyz_to_enu()
+
+In astroutils/tests/test_geometry.py,
+
+(*) Update test_xyz2enu() and test_enu2xyz() to be pytest
+fixture-based
+
 From 0c3926b (test):
 ===================
 
