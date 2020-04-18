@@ -1,3 +1,11 @@
+From f59fc29 (geometry):
+=======================
+
+In astroutils/geometry.py,
+
+(*) Fix bug in function sph2xyz() where the x and y values were
+interchanged. Update function docstring to make this clear.
+
 From 2edd51c (test):
 ===================
 

@@ -1291,9 +1291,10 @@ def sph2xyz(lon, lat, rad=None):
 
     Inputs:
 
-    lon [scalar or vector] longitude in degrees.  
+    lon [scalar or vector] longitude in degrees.  Longitude is equivalent to
+        azimuth = 90 - CCW angle from X-axis
 
-    lat [scalar or vector] latitude in degrees. Same size as lon.
+    lat [scalar or vector] latitude (=90 - ZA) in degrees. Same size as lon. 
 
     rad [Optional. scalar or vector] radius. Same size as lon and lat.
         Default = 1.0
@@ -1327,9 +1328,9 @@ def sph2xyz(lon, lat, rad=None):
     if lonr.size != rad.size:
         raise ValueError('rad must have same size as lon and lat in sph2xyz().')
 
-    x = rad * NP.cos(lonr) * NP.cos(latr)
-    y = rad * NP.sin(lonr) * NP.cos(latr)
-    z = rad * NP.sin(latr)
+    x = rad * NP.cos(NP.pi/2-lonr) * NP.sin(NP.pi/2-latr)
+    y = rad * NP.sin(NP.pi/2-lonr) * NP.sin(NP.pi/2-latr)
+    z = rad * NP.cos(NP.pi/2-latr)
 
     return x, y, z
 
