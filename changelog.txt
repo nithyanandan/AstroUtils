@@ -1,3 +1,10 @@
+From 0c3926b (test):
+===================
+
+In astroutils/tests/test_geometry.py,
+
+(*) Remove obsolete and commented old version of test_hadec2altaz()
+
 From 0826a8a (test):
 ===================
 

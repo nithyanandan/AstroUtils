@@ -49,13 +49,6 @@ def test_hadec2altaz(hadec_to_altaz):
         expected_altaz = NP.asarray([expected_altaz[0], altaz[1]])
     NP.testing.assert_allclose(altaz, expected_altaz, atol=1e-12)
 
-# def test_hadec2altaz():
-#     hadec = NP.asarray([[30.0, 0.0], [-90.0, 0.0]]).reshape(-1,2)
-#     latitude = 0.0
-#     expected_altaz = NP.asarray([[60.0, 270.0], [0.0, 90.0]]).reshape(-1,2)
-#     altaz = GEOM.hadec2altaz(hadec, latitude, units='degrees')
-#     NP.testing.assert_allclose(altaz, expected_altaz, atol=1e-12)
-
 def test_enu2xyz():
     enu = NP.asarray([[1.0, 0.0, 0.0],
                       [0.0, 1.0, 0.0],
