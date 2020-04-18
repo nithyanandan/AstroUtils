@@ -63,31 +63,35 @@ def test_xyz2enu(xyz_to_enu):
     expected_enu = GEOM.xyz2enu(xyz, latitude, units='degrees').ravel()
     NP.testing.assert_allclose(enu, expected_enu, atol=1e-12)
 
-def test_sph2xyz():
-    lon = NP.asarray([0.0, 45.0])
-    lat = NP.asarray([30.0, 0.0])
-    expected_x = NP.cos(NP.radians(lat)) * NP.cos(NP.radians(lon))
-    expected_y = NP.cos(NP.radians(lat)) * NP.sin(NP.radians(lon))
-    expected_z = NP.sin(NP.radians(lat))
-    expected_xyz = NP.hstack((expected_x.reshape(-1,1), expected_y.reshape(-1,1), expected_z.reshape(-1,1)))
-    x, y, z = GEOM.sph2xyz(lon, lat)
-    xyz = NP.hstack((x.reshape(-1,1), y.reshape(-1,1), z.reshape(-1,1)))
-    NP.testing.assert_allclose(xyz, expected_xyz, atol=1e-12)
+# def test_sph2xyz():
+#     lon = NP.asarray([0.0, 45.0])
+#     lat = NP.asarray([30.0, 0.0])
+#     expected_x = NP.cos(NP.radians(lat)) * NP.cos(NP.radians(lon))
+#     expected_y = NP.cos(NP.radians(lat)) * NP.sin(NP.radians(lon))
+#     expected_z = NP.sin(NP.radians(lat))
+#     expected_xyz = NP.hstack((expected_x.reshape(-1,1), expected_y.reshape(-1,1), expected_z.reshape(-1,1)))
+#     x, y, z = GEOM.sph2xyz(lon, lat)
+#     xyz = NP.hstack((x.reshape(-1,1), y.reshape(-1,1), z.reshape(-1,1)))
+#     NP.testing.assert_allclose(xyz, expected_xyz, atol=1e-12)
 
-def test_xyz2sph():
-    expected_r = 1.0 + NP.arange(2)
-    expected_lat = NP.asarray([NP.pi/4, NP.pi/3])
-    expected_lon = NP.asarray([NP.pi/3, 3*NP.pi/2])
-    theta = NP.pi/2 - expected_lat
-    phi = NP.pi/2 - expected_lon
-    x = expected_r * NP.sin(theta) * NP.cos(phi)
-    y = expected_r * NP.sin(theta) * NP.sin(phi)
-    z = expected_r * NP.cos(theta)
-    r, lat, lon = GEOM.xyz2sph(x, y, z, units='radians')
-    r_lat_lon = NP.hstack((r.reshape(-1,1), lat.reshape(-1,1), lon.reshape(-1,1)))
-    expected_r_lat_lon = NP.hstack((expected_r.reshape(-1,1), expected_lat.reshape(-1,1), expected_lon.reshape(-1,1)))
+def test_xyz2sph(xyz_to_sph):
+    xyz, r_lat_lon = xyz_to_sph # Read from fixture in conftest.py
+    xyz = NP.asarray(xyz).reshape(-1)
+    r_lat_lon = NP.asarray(r_lat_lon).reshape(-1)
+
+    expected_r, expected_lat, expected_lon = GEOM.xyz2sph(xyz[0], xyz[1], xyz[2], units='radians')
+    expected_r_lat_lon = NP.asarray([expected_r, expected_lat, expected_lon])
     NP.testing.assert_allclose(r_lat_lon, expected_r_lat_lon, atol=1e-12)
 
+# def test_sph2xyz(sph_to_xyz):
+#     r_lat_lon, xyz = sph_to_xyz # Read from fixture in conftest.py
+#     xyz = NP.asarray(xyz).reshape(-1)
+#     r_lat_lon = NP.asarray(r_lat_lon).reshape(-1)
+
+#     expected_x, expected_y, expected_z = GEOM.sph2xyz(NP.degrees(r_lat_lon[2]), NP.degrees(r_lat_lon[1]), rad=r_lat_lon[0])
+#     expected_xyz = NP.asarray([expected_x, expected_y, expected_z])
+#     NP.testing.assert_allclose(xyz, expected_xyz, atol=1e-12)
+    
 def test_sphdist():
     lon1 = NP.asarray([0.0, 45.0])
     lat1 = NP.asarray([30.0, 0.0])

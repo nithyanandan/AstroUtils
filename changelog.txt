@@ -1,3 +1,15 @@
+From 2edd51c (test):
+===================
+
+In astroutils/tests/conftest.py,
+
+(*) Add r_lat_lon values
+(*) Add fixtures sph_to_xyz() and xyz_to_sph()
+
+In astroutils/tests/test_geometry.py,
+
+(*) Update test_xyz2sph() to be pytest fixture-based
+
 From 814b251 (test):
 ===================
 

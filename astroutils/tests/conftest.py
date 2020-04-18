@@ -16,6 +16,16 @@ y = [NP.dot(NP.asarray(dircos[i]), NP.asarray([1.0, 0.0, 0.0])) for i in range(l
 z = [NP.dot(NP.asarray(dircos[i]), NP.asarray([0.0, NP.cos(NP.radians(latitude[i])), NP.sin(NP.radians(latitude[i]))])) for i in range(len(latitude))]
 xyz = zip(x,y,z)
 
+r = NP.sqrt(NP.asarray(x)**2 + NP.asarray(y)**2 + NP.asarray(z)**2)
+latang = NP.pi/2 - NP.arccos(NP.asarray(z)/r)
+lonang = NP.pi/2 - NP.arctan2(NP.asarray(y), NP.asarray(x))
+
+r = r.tolist()
+latang = latang.tolist()
+lonang = lonang.tolist()
+
+r_lat_lon = zip(r, latang, lonang)
+
 @pytest.fixture(scope='module', params=zip(altaz, dircos))
 def altaz_to_dircos(request):
     return request.param
@@ -38,6 +48,14 @@ def enu_to_xyz(request):
 
 @pytest.fixture(scope='module', params=zip(xyz, enu, latitude))
 def xyz_to_enu(request):
+    return request.param
+
+@pytest.fixture(scope='module', params=zip(xyz, r_lat_lon))
+def xyz_to_sph(request):
+    return request.param
+
+@pytest.fixture(scope='module', params=zip(r_lat_lon, xyz))
+def sph_to_xyz(request):
     return request.param
 
 
