@@ -1,3 +1,14 @@
+From 509a911 (test):
+===================
+
+In setup.py,
+
+(*) Remove pytest-runner from setup requirements
+
+In astroutils/tests/test_geometry.py,
+
+(*) Remove obsolete, commented lines of code 
+
 From 2ee45cd (master):
 =====================
 

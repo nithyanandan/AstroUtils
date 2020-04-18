@@ -2,18 +2,6 @@ import pytest
 from astroutils import geometry as GEOM
 import numpy as NP
 
-# @pytest.mark.parametrize('altaz, lmn', [([90.0, 270.0], [0.0, 0.0, 1.0]),
-#                                         ([0.0, 90.0], [1.0, 0.0, 0.0]),
-#                                         ([-90.0, 270.0], [0.0, 0.0, -1.0]),
-#                                         ([0.0, -90.0], [-1.0, 0.0, 0.0]),
-#                                         ([0.0, 180.0], [0.0, -1.0, 0.0]),
-#                                         ([0.0, 0.0], [0.0, 1.0, 0.0])])
-# def test_altaz2dircos(altaz, lmn):
-#     alt_az = NP.asarray(altaz).reshape(1,-1)
-#     l_m_n = NP.asarray(lmn).reshape(1,-1)
-#     expected_dircos = GEOM.altaz2dircos(alt_az, units='degrees')
-#     NP.testing.assert_allclose(l_m_n, expected_dircos, atol=1e-12)
-
 def test_altaz2dircos(altaz_to_dircos):
     altaz, expected_dircos = altaz_to_dircos # Read from fixture in conftest.py
     altaz = NP.asarray(altaz).reshape(1,-1)
