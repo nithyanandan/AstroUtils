@@ -1,3 +1,11 @@
+From a6a80db (master):
+=====================
+
+In astroutils/catalog.py,
+
+(*) Make import of PyGSM module optional and only if it is
+installed
+
 From 0bc6e41 (test):
 ===================
 

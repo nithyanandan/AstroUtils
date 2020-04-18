@@ -8,7 +8,6 @@ from astropy.table import Table
 from astropy.io import fits, ascii
 import h5py
 import warnings
-from pygsm import GlobalSkyModel, GlobalSkyModel2016
 from astropy.coordinates import Angle, SkyCoord
 from astropy import units
 import scipy.constants as FCNST
@@ -18,6 +17,12 @@ import mathops as OPS
 import lookup_operations as LKP
 import constants as CNST
 import foregrounds as FG
+try:
+    from pygsm import GlobalSkyModel, GlobalSkyModel2016
+except ImportError:
+    pygsm_found = False
+else:
+    pygsm_found = True
 
 #################################################################################
 
