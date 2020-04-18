@@ -1,3 +1,15 @@
+From 2ee45cd (master):
+=====================
+
+In astroutils/tests/conftest.py,
+
+(*) Add lonlat1, lonlat2, and cartesian_diffang values
+(*) Add fixture sph_dist()
+
+In astroutils/tests/test_geometry.py,
+
+(*) Update test_sphdist() to be pytest fixture-based
+
 From a6a80db (master):
 =====================
 

@@ -81,14 +81,11 @@ def test_sph2xyz(sph_to_xyz):
     expected_xyz = NP.asarray([expected_x, expected_y, expected_z])
     NP.testing.assert_allclose(xyz, expected_xyz, atol=1e-12)
     
-def test_sphdist():
-    lon1 = NP.asarray([0.0, 45.0])
-    lat1 = NP.asarray([30.0, 0.0])
-    lon2 = NP.asarray([90.0, 0.0])
-    lat2 = NP.asarray([90.0, 0.0])
-    expected_dist = NP.asarray([60.0, 45.0])
-    dist = GEOM.sphdist(lon1, lat1, lon2, lat2)
-    NP.testing.assert_allclose(dist, expected_dist, atol=1e-12)
+def test_sphdist(sph_dist):
+    lonlat1, lonlat2, diffang_cartesian = sph_dist # Read from fixture in conftest.py
+    print(NP.hstack((lonlat1, lonlat2)))
+    expected_diffang = GEOM.sphdist(lonlat1[:,0], lonlat1[:,1], lonlat2[:,0], lonlat2[:,1])
+    NP.testing.assert_allclose(diffang_cartesian, expected_diffang, atol=1e-12)
 
 def test_spherematch_1match():
     lon1 = NP.asarray([0.0, 45.0])
