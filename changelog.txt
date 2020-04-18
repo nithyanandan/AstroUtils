@@ -1,3 +1,14 @@
+From 0bc6e41 (test):
+===================
+
+In astroutils/tests/conftest.py,
+
+(*) Minor syntax update
+
+In astroutils/tests/test_geometry.py,
+
+(*) Update test_sph2xyz() to be pytest fixture-based
+
 From f59fc29 (geometry):
 =======================
 

@@ -63,17 +63,6 @@ def test_xyz2enu(xyz_to_enu):
     expected_enu = GEOM.xyz2enu(xyz, latitude, units='degrees').ravel()
     NP.testing.assert_allclose(enu, expected_enu, atol=1e-12)
 
-# def test_sph2xyz():
-#     lon = NP.asarray([0.0, 45.0])
-#     lat = NP.asarray([30.0, 0.0])
-#     expected_x = NP.cos(NP.radians(lat)) * NP.cos(NP.radians(lon))
-#     expected_y = NP.cos(NP.radians(lat)) * NP.sin(NP.radians(lon))
-#     expected_z = NP.sin(NP.radians(lat))
-#     expected_xyz = NP.hstack((expected_x.reshape(-1,1), expected_y.reshape(-1,1), expected_z.reshape(-1,1)))
-#     x, y, z = GEOM.sph2xyz(lon, lat)
-#     xyz = NP.hstack((x.reshape(-1,1), y.reshape(-1,1), z.reshape(-1,1)))
-#     NP.testing.assert_allclose(xyz, expected_xyz, atol=1e-12)
-
 def test_xyz2sph(xyz_to_sph):
     xyz, r_lat_lon = xyz_to_sph # Read from fixture in conftest.py
     xyz = NP.asarray(xyz).reshape(-1)
@@ -83,14 +72,14 @@ def test_xyz2sph(xyz_to_sph):
     expected_r_lat_lon = NP.asarray([expected_r, expected_lat, expected_lon])
     NP.testing.assert_allclose(r_lat_lon, expected_r_lat_lon, atol=1e-12)
 
-# def test_sph2xyz(sph_to_xyz):
-#     r_lat_lon, xyz = sph_to_xyz # Read from fixture in conftest.py
-#     xyz = NP.asarray(xyz).reshape(-1)
-#     r_lat_lon = NP.asarray(r_lat_lon).reshape(-1)
+def test_sph2xyz(sph_to_xyz):
+    r_lat_lon, xyz = sph_to_xyz # Read from fixture in conftest.py
+    xyz = NP.asarray(xyz).reshape(-1)
+    r_lat_lon = NP.asarray(r_lat_lon).reshape(-1)
 
-#     expected_x, expected_y, expected_z = GEOM.sph2xyz(NP.degrees(r_lat_lon[2]), NP.degrees(r_lat_lon[1]), rad=r_lat_lon[0])
-#     expected_xyz = NP.asarray([expected_x, expected_y, expected_z])
-#     NP.testing.assert_allclose(xyz, expected_xyz, atol=1e-12)
+    expected_x, expected_y, expected_z = GEOM.sph2xyz(NP.degrees(r_lat_lon[2]), NP.degrees(r_lat_lon[1]), rad=r_lat_lon[0])
+    expected_xyz = NP.asarray([expected_x, expected_y, expected_z])
+    NP.testing.assert_allclose(xyz, expected_xyz, atol=1e-12)
     
 def test_sphdist():
     lon1 = NP.asarray([0.0, 45.0])
