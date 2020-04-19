@@ -111,4 +111,22 @@ def test_spherematch_allmatch():
     NP.testing.assert_array_equal(m2, expected_m2)
     NP.testing.assert_allclose(d12, expected_d12, atol=1e-12)
 
+def test_parabola_parameters(parabola_parms):
+    indict, fulldict = parabola_parms
+    if ('f/D' in indict) and ('D' in indict):
+        outdict = GEOM.parabola_parameters(dia=indict['D'], f_to_dia_ratio=indict['f/D'])
+    if ('f/D' in indict) and ('f' in indict):
+        outdict = GEOM.parabola_parameters(f=indict['f'], f_to_dia_ratio=indict['f/D'])
+    if ('f/D' in indict) and ('h' in indict):
+        outdict = GEOM.parabola_parameters(depth=indict['h'], f_to_dia_ratio=indict['f/D'])
+    if ('D' in indict) and ('f' in indict):
+        outdict = GEOM.parabola_parameters(f=indict['f'], dia=indict['D'])
+    if ('D' in indict) and ('h' in indict):
+        outdict = GEOM.parabola_parameters(depth=indict['h'], dia=indict['D'])
+    if ('f' in indict) and ('h' in indict):
+        outdict = GEOM.parabola_parameters(depth=indict['h'], f=indict['f'])
+    assert fulldict == outdict
+
+
+        
     

@@ -1,3 +1,22 @@
+From 127cda5 (test):
+===================
+
+In astroutils/geometry.py,
+
+(*) In function parabola_parameters(), fix bug in determining
+number of input parameters specified. Return the full (not half)
+opening angle in degrees (not radians). Update function docstring
+accordingly
+
+In astroutils/tests/conftest.py,
+
+(*) Add parabolaparms dictionary
+(*) Add fixture parabola_parms()
+
+In astroutils/tests/test_geometry.py,
+
+(*) Add pytest fixture-based test_parabola_parameters()
+
 From 509a911 (test):
 ===================
 

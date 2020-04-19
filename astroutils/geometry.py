@@ -1665,7 +1665,7 @@ def parabola_parameters(dia=None, f_to_dia_ratio=None, f=None, depth=None):
     'h'         [numpy array] depth of the parabola
     'f/D'       [numpy array] ratio of focal distance to diameter
     'angle'     [scalar or numpy array] Opening angle between the edge and the 
-                axis of the parabola
+                axis of the parabola (in degrees)
     -----------------------------------------------------------------------------
     """
 
@@ -1677,7 +1677,7 @@ def parabola_parameters(dia=None, f_to_dia_ratio=None, f=None, depth=None):
     f_to_dia_ratio_specified = NP.asarray(f_to_dia_ratio_specified, dtype=int)
     f_specified = NP.asarray(f_specified, dtype=int)
     depth_specified = NP.asarray(depth_specified, dtype=int)
-    num_keywords = f_to_dia_ratio_specified + f_specified + depth_specified
+    num_keywords = f_to_dia_ratio_specified + f_specified + depth_specified + dia_specified
     if dia_specified:
         dia = NP.asarray(dia).reshape(-1)
         if NP.any(dia <= 0.0):
@@ -1724,7 +1724,7 @@ def parabola_parameters(dia=None, f_to_dia_ratio=None, f=None, depth=None):
         parms['D'] = dia
         parms['f/D'] = f_to_dia_ratio
         parms['h'] = depth
-        parms['angle'] = NP.arctan2(0.5*dia, f-depth)
+        parms['angle'] = 2 * NP.degrees(NP.arctan2(0.5*dia, f-depth))
     else:
         raise ValueError('Either too little or too many parameters specified for unique determination of parabola parameters')
     

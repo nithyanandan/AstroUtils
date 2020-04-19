@@ -1,6 +1,8 @@
 import pytest
 import numpy as NP
 
+############# Fixtures for test_geometry.py ##############
+
 altaz = [([90.0, 270.0]), ([0.0, 90.0]), ([-90.0, 270.0]), ([0.0, -90.0]), ([0.0, 180.0]), ([0.0, 0.0]), ([90.0, 270.0])]
 dircos = [([0.0, 0.0, 1.0]), ([1.0, 0.0, 0.0]), ([0.0, 0.0, -1.0]), ([-1.0, 0.0, 0.0]), ([0.0, -1.0, 0.0]), ([0.0, 1.0, 0.0]), ([0.0, 0.0, 1.0])]
 hadec = [(180.0, -90.0), (-90.0, 0.0), (180.0, 30.0), (90.0, 0.0), (0.0, -60.0), (180.0, 30.0), (0.0, 90.0)]
@@ -73,3 +75,10 @@ diffang_cartesian = NP.degrees(NP.arccos(NP.sum(xyz1*xyz2, axis=1)))
 @pytest.fixture(scope='module', params=[(lonlat1, lonlat2, diffang_cartesian)])
 def sph_dist(request):
     return request.param
+
+parabolaparms = {'D': NP.asarray([20.0]), 'f/D': NP.asarray([0.25]), 'f': NP.asarray([5.0]), 'h': NP.asarray([5.0]), 'angle': NP.asarray([180.0])}
+
+@pytest.fixture(scope='module', params=[({'f/D': parabolaparms['f/D'], 'D': parabolaparms['D']}, parabolaparms), ({'f/D': parabolaparms['f/D'], 'f': parabolaparms['f']}, parabolaparms), ({'f/D': parabolaparms['f/D'], 'h': parabolaparms['h']}, parabolaparms), ({'D': parabolaparms['D'], 'f': parabolaparms['f']}, parabolaparms), ({'D': parabolaparms['D'], 'h': parabolaparms['h']}, parabolaparms), ({'f': parabolaparms['f'], 'h': parabolaparms['h']}, parabolaparms)])
+def parabola_parms(request):
+    return request.param
+
