@@ -1461,6 +1461,9 @@ def diffuse_radio_sky_model(outfreqs, gsmversion='gsm2008', nside=512, ind=None,
     ---------------------------------------------------------------------------
     """
     
+    if not pygsm_found:
+        raise ImportError('Module PyGSM not found. Cannot proceed.')
+
     try:
         outfreqs
     except NameError:
@@ -1489,9 +1492,9 @@ def diffuse_radio_sky_model(outfreqs, gsmversion='gsm2008', nside=512, ind=None,
             raise TypeError('outfile must be a string')
 
     if gsmversion == 'gsm2008':
-        gsm = GlobalSkyModel(freq_unit='MHz', basemap='haslam', interpolation='pchip')
+        gsm = GlobalSkyModel(freq_unit='MHz', basemap='haslam', interpolation='pchip') # in Kelvin
     elif gsmversion == 'gsm2016':
-        gsm = GlobalSkyModel2016()
+        gsm = GlobalSkyModel2016(freq_unit='MHz', unit='TRJ', resolution='hi', theta_rot=0, phi_rot=0) # in Kelvin
 
     map_cube = gsm.generate(outfreqs/1e6)
     if HP.npix2nside(map_cube.shape[1]) > nside:
@@ -1540,10 +1543,8 @@ def diffuse_radio_sky_model(outfreqs, gsmversion='gsm2008', nside=512, ind=None,
         
     outmaps = outmaps.T
     pixarea = HP.nside2pixarea(nside) # Steradians
-    if gsmversion == 'gsm2016':
-        outmaps *= 1e6 * pixarea # 1e6 * (MJy/Sr) * Sr = Jy
-    else:
-        outmaps = outmaps * (2.0 * FCNST.k * outfreqs.reshape(1,-1)**2 / FCNST.c**2) * pixarea / CNST.Jy
+
+    outmaps = outmaps * (2.0 * FCNST.k * outfreqs.reshape(1,-1)**2 / FCNST.c**2) * pixarea / CNST.Jy # in Jy
 
     theta, phi = HP.pix2ang(nside, NP.arange(outmaps.shape[0]), nest=False)
     gc = SkyCoord(l=NP.degrees(phi)*units.degree, b=(90.0-NP.degrees(theta))*units.degree, frame='galactic')
