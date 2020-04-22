@@ -1,3 +1,12 @@
+From 4c4e815 (skymod):
+=====================
+
+In astroutils/catalog.py,
+
+(*) In function diffuse_radio_sky_model(), pass explicit
+initialization parameters in call to GlobalSkyModel() of the
+PyGSM module
+
 From eb82f6b (master):
 =====================
 

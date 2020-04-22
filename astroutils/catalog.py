@@ -1489,7 +1489,7 @@ def diffuse_radio_sky_model(outfreqs, gsmversion='gsm2008', nside=512, ind=None,
             raise TypeError('outfile must be a string')
 
     if gsmversion == 'gsm2008':
-        gsm = GlobalSkyModel()
+        gsm = GlobalSkyModel(freq_unit='MHz', basemap='haslam', interpolation='pchip')
     elif gsmversion == 'gsm2016':
         gsm = GlobalSkyModel2016()
 
