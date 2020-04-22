@@ -1,3 +1,27 @@
+From eb82f6b (master):
+=====================
+
+In astroutils/catalog.py,
+
+(*) Import Pchipinterpolator from scipy.interpolate
+(*) In member function __init__() of class SkyModel, remove some
+redundant statements and commented lines
+(*) In member function __init__() of class SkyModel, load spectrum
+into returned instance of class SkyModel only if input keyword
+load_spectrum is set to True
+(*) In member function subset() of class SkyModel, change default
+value of input keyword interp_method to 'pchip'. Update member
+function docstring accordingly
+(*) In member function subset() of class SkyModel, change input
+indices to outloc and make same changes throughout the body of the
+member function. Update member function docstring accordingly
+(*) In member function generate_spectrum() of class SkyModel, include
+'pchip' as a spectral interpolation method and make it also the
+default method. Update member function docstring accordingly
+(*) In member function save() of class SkyModel, remove some obsolete
+commented and redundant lines, and assign value to 'spec_extfile' in
+the saved file
+
 From 127cda5 (test):
 ===================
 

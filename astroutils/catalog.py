@@ -11,7 +11,7 @@ import warnings
 from astropy.coordinates import Angle, SkyCoord
 from astropy import units
 import scipy.constants as FCNST
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d, PchipInterpolator
 import geometry as GEOM
 import mathops as OPS
 import lookup_operations as LKP
@@ -596,18 +596,14 @@ class SkyModel(object):
                             if 'spindex' in grp:
                                 self.spec_parms['power-law-index'] = grp['spindex'].value
                         else:
-                            self.frequency = grp['freq'].value.reshape(1,-1)
                             if 'spec_extfile' in grp:
                                 self.spec_extfile = grp['spec_extfile'].value
                             else:
-                                if not isinstance(load_spectrum, bool):
-                                    load_spectrum = False
-                                if load_spectrum:
-                                    self.spectrum = grp['spectrum'].value
-                                else:
-                                    self.spec_extfile = init_file
-                            # self.frequency = grp['freq'].value.reshape(1,-1)
-                            self.spectrum = grp['spectrum'].value
+                                self.spec_extfile = init_file
+                            if not isinstance(load_spectrum, bool):
+                                load_spectrum = False
+                            if load_spectrum:
+                                self.spectrum = grp['spectrum'].value
         elif (init_parms is None):
             raise ValueError('In the absence of init_file, init_parms must be provided for initialization')
         else:
@@ -886,26 +882,34 @@ class SkyModel(object):
         
     #############################################################################
 
-    def subset(self, indices, axis='position'):
+    def subset(self, outloc, axis='position', interp_method='pchip'):
 
         """
         -------------------------------------------------------------------------
-        Provide a subset of the sky model using a list of indices onto the 
-        existing sky model. Subset can be either in position or frequency 
-        channels
+        Provide a subset of the sky model using a list of output locations 
+        onto the existing sky model. Subset can be either in position or 
+        frequency channels
         
         Inputs:
 
-        indices    [list or numpy array] Flattened list or numpy array of 
-                   indices of sources in the current instance of class SkyModel
+        outloc     [list or numpy array] Flattened list or numpy array of 
+                   output locations of sources (integer indices) or the spectral
+                   frequencies (in frequency units) in the current instance of 
+                   class SkyModel. The output locations correspond to the axis
+                   specified in input axis
 
         axis       [string] the axis to take the subset along. Currently 
                    accepted values are 'position' (default) and 'spectrum' 
-                   which indicates the indices are to be used along the 
+                   which indicates the output locations are to be used along the 
                    position or spectrum axis respectively to obtain the subset.
                    When spectral axis is specified by spec_type='func', then 
                    there will be no slicing along the spectral axis and will 
                    return the original instance. 
+
+        interp_method 
+                   [string] Specifies the type of spectral interpolation if the
+                   axis is set to 'spectrum'. Accepted values are 'nearest' 
+                   (nearest neighbor), 'linear', 'cubic' or 'pchip' (default)
 
         Output:    [instance of class SkyModel] An instance of class 
                    SkyModel holding a subset of the sources in the current 
@@ -914,62 +918,57 @@ class SkyModel(object):
         """
 
         try:
-            indices
+            outloc
         except NameError:
             return self
 
         if axis not in ['position', 'spectrum']:
             raise ValueError('input axis must be along position or spectrum')
 
-        if (indices is None) or (len(indices) == 0):
+        if (outloc is None) or (len(outloc) == 0):
             return self
         else:
             init_parms = {}
+            outloc = NP.asarray(outloc).ravel()
             if axis == 'position':
-                indices = NP.asarray(indices).ravel()
-                init_parms = {'name': NP.take(self.name, indices), 'frequency': self.frequency, 'location': NP.take(self.location, indices, axis=0), 'spec_type': self.spec_type, 'epoch': self.epoch, 'coords': self.coords}
+                if not outloc.dtype != NP.int:
+                    raise TypeError('Output locations for position axis must be integer indices')
+                init_parms = {'name': NP.take(self.name, outloc), 'frequency': self.frequency, 'location': NP.take(self.location, outloc, axis=0), 'spec_type': self.spec_type, 'epoch': self.epoch, 'coords': self.coords}
                 if self.spec_type == 'spectrum':
                     if self.spectrum is not None:
-                        init_parms['spectrum'] = NP.take(self.spectrum, indices, axis=0)
+                        init_parms['spectrum'] = NP.take(self.spectrum, outloc, axis=0)
                     elif self.spec_extfile is not None:
-                        init_parms['spectrum'] = retrieve_external_spectrum(self.spec_extfile, ind=indices)
+                        init_parms['spectrum'] = retrieve_external_spectrum(self.spec_extfile, ind=outloc)
                     else:
                         raise AttributeError('Neither attribute "spectrum" nor "spec_extfile" found in the instance')
 
                     if self.src_shape is not None:
-                        init_parms['src_shape'] = NP.take(self.src_shape, indices, axis=0)
+                        init_parms['src_shape'] = NP.take(self.src_shape, outloc, axis=0)
                 else:
                     spec_parms = {}
-                    spec_parms['name'] = NP.take(self.spec_parms['name'], indices)
-                    spec_parms['power-law-index'] = NP.take(self.spec_parms['power-law-index'], indices)
-                    spec_parms['freq-ref'] = NP.take(self.spec_parms['freq-ref'], indices)
-                    spec_parms['flux-scale'] = NP.take(self.spec_parms['flux-scale'], indices)
-                    spec_parms['flux-offset'] = NP.take(self.spec_parms['flux-offset'], indices)
-                    spec_parms['z-width'] = NP.take(self.spec_parms['z-width'], indices)                
+                    spec_parms['name'] = NP.take(self.spec_parms['name'], outloc)
+                    spec_parms['power-law-index'] = NP.take(self.spec_parms['power-law-index'], outloc)
+                    spec_parms['freq-ref'] = NP.take(self.spec_parms['freq-ref'], outloc)
+                    spec_parms['flux-scale'] = NP.take(self.spec_parms['flux-scale'], outloc)
+                    spec_parms['flux-offset'] = NP.take(self.spec_parms['flux-offset'], outloc)
+                    spec_parms['z-width'] = NP.take(self.spec_parms['z-width'], outloc)                
                     init_parms['spec_parms'] = spec_parms
                     if self.src_shape is not None:
-                        init_parms['src_shape'] = NP.take(self.src_shape, indices, axis=0)
+                        init_parms['src_shape'] = NP.take(self.src_shape, outloc, axis=0)
             else:
-                indices = NP.asarray(indices).ravel()
-                init_parms = {'name': self.name, 'frequency': NP.take(self.frequency, indices, axis=1), 'location': self.location, 'spec_type': self.spec_type, 'epoch': self.epoch, 'coords': self.coords}
+                init_parms = {'name': self.name, 'frequency': outloc, 'location': self.location, 'spec_type': self.spec_type, 'epoch': self.epoch, 'coords': self.coords}
                 if self.src_shape is not None:
                     init_parms['src_shape'] = self.src_shape
                 if self.spec_type == 'func':
                     init_parms['spec_parms'] = self.spec_parms
                 else:
-                    if self.spectrum is not None:
-                        init_parms['spectrum'] = NP.take(self.spectrum, indices, axis=1)
-                    elif self.spec_extfile is not None:
-                        spectrum = retrieve_external_spectrum(self.spec_extfile, ind=None)
-                        init_parms['spectrum'] = NP.take(spectrum, indices, axis=1)
-                    else:
-                        raise AttributeError('Neither attribute "spectrum" nor "spec_extfile" found in the instance')
+                    init_parms['spectrum'] = self.generate_spectrum(ind=None, frequency=outloc, interp_method=interp_method)
 
             return SkyModel(init_parms=init_parms, init_file=None)
 
     #############################################################################
 
-    def generate_spectrum(self, ind=None, frequency=None, interp_method='linear'):
+    def generate_spectrum(self, ind=None, frequency=None, interp_method='pchip'):
 
         """
         -------------------------------------------------------------------------
@@ -991,10 +990,11 @@ class SkyModel(object):
 
         interp_method 
                    [string] Specified kind of interpolation to be used if 
-                   self.spec_type is set to 'spectrum'. Default='linear'. 
-                   Accepted values are described in docstring of 
-                   scipy.interpolate.interp1d() or as a power law index 
-                   specified by 'power-law'
+                   self.spec_type is set to 'spectrum'. Accepted values are 
+                   described in docstring of scipy.interpolate.interp1d() 
+                   ['nearest', 'linear', 'cubic'] or 
+                   scipy.interpolate.PchipInterpolator() ['pchip' (default)] 
+                   or as a power law index specified by 'power-law'
 
         Outputs:
 
@@ -1101,7 +1101,10 @@ class SkyModel(object):
                 spindex = FG.power_law_spectral_index(self.frequency.ravel(), spectrum)
                 return spectrum[:,int(self.frequency.size/2)].reshape(-1,1) * (frequency.ravel()/self.frequency.ravel()[int(self.frequency.size/2)]).reshape(1,-1)**spindex.reshape(-1,1)
             else:
-                interp_func = interp1d(self.frequency.ravel(), spectrum, axis=1, kind=interp_method)
+                if interp_method.lower() in ['nearest', 'linear', 'cubic']:
+                    interp_func = interp1d(self.frequency.ravel(), spectrum, axis=1, kind=interp_method)
+                elif interp_method.lower() == 'pchip':
+                    interp_func = PchipInterpolator(self.frequency.ravel(), spectrum, axis=1)
                 return interp_func(frequency)
 
     #############################################################################
@@ -1357,7 +1360,6 @@ class SkyModel(object):
                 freq_range_dset = spec_group.create_dataset('freq', (self.frequency.size,), maxshape=(None,), data=self.frequency.ravel(), compression='gzip', compression_opts=9)
                 freq_range_dset.attrs['units'] = 'Hz'
                 if self.spec_type == 'func':
-                    # spec_group['func-name'] = self.spec_parms['name']
                     func_name_dset = spec_group.create_dataset('func-name', self.spec_parms['name'].shape, maxshape=(None,), data=self.spec_parms['name'])
                     freq_ref_dset = spec_group.create_dataset('freq-ref', self.spec_parms['freq-ref'].shape, maxshape=(None,), data=self.spec_parms['freq-ref'], compression='gzip', compression_opts=9)
                     freq_ref_dset.attrs['units'] = 'Hz'
@@ -1366,8 +1368,6 @@ class SkyModel(object):
                     if NP.all(self.spec_parms['name'] == 'power-law'):
                         spindex_dset = spec_group.create_dataset('spindex', self.spec_parms['power-law-index'].shape, maxshape=(None,), data=self.spec_parms['power-law-index'], compression='gzip', compression_opts=9)
                 else:
-                    freq_dset = spec_group.create_dataset('freq', data=self.frequency.ravel(), compression='gzip', compression_opts=9)
-                    freq_dset.attrs['units'] = 'Hz'
                     if self.spectrum is not None:
                         spectrum_dset = spec_group.create_dataset('spectrum', data=self.spectrum, chunks=(1,self.frequency.size), compression='gzip', compression_opts=9)
                         if extspec_action is not None:
@@ -1377,11 +1377,10 @@ class SkyModel(object):
                                 raise ValueError('Value specified for input extspec_action invalid')
                             if extspec_action.lower() == 'unload':
                                 self.spectrum = None
-                                self.spec_extfile = outfile
-                    elif self.spec_extfile is not None:
-                        spec_group['spec_extfile'] = self.spec_extfile
-                    else:
+                    elif self.spec_extfile is None:
                         raise AttributeError('Neither attribute "spectrum" nor "spec_extfile" found in the instance')
+                    self.spec_extfile = outfile
+                    spec_group['spec_extfile'] = outfile
         else:
             outfile = outfile + '.txt'
             frmts = {}
