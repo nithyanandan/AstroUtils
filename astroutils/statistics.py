@@ -21,6 +21,7 @@ For additional information about the original IDL routines, see:
   http://idlastro.gsfc.nasa.gov/contents.html#C17
 """
 
+from __future__ import print_function, division, unicode_literals, absolute_import
 import math
 import numpy as NP
 
@@ -36,21 +37,21 @@ __epsilon = 1.0e-20
 def biweightMean(inputData, axis=None, dtype=None):
     """
     Calculate the mean of a data set using bisquare weighting.  
-	
+        
     Based on the biweight_mean routine from the AstroIDL User's 
     Library.
     """
-	
+        
     if axis is not None:
-	fnc = lambda x: biweightMean(x, dtype=dtype)
-	y0 = NP.apply_along_axis(fnc, axis, inputData)
+        fnc = lambda x: biweightMean(x, dtype=dtype)
+        y0 = NP.apply_along_axis(fnc, axis, inputData)
     else:
         y = inputData.ravel()
         if type(y).__name__ == "MaskedArray":
             y = y.compressed()
         if dtype is not None:
             y = y.astype(dtype)
-        	
+                
         n = len(y)
         closeEnough = 0.03*NP.sqrt(0.5/(n-1))
         
@@ -66,7 +67,7 @@ def biweightMean(inputData, axis=None, dtype=None):
         while diff > closeEnough:
             nIter = nIter + 1
             if nIter > __iterMax:
-        	break
+                break
             uu = ((y-y0)/(6.0*sigma))**2.0
             uu = NP.where(uu > 1.0, 1.0, uu)
             weights = (1.0-uu)**2.0
@@ -76,10 +77,10 @@ def biweightMean(inputData, axis=None, dtype=None):
             prevSigma = sigma
             sigma = std(deviation, Zero=True)
             if sigma > __epsilon:
-        	diff = NP.abs(prevSigma - sigma) / prevSigma
+                diff = NP.abs(prevSigma - sigma) / prevSigma
             else:
-        	diff = 0.0
-				
+                diff = 0.0
+                                
     return y0
 
 
