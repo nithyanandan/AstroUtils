@@ -593,6 +593,8 @@ class SkyModel(object):
                             self.spec_parms['name'] = grp['func-name'].value
                             self.spec_parms['freq-ref'] = grp['freq-ref'].value
                             self.spec_parms['flux-scale'] = grp['flux_density'].value
+                            if 'flux_offset' in grp:
+                                self.spec_parms['flux-offset'] = grp['flux_offset'].value
                             if 'spindex' in grp:
                                 self.spec_parms['power-law-index'] = grp['spindex'].value
                         else:
@@ -1365,6 +1367,9 @@ class SkyModel(object):
                     freq_ref_dset.attrs['units'] = 'Hz'
                     flux_dset = spec_group.create_dataset('flux_density', self.spec_parms['flux-scale'].shape, maxshape=(None,), data=self.spec_parms['flux-scale'], compression='gzip', compression_opts=9)
                     flux_dset.attrs['units'] = 'Jy'
+                    if 'flux-offset' in self.spec_parms:
+                        fluxoffset_dset = spec_group.create_dataset('flux_offset', self.spec_parms['flux-offset'].shape, maxshape=(None,), data=self.spec_parms['flux-offset'], compression='gzip', compression_opts=9)
+                        fluxoffset_dset.attrs['units'] = 'Jy'
                     if NP.all(self.spec_parms['name'] == 'power-law'):
                         spindex_dset = spec_group.create_dataset('spindex', self.spec_parms['power-law-index'].shape, maxshape=(None,), data=self.spec_parms['power-law-index'], compression='gzip', compression_opts=9)
                 else:

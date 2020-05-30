@@ -1,3 +1,13 @@
+From ca0ab4e (skymod):
+=====================
+
+In astroutils/catalog.py,
+
+(*) In member function save() of class SkyModel, save the values in
+key 'flux-offset' of attribute spec_parms
+(*) In member function __init__() of class SkyModel, read the values 
+into key 'flux-offset' of attribute spec_parms
+
 From f785a23 (skymod):
 =====================
 
