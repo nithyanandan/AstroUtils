@@ -1,3 +1,15 @@
+From c7d618e (skymod):
+=====================
+
+In astroutils/catalog.py,
+
+(*) Import astroutils
+(*) In member function save() of class SkyModel, save the githash of
+the AstroUtils version
+(*) In member function __init__() of class SkyModel, read or assign
+the astroutils_githash attribute. Update class and member function
+docstring accordingly
+
 From ca0ab4e (skymod):
 =====================
 

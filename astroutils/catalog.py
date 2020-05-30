@@ -12,6 +12,7 @@ from astropy.coordinates import Angle, SkyCoord
 from astropy import units
 import scipy.constants as FCNST
 from scipy.interpolate import interp1d, PchipInterpolator
+import astroutils
 import geometry as GEOM
 import mathops as OPS
 import lookup_operations as LKP
@@ -233,6 +234,10 @@ class SkyModel(object):
     Class to manage sky model information.
 
     Attributes:
+
+    astroutils_githash
+                   [string] Git# of the AstroUtils version used to create/save 
+                   the SkyModel
 
     name           [scalar or vector] Name of the catalog. If scalar, will be 
                    used for all sources in the sky model. If vector, will be 
@@ -563,6 +568,10 @@ class SkyModel(object):
                 for key in ['header', 'object', 'spectral_info']:
                     grp = fileobj[key]
                     if key == 'header':
+                        if 'AstroUtils#' in grp:
+                            self.astroutils_githash = grp['AstroUtils#'].value
+                        else:
+                            self.astroutils_githash = astroutils.__githash__
                         self.spec_type = grp['spec_type'].value
                         self.is_healpix = False
                         self.healpix_ordering = 'na'
@@ -620,6 +629,7 @@ class SkyModel(object):
             except KeyError:
                 raise KeyError('Catalog name, frequency, location, and spectral type must be provided.')
 
+            self.astroutils_githash = astroutils.__githash__
             self.is_healpix = False
             self.healpix_ordering = 'na'
             if 'is_healpix' in init_parms:
@@ -1334,6 +1344,7 @@ class SkyModel(object):
             outfile = outfile + '.hdf5'
             with h5py.File(outfile, 'w') as fileobj:
                 hdr_group = fileobj.create_group('header')
+                hdr_group['AstroUtils#'] = astroutils.__githash__
                 hdr_group['spec_type'] = self.spec_type
                 hdr_group['is_healpix'] = int(self.is_healpix)
                 hdr_group['healpix_ordering'] = self.healpix_ordering
