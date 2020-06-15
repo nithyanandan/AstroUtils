@@ -1,3 +1,16 @@
+From 31a5d33 (master):
+=====================
+
+In README.rst,
+
+(*) Update basic usage instructions
+(*) Include info on citing and acknowledgement using DOI link on
+Zenodo
+
+In astroutils/__init__.py,
+
+(*) Change AstroUtils version number to 2.0
+
 From c7d618e (skymod):
 =====================
 

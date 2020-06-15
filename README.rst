@@ -45,7 +45,11 @@ Basic Usage
 
 Typical usage often looks like this:
 
-``from AstroUtils import DSP_modules``
+``from astroutils import DSP_modules``
 
-``from AstroUtils import geometry``
+``from astroutils import geometry``
 
+Citing and acknowledging use of AstroUtils
+==========================================
+
+If you use AstroUtils for your research, please acknowledge and cite it using the bibtex entry from https://doi.org/10.5281/zenodo.3831861
