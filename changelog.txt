@@ -1,3 +1,10 @@
+From 009f6c8 (master):
+=====================
+
+In README.rst,
+
+(*) Minor update -- correction of a typo
+
 From 1b839a7 (master):
 =====================
 

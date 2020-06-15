@@ -1,7 +1,7 @@
 AstroUtils
 ==========
 
-General purpose utilities, paritcularly useful for astronomy calculations. It
+General purpose utilities, particularly useful for astronomy calculations. It
 includes mathematical, non-mathematical, geometrical, sky model, and
 miscellaneous routines.
 
