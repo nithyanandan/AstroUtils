@@ -1,3 +1,11 @@
+From 17ea204 (geometry):
+=======================
+
+In astroutils/geometry.py,
+
+(*) Add function generate_line_from_point_and_slope() along with
+docstring
+
 From 3df0eea (geometry):
 =======================
 

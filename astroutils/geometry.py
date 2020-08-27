@@ -398,25 +398,28 @@ class Point:
 
 def points_from_line2d_intersection(coeffs, dvect):
     """
-    --------------------------------------------------------
-    Find pairwise intersections between a system of equations denoting lines in the 
-    Cartesian plane. If N equations are provided then N(N-1)/2 intersection points are 
-    determined and returned. The equations mut be represented by coeffs(dot)xyvect = dvect
+    ----------------------------------------------------------------------------
+    Find pairwise intersections between a system of equations denoting lines in 
+    the Cartesian plane. If N equations are provided then N(N-1)/2 intersection 
+    points are determined and returned. The equations mut be represented by 
+    coeffs(dot)xyvect = dvect
     
     Inputs:
     
-    coeffs [numpy array] NxM numpy array denoting N measurements using (M=2) parameters in
-        (M=2)-dimensional space
+    coeffs  [numpy array] NxM numpy array denoting N measurements using (M=2) 
+            parameters in (M=2)-dimensional space
     
-    dvect  [numpy array] Numpy array of shape (N,1) or (N,) denoting the measured values
+    dvect   [numpy array] Numpy array of shape (N,1) or (N,) denoting the 
+            measured values
     
     Output:
     
-    (N,N,M=2) array containing intersection between all pairs chosen from the N lines. The 
-    main diagonal and upper diagonal is set to NaN since that denotes lines intersecting 
-    with themselves or transposes of the lower diagonal respectively. If no intersection 
-    is found between any pair of lines, they are also denoted by NaN.
-    --------------------------------------------------------
+    (N,N,M=2) array containing intersection between all pairs chosen from the N 
+    lines. The main diagonal and upper diagonal is set to NaN since that denotes 
+    lines intersecting with themselves or transposes of the lower diagonal 
+    respectively. If no intersection is found between any pair of lines, they 
+    are also denoted by NaN.
+    ----------------------------------------------------------------------------
     """
     
     if not isinstance(coeffs, NP.ndarray):
@@ -448,6 +451,53 @@ def points_from_line2d_intersection(coeffs, dvect):
                 print('Encountered {0}. System of equations ({1:0d}) and ({2:0d}) are ill-conditioned. Proceeding...'.format(LAerr, i, j))
                 
     return outarr
+
+#################################################################################
+
+def generate_line_from_point_and_slope(points, slopes):
+    """
+    ----------------------------------------------------------------------------
+    Find equation of a line given a point on the line and the slope. This 
+    function can return N lines at a time given the corresponding N points and N 
+    slopes. The returned line equations will be represented by 
+    coeffs(dot)xyvect = dvect
+    
+    Inputs:
+    
+    points  [numpy array] NxM numpy array denoting N points in (M=2)-dimensional 
+            space
+    
+    slopes  [numpy array] Numpy array of shape (N,) denoting the N slopes to be 
+           associated with the N lines whose N points are given above
+    
+    Output:
+    
+    (N,M+1) array (an augmented matrix) where the (N,M=2) array corresponds to 
+    the coefficients and the last column corresponds to the dvect. 
+    ----------------------------------------------------------------------------
+    """
+  
+    if not isinstance(points, NP.ndarray):
+        raise TypeError('Input points must be a numpy array')
+    if not isinstance(slopes, NP.ndarray):
+        raise TypeError('Input slopes must be a numpy array')
+    if points.ndim != 2:
+        raise ValueError('Input points must be a 2D numpy array')
+    if points.shape[1] != 2:
+        raise ValueError('Input points must be of shape (N,2)')
+    slopes = slopes.reshape(-1,1)
+    if slopes.shape[0] != points.shape[0]:
+        raise ValueError('Size of input slopes must match the number of points')
+
+    coeffs = NP.hstack((-slopes, NP.ones(slopes.shape)))
+    dvect = points[:,1] - slopes.ravel() * points[:,0]
+    
+    ind_infinite = NP.isinf(slopes.ravel())
+    coeffs[ind_infinite,0] = 1.0
+    coeffs[ind_infinite,1] = 0.0
+    dvect[ind_infinite] = points[ind_infinite,0]
+    
+    return NP.hstack((coeffs, dvect.reshape(-1,1)))
 
 #################################################################################
 
