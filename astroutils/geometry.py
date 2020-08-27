@@ -501,6 +501,97 @@ def generate_line_from_point_and_slope(points, slopes):
 
 #################################################################################
 
+def get_abscissa_from_ordinate_on_line(coeffs, dvect, ordinates):
+    """
+    ----------------------------------------------------------------------------
+    Find abscissae for given ordinates on a specified line: 
+    coeffs(dot)xyvect = dvect
+    
+    Inputs:
+    
+    coeffs      [numpy array] (M=2)-element numpy array denoting (M=2) 
+                parameters in (M=2)-dimensional space
+    
+    dvect       [int or float] Measured value on the RHS
+    
+    ordinates   [numpy array] y-values on the line
+    
+    Output:
+    
+    Numpy array representing x-values (abscissae) on the line. The array size is 
+    equal to that of the input ordinates. If the slope of the line is zero, the 
+    corresponding abscissa is set to NaN.
+    ----------------------------------------------------------------------------
+    """
+    if not isinstance(coeffs, NP.ndarray):
+        raise TypeError('Input coeffs must be a numpy array')
+    if not isinstance(dvect, (int,float,NP.ndarray)):
+        raise TypeError('Input dvect must be a scalar or numpy array')
+    elif isinstance(dvect, NP.ndarray):
+        if dvect.size != 1:
+            raise ValueError('Size of input dvect must be 1')
+        dvect = dvect.ravel()[0]        
+    coeffs = coeffs.reshape(-1)
+    if coeffs.size != 2:
+        raise ValueError('Input coeffs must be of shape (1,2) or (2,)')
+    if not isinstance(ordinates, (int,float,NP.ndarray)):
+        raise TypeError('Input ordinates must be a scalar or numpy array')
+    ordinates = NP.asarray(ordinates).reshape(-1)
+    
+    slope = -coeffs[0]/coeffs[1] # Check for infinite slope
+    ind_zero_slope = NP.isinf(1/slope) # Check for zero slope
+    abscissae = (dvect - coeffs[1]*ordinates) / coeffs[0]
+    abscissae[ind_zero_slope] = NP.nan
+    return abscissae
+
+#################################################################################
+
+def get_ordinate_from_abscissa_on_line(coeffs, dvect, abscissae):
+    """
+    ----------------------------------------------------------------------------
+    Find ordinates for given abscissae on a specified line: 
+    coeffs(dot)xyvect = dvect
+    
+    Inputs:
+    
+    coeffs      [numpy array] (M=2)-element numpy array denoting (M=2) 
+                parameters in (M=2)-dimensional space
+    
+    dvect       [int or float] Measured value on the RHS
+    
+    abscissae   [numpy array] x-values on the line
+    
+    Output:
+    
+    Numpy array representing y-values (ordinates) on the line. The array size is 
+    equal to that of the input abscissae. If the slope of the line is infinite, 
+    the corresponding ordinate is set to NaN.
+    ----------------------------------------------------------------------------
+    """
+    if not isinstance(coeffs, NP.ndarray):
+        raise TypeError('Input coeffs must be a numpy array')
+    if not isinstance(dvect, (int,float,NP.ndarray)):
+        raise TypeError('Input dvect must be a scalar or numpy array')
+    elif isinstance(dvect, NP.ndarray):
+        if dvect.size != 1:
+            raise ValueError('Size of input dvect must be 1')
+        dvect = dvect.ravel()[0]        
+    coeffs = coeffs.reshape(-1)
+    if coeffs.size != 2:
+        raise ValueError('Input coeffs must be of shape (1,2) or (2,)')
+    coeffs = coeffs.reshape(-1)
+    if not isinstance(abscissae, (int,float,NP.ndarray)):
+        raise TypeError('Input abscissae must be a scalar or numpy array')
+    abscissae = NP.asarray(abscissae).reshape(-1)
+
+    slope = -coeffs[0]/coeffs[1] # Check for infinite slope
+    ind_infinite_slope = NP.isinf(slope) # Check for infinite slope
+    ordinates = (dvect - coeffs[0]*abscissae) / coeffs[1]
+    ordinates[ind_infinite_slope] = NP.nan
+    return ordinates
+
+#################################################################################
+
 def altaz2dircos(altaz, units=None):
 
     """

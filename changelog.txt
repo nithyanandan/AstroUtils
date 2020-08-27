@@ -1,3 +1,11 @@
+From b27c07d (geometry):
+=======================
+
+(*) Add function get_ordinate_from_abscissa_on_line() along with
+docstring
+(*) Add function get_abscissa_from_ordinate_on_line() along with
+docstring
+
 From 17ea204 (geometry):
 =======================
 
