@@ -1,6 +1,7 @@
 from __future__ import division, print_function, absolute_import
 import sys
 import numpy as NP
+import numpy.linalg as LA
 import healpy as HP
 import warnings
 
@@ -392,6 +393,61 @@ class Point:
             raise TypeError('The object provided for comparison must be an instance of class Point.')
 
         return abs(self) == abs(other)
+
+#################################################################################
+
+def points_from_line2d_intersection(coeffs, dvect):
+    """
+    --------------------------------------------------------
+    Find pairwise intersections between a system of equations denoting lines in the 
+    Cartesian plane. If N equations are provided then N(N-1)/2 intersection points are 
+    determined and returned. The equations mut be represented by coeffs(dot)xyvect = dvect
+    
+    Inputs:
+    
+    coeffs [numpy array] NxM numpy array denoting N measurements using (M=2) parameters in
+        (M=2)-dimensional space
+    
+    dvect  [numpy array] Numpy array of shape (N,1) or (N,) denoting the measured values
+    
+    Output:
+    
+    (N,N,M=2) array containing intersection between all pairs chosen from the N lines. The 
+    main diagonal and upper diagonal is set to NaN since that denotes lines intersecting 
+    with themselves or transposes of the lower diagonal respectively. If no intersection 
+    is found between any pair of lines, they are also denoted by NaN.
+    --------------------------------------------------------
+    """
+    
+    if not isinstance(coeffs, NP.ndarray):
+        raise TypeError('Input coeffs must be a numpy array')
+    if not isinstance(dvect, NP.ndarray):
+        raise TypeError('Input dvect must be a numpy array')
+    if coeffs.ndim != 2:
+        raise ValueError('Input coeffs must be a 2D numpy array')
+    if coeffs.shape[1] != 2:
+        raise ValueError('Input coeffs must be of shape (N,2)')
+    dvect = dvect.reshape(-1)
+    if dvect.size != coeffs.shape[0]:
+        raise ValueError('Size of input dvect must match the first dimension of coeffs')
+    
+    if dvect.dtype == NP.complexfloating:
+        outarr = NP.empty((dvect.size, dvect.size, 2), dtype=dvect.dtype)
+        outarr.fill(NP.nan + 1j*NP.nan)
+    else:
+        outarr = NP.empty((dvect.size, dvect.size, 2), dtype=NP.float)
+        outarr.fill(NP.nan)
+    
+    for i in range(dvect.size):
+        for j in range(i):
+            coeff_2x2 = NP.vstack((coeffs[i,:], coeffs[j,:]))
+            d2 = dvect[[i,j]]
+            try:
+                outarr[i,j] = LA.solve(coeff_2x2, d2)
+            except LA.LinAlgError as LAerr:
+                print('Encountered {0}. System of equations ({1:0d}) and ({2:0d}) are ill-conditioned. Proceeding...'.format(LAerr, i, j))
+                
+    return outarr
 
 #################################################################################
 

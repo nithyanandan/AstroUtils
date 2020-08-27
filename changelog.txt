@@ -1,3 +1,11 @@
+From 3df0eea (geometry):
+=======================
+
+In astroutils/geometry.py,
+
+(*) Add function points_from_line2d_intersection() along with
+docstring
+
 From 009f6c8 (master):
 =====================
 
