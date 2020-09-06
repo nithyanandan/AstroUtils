@@ -592,6 +592,45 @@ def get_ordinate_from_abscissa_on_line(coeffs, dvect, abscissae):
 
 #################################################################################
 
+def polygonArea2D(vertices, absolute=False):
+    """
+    ----------------------------------------------------------------------------
+    Find area of a polygon in 2D when its vertices are specified
+    
+    Inputs:
+
+    vertices   [numpy array] An array of shape (N,2) where each row specifies a 
+               vertex in 2-dimensions
+
+    absolute   [boolean] If set to False (default), return the signed area, otherwise
+               return the absolute value
+    
+    Output: 
+
+    area       [float] Area of the polygon. Will return zero if N<=2.
+
+    ----------------------------------------------------------------------------
+    """
+
+    if not isinstance(vertices, NP.ndarray):
+        raise TypeError('Input vertices must be a numpy array')
+    if vertices.ndim != 2:
+        raise ValueError('Input vertices must be a 2D array')
+    if vertices.shape[0] <= 2: # Need at least 3 vertices to get non-zero area
+        return 0.0 
+    if vertices.shape[1] > 2:
+        raise ValueError('This function can only compute area in 2D coordinates')
+    if vertices.shape[1] == 1:
+        return 0.0
+    if not isinstance(absolute, NP.bool):
+        raise TypeError('Input absolute must be a boolean value')
+    area = 0.5 * (NP.sum(vertices[:,0]*NP.roll(vertices[:,1],-1) - vertices[:,1]*NP.roll(vertices[:,0],-1)))
+    if absolute:
+        area = NP.abs(area)
+    return area
+
+#################################################################################
+
 def altaz2dircos(altaz, units=None):
 
     """

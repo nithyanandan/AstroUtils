@@ -1,5 +1,14 @@
+From b7c2301 (geometry):
+=======================
+
+In astroutils/geometry.py,
+
+(*) Add function polygonArea2D() along with docstring
+
 From b27c07d (geometry):
 =======================
+
+In astroutils/geometry.py,
 
 (*) Add function get_ordinate_from_abscissa_on_line() along with
 docstring
