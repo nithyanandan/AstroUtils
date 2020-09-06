@@ -2,6 +2,16 @@ import pytest
 from astroutils import geometry as GEOM
 import numpy as NP
 
+def test_polygonArea2D(polygonArea2D):
+    vertices2D, expected_area2D = polygonArea2D # Read from fixture in conftest.py
+    vertices2D = NP.asarray(vertices2D)
+    expected_area2D = NP.asarray(expected_area2D)
+    try:
+        area2D = GEOM.polygonArea2D(vertices2D, absolute=False)
+        NP.testing.assert_almost_equal(area2D,  expected_area2D, decimal=10, err_msg='Polygon areas do not match', verbose=True)
+    except Exception as err:
+        NP.testing.assert_equal(NP.nan, expected_area2D, err_msg='Exception must have been raised', verbose=True)
+
 def test_altaz2dircos(altaz_to_dircos):
     altaz, expected_dircos = altaz_to_dircos # Read from fixture in conftest.py
     altaz = NP.asarray(altaz).reshape(1,-1)

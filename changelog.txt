@@ -1,3 +1,16 @@
+From 9033caf (test):
+===================
+
+In astroutils/tests/conftest.py,
+
+(*) Add polygon_vertices_2D, polygon_areas_2D
+(*) Add fixture polygonArea2D()
+
+In astroutils/tests/test_geometry.py,
+
+(*) Add pytest fixture-based test_polygonArea2D()
+
+
 From b7c2301 (geometry):
 =======================
 
