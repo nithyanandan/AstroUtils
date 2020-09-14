@@ -2,6 +2,22 @@ import pytest
 from astroutils import geometry as GEOM
 import numpy as NP
 
+def test_generate_line_from_point_and_slope(generate_line_from_point_and_slope):
+    points, slopes, expected_eqns = generate_line_from_point_and_slope # Read from fixture in conftest.py
+    points = NP.asarray(points).reshape(-1,2)
+    slopes = NP.asarray(slopes).reshape(-1)
+    expected_eqns = NP.asarray(expected_eqns).reshape(-1,3)
+    eqns = GEOM.generate_line_from_point_and_slope(points, slopes)
+    NP.testing.assert_almost_equal(eqns,  expected_eqns, decimal=10, err_msg='Line equations do not match', verbose=True)
+
+def test_generate_line_from_two_points(generate_line_from_two_points):
+    points1, points2, expected_eqns = generate_line_from_two_points # Read from fixture in conftest.py
+    points1 = NP.asarray(points1).reshape(-1,2)
+    points2 = NP.asarray(points2).reshape(-1,2)
+    expected_eqns = NP.asarray(expected_eqns).reshape(-1,3)
+    eqns = GEOM.generate_line_from_two_points(points1, points2)
+    NP.testing.assert_almost_equal(eqns,  expected_eqns, decimal=10, err_msg='Line equations do not match', verbose=True)
+
 def test_polygonArea2D(polygonArea2D):
     vertices2D, expected_area2D = polygonArea2D # Read from fixture in conftest.py
     vertices2D = NP.asarray(vertices2D)

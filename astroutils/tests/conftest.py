@@ -3,6 +3,25 @@ import numpy as NP
 
 ############# Fixtures for test_geometry.py ##############
 
+points1 = [([1.0, 1.0]),
+           ([1.0, -1.0]),
+           ([2.0, 3.0])]
+points2 = [([-1.0, 1.0]),
+           ([1.0, 1.0]),
+           ([-1.0, 0.0])]
+slopes = [0.0, NP.inf, 1.0]
+eqns = [([0.0, 1.0, 1.0]),
+        ([1.0, 0.0, 1.0]),
+        ([-1.0, 1.0, 1.0])]
+
+@pytest.fixture(scope='module', params=zip(points1, slopes, eqns))
+def generate_line_from_point_and_slope(request):
+    return request.param
+
+@pytest.fixture(scope='module', params=zip(points1, points2, eqns))
+def generate_line_from_two_points(request):
+    return request.param
+
 polygon_vertices_2D = [([[0.0, 2.0], [85.0, -25.0], [40.0, 25.0]]),
                        ([[0.0, 0.0], [3.0, 0.0], [0.0, 4.0]]),
                        ([[0.0, 0.0], [3.0, 0.0], [6.0, 4.0], [3.0, 4.0]]),
@@ -11,15 +30,15 @@ polygon_vertices_2D = [([[0.0, 2.0], [85.0, -25.0], [40.0, 25.0]]),
                        ([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])]
 polygon_areas_2D = [1517.5, 6.0, 12.0, 0.0, 0.0, NP.nan]
 
+@pytest.fixture(scope='module', params=zip(polygon_vertices_2D, polygon_areas_2D))
+def polygonArea2D(request):
+    return request.param
+
 altaz = [([90.0, 270.0]), ([0.0, 90.0]), ([-90.0, 270.0]), ([0.0, -90.0]), ([0.0, 180.0]), ([0.0, 0.0]), ([90.0, 270.0])]
 dircos = [([0.0, 0.0, 1.0]), ([1.0, 0.0, 0.0]), ([0.0, 0.0, -1.0]), ([-1.0, 0.0, 0.0]), ([0.0, -1.0, 0.0]), ([0.0, 1.0, 0.0]), ([0.0, 0.0, 1.0])]
 hadec = [(180.0, -90.0), (-90.0, 0.0), (180.0, 30.0), (90.0, 0.0), (0.0, -60.0), (180.0, 30.0), (0.0, 90.0)]
 
 latitude = [-90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0]
-
-@pytest.fixture(scope='module', params=zip(polygon_vertices_2D, polygon_areas_2D))
-def polygonArea2D(request):
-    return request.param
 
 @pytest.fixture(scope='module', params=zip(altaz, dircos))
 def altaz_to_dircos(request):

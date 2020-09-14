@@ -1,3 +1,17 @@
+From 7adde7d (test):
+===================
+
+In astroutils/tests/conftest.py,
+
+(*) Add points1, points2, slopes, eqns
+(*) Add fixtures generate_line_from_point_and_slope() and
+generate_line_from_two_points()
+
+In astroutils/tests/test_geometry.py,
+
+(*) Add pytest fixture-based test_generate_line_from_point_and_slope()
+and test_generate_line_from_two_points()
+
 From e8a6330 (geometry):
 =======================
 
@@ -16,7 +30,6 @@ In astroutils/tests/conftest.py,
 In astroutils/tests/test_geometry.py,
 
 (*) Add pytest fixture-based test_polygonArea2D()
-
 
 From b7c2301 (geometry):
 =======================
