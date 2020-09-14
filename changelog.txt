@@ -1,3 +1,10 @@
+From e8a6330 (geometry):
+=======================
+
+In astroutils/geometry.py,
+
+(*) Add function generate_line_from_two_points() along with docstring
+
 From 9033caf (test):
 ===================
 

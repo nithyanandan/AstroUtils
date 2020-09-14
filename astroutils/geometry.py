@@ -501,6 +501,59 @@ def generate_line_from_point_and_slope(points, slopes):
 
 #################################################################################
 
+def generate_line_from_two_points(points1, points2):
+    """
+    -----------------------------------------------------------------------------
+    Find equation of a line given two points on the line. This function can 
+    return N lines at a time given the corresponding N pairs of points. The 
+    returned line equations will be represented by coeffs(dot)xyvect = dvect
+
+    Inputs:
+
+    points1 [numpy array] N1 points specified as a numpy array of shape 
+            (N1,M=2). N1=1 or N1=N2. If N1=1, this point is used with every point
+            in points2 to give N2 line equations. Otherwise, N1=N2, which will 
+            give N=N1=N2 line equations from the N=N1=N2 corresponding pairs of 
+            points
+
+    points2 [numpy array] N2 points specified as a numpy array of shape 
+            (N2,M=2). N2=1 or N2=N1. If N2=1, this point is used with every point
+            in points1 to give N1 line equations. Otherwise, N1=N2, which will 
+            give N=N1=N2 line equations from the N=N1=N2 corresponding pairs of 
+            points
+
+    Output:
+
+    (N,M+1) array (an augmented matrix) where the (N=max(N1,N2),M=2) array 
+    corresponds to the coefficients and the last column corresponds to the 
+    dvect. If N1=1, this point in points1 is used with every point in points2 to 
+    give N1 line equations. If N2=1, this point in points2 is used with every 
+    point in points1 to give N1 line equations. Otherwise, N1=N2, which will give 
+    N=N1=N2 line equations from the N=N1=N2 corresponding pairs of points. 
+    -----------------------------------------------------------------------------
+    """
+    
+    if not isinstance(points1, NP.ndarray):
+        raise TypeError('Input points1 must be a numpy array')
+    if points1.ndim != 2:
+        raise ValueError('Input points1 must be a 2D array')
+    if points1.shape[1] != 2:
+        raise ValueError('Input points1 must be a (N,2) array')
+        
+    if not isinstance(points2, NP.ndarray):
+        raise TypeError('Input points2 must be a numpy array')
+    if points2.ndim != 2:
+        raise ValueError('Input points2 must be a 2D array')
+    if points2.shape[1] != 2:
+        raise ValueError('Input points2 must be a (N,2) array')
+    if (points2.shape[0] != 1) and (points2.shape[0] != points1.shape[0]):
+        raise ValueError('Number of points in points1 and points2 are not broadcastable')
+    slopes = (points2[:,1] - points1[:,1])/(points2[:,0] - points1[:,0])
+    coeffs_dvects = generate_line_from_point_and_slope(points1, slopes)
+    return coeffs_dvects
+
+#################################################################################
+
 def get_abscissa_from_ordinate_on_line(coeffs, dvect, ordinates):
     """
     ----------------------------------------------------------------------------
