@@ -4,6 +4,7 @@ import numpy as NP
 import numpy.linalg as LA
 import healpy as HP
 import warnings
+import ipdb as PDB
 
 try:
     from scipy.spatial import cKDTree as KDT
@@ -464,16 +465,19 @@ def generate_line_from_point_and_slope(points, slopes):
     
     Inputs:
     
-    points  [numpy array] NxM numpy array denoting N points in (M=2)-dimensional 
-            space
+    points  [numpy array] NpxM numpy array denoting Np points in 
+            (M=2)-dimensional space. If Np=1, determine line equations for this
+            point with each of the Ns slopes. Otherwise Np=Ns.
     
-    slopes  [numpy array] Numpy array of shape (N,) denoting the N slopes to be 
-           associated with the N lines whose N points are given above
+    slopes  [numpy array] Numpy array of shape (Ns,) denoting the Ns slopes to be 
+            associated with the Ns lines whose Np points are given above. If 
+            Ns=1, determine line equations for this slope with each of the Np 
+            points. Otherwise Np=Ns.
     
     Output:
     
     (N,M+1) array (an augmented matrix) where the (N,M=2) array corresponds to 
-    the coefficients and the last column corresponds to the dvect. 
+    the coefficients and the last column corresponds to the dvect. N=max(Np, Ns).
     ----------------------------------------------------------------------------
     """
   
@@ -486,8 +490,13 @@ def generate_line_from_point_and_slope(points, slopes):
     if points.shape[1] != 2:
         raise ValueError('Input points must be of shape (N,2)')
     slopes = slopes.reshape(-1,1)
-    if slopes.shape[0] != points.shape[0]:
-        raise ValueError('Size of input slopes must match the number of points')
+    if (slopes.shape[0] != points.shape[0]):
+        if slopes.shape[0] == 1:
+            slopes = slopes * NP.ones((points.shape[0],1))
+        elif points.shape[0] == 1:
+            points = points + NP.zeros((slopes.size,2))
+        else:
+            raise ValueError('Size of input slopes must match the number of points or they must be broadcastable')
 
     coeffs = NP.hstack((-slopes, NP.ones(slopes.shape)))
     dvect = points[:,1] - slopes.ravel() * points[:,0]
@@ -546,8 +555,9 @@ def generate_line_from_two_points(points1, points2):
         raise ValueError('Input points2 must be a 2D array')
     if points2.shape[1] != 2:
         raise ValueError('Input points2 must be a (N,2) array')
-    if (points2.shape[0] != 1) and (points2.shape[0] != points1.shape[0]):
-        raise ValueError('Number of points in points1 and points2 are not broadcastable')
+    if points2.shape[0] != points1.shape[0]:
+        if (points2.shape[0] != 1) and (points1.shape[0] != 1):
+            raise ValueError('Number of points in points1 and points2 are not broadcastable')
     slopes = (points2[:,1] - points1[:,1])/(points2[:,0] - points1[:,0])
     coeffs_dvects = generate_line_from_point_and_slope(points1, slopes)
     return coeffs_dvects

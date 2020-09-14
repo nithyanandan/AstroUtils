@@ -1,3 +1,11 @@
+From 4c9f238 (geometry):
+=======================
+
+In astroutils/geometry.py,
+
+(*) In function generate_line_from_point_and_slope(), make it
+broadcastable when the number of points and slopes are unequal
+
 From 7adde7d (test):
 ===================
 
