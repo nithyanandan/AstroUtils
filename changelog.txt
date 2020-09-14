@@ -1,3 +1,11 @@
+From 677811a (test):
+===================
+
+In astroutils/tests/conftest.py,
+
+(*) Update points1, points2, slopes, eqns to test numpy
+broadcastability
+
 From 4c9f238 (geometry):
 =======================
 
