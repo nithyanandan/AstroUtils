@@ -1,3 +1,19 @@
+From 346d42b (test):
+===================
+
+In astroutils/tests/conftest.py,
+
+(*) Add coeffs, dvect, pts to test points of intersections from pairs
+of lines in 2D 
+(*) Add fixtures points_from_line2d_intersection()
+
+In astroutils/test_geometry.py,
+
+(*) Add pytest fixture-based test_points_from_line2d_intersection(). 
+(*) Replace occurrences of NP.testing.assert_almost_equal() with
+NP.testing.assert_allclose() in test_generate_line_from_two_points()
+and test_generate_line_from_point_and_slope()
+
 From b559baa (geometry):
 =======================
 

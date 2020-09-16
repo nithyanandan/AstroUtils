@@ -29,6 +29,35 @@ def generate_line_from_point_and_slope(request):
 def generate_line_from_two_points(request):
     return request.param
 
+coeffs = [([[0.0, 1.0],
+            [1.0, 0.0],
+            [1.0, 0.0],
+            [-1.0, 1.0]])]
+dvect = [([0.0,
+           0.0,
+           1.0,
+           1.0])]
+pts = [([[[NP.nan, NP.nan],
+          [NP.nan, NP.nan],
+          [NP.nan, NP.nan],
+          [NP.nan, NP.nan]],
+         [[0.0, 0.0],
+          [NP.nan, NP.nan],
+          [NP.nan, NP.nan],
+          [NP.nan, NP.nan]],
+         [[1.0, 0.0],
+          [NP.nan, NP.nan],
+          [NP.nan, NP.nan],
+          [NP.nan, NP.nan]],
+         [[-1.0, 0.0],
+          [0.0, 1.0],
+          [1.0, 2.0],
+          [NP.nan, NP.nan]]])]
+
+@pytest.fixture(scope='module', params=zip(coeffs, dvect, pts))
+def points_from_line2d_intersection(request):
+    return request.param
+
 polygon_vertices_2D = [([[0.0, 2.0], [85.0, -25.0], [40.0, 25.0]]),
                        ([[0.0, 0.0], [3.0, 0.0], [0.0, 4.0]]),
                        ([[0.0, 0.0], [3.0, 0.0], [6.0, 4.0], [3.0, 4.0]]),

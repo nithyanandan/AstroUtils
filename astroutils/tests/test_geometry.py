@@ -8,7 +8,7 @@ def test_generate_line_from_point_and_slope(generate_line_from_point_and_slope):
     slopes = NP.asarray(slopes).reshape(-1)
     expected_eqns = NP.asarray(expected_eqns).reshape(-1,3)
     eqns = GEOM.generate_line_from_point_and_slope(points, slopes)
-    NP.testing.assert_almost_equal(eqns,  expected_eqns, decimal=10, err_msg='Line equations do not match', verbose=True)
+    NP.testing.assert_allclose(eqns, expected_eqns, atol=1e-10, equal_nan=True, err_msg='Line equations do not match', verbose=True)    
 
 def test_generate_line_from_two_points(generate_line_from_two_points):
     points1, points2, expected_eqns = generate_line_from_two_points # Read from fixture in conftest.py
@@ -16,7 +16,18 @@ def test_generate_line_from_two_points(generate_line_from_two_points):
     points2 = NP.asarray(points2).reshape(-1,2)
     expected_eqns = NP.asarray(expected_eqns).reshape(-1,3)
     eqns = GEOM.generate_line_from_two_points(points1, points2)
-    NP.testing.assert_almost_equal(eqns,  expected_eqns, decimal=10, err_msg='Line equations do not match', verbose=True)
+    NP.testing.assert_allclose(eqns, expected_eqns, atol=1e-10, equal_nan=True, err_msg='Line equations do not match', verbose=True)    
+
+def test_points_from_line2d_intersection(points_from_line2d_intersection):
+    coeffs, dvect, expected_pts = points_from_line2d_intersection # Read from fixture in conftest.py
+    coeffs = NP.asarray(coeffs)
+    dvect = NP.asarray(dvect)
+    expected_pts = NP.asarray(expected_pts)
+    pts = GEOM.points_from_line2d_intersection(coeffs, dvect, ravel=False)
+    expected_pts_raveled = NP.asarray([expected_pts[i,j,:] for i in range(expected_pts.shape[0]) for j in range(i-1,-1,-1)])
+    pts_raveled = GEOM.points_from_line2d_intersection(coeffs, dvect, ravel=True)
+    NP.testing.assert_allclose(pts, expected_pts, atol=1e-10, equal_nan=True, err_msg='Intersection points do not match', verbose=True)
+    NP.testing.assert_allclose(pts_raveled,  expected_pts_raveled, atol=1e-10, equal_nan=True, err_msg='Intersection points do not match', verbose=True)
 
 def test_polygonArea2D(polygonArea2D):
     vertices2D, expected_area2D = polygonArea2D # Read from fixture in conftest.py
@@ -24,10 +35,10 @@ def test_polygonArea2D(polygonArea2D):
     expected_area2D = NP.asarray(expected_area2D)
     try:
         area2D = GEOM.polygonArea2D(vertices2D, absolute=False)
-        NP.testing.assert_almost_equal(area2D,  expected_area2D, decimal=10, err_msg='Polygon areas do not match', verbose=True)
+        NP.testing.assert_allclose(area2D, expected_area2D, atol=1e-10, equal_nan=True, err_msg='Polygon areas do not match', verbose=True)
     except Exception as err:
         NP.testing.assert_equal(NP.nan, expected_area2D, err_msg='Exception must have been raised', verbose=True)
-
+    
 def test_altaz2dircos(altaz_to_dircos):
     altaz, expected_dircos = altaz_to_dircos # Read from fixture in conftest.py
     altaz = NP.asarray(altaz).reshape(1,-1)
