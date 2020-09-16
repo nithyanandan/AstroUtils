@@ -74,9 +74,21 @@ expected_yvals = [[0.0, 0.0, 0.0],
                   [NP.nan, NP.nan],
                   [NP.nan, NP.nan],
                   [0.0, 1.0, 2.0]]
+yvals = [[0.0, NP.nan],
+         [NP.nan, 0.0, 1.0],
+         [NP.nan, 0.0, NP.nan],
+         [0.0, 1.0, 2.0]]
+expected_xvals = [[NP.nan, NP.nan],
+                  [0.0, 0.0, 0.0],
+                  [1.0, 1.0, 1.0],
+                  [-1.0, 0.0, 1.0]]
 
 @pytest.fixture(scope='module', params=zip(coeffs2, dvect2, xvals, expected_yvals))
 def get_ordinate_from_abscissa_on_line(request):
+    return request.param
+
+@pytest.fixture(scope='module', params=zip(coeffs2, dvect2, yvals, expected_xvals))
+def get_abscissa_from_ordinate_on_line(request):
     return request.param
 
 polygon_vertices_2D = [([[0.0, 2.0], [85.0, -25.0], [40.0, 25.0]]),
