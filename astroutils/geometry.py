@@ -613,8 +613,10 @@ def get_abscissa_from_ordinate_on_line(coeffs, dvect, ordinates):
     
     slope = -coeffs[0]/coeffs[1] # Check for infinite slope
     ind_zero_slope = NP.isinf(1/slope) # Check for zero slope
+    ind_infinite_slope = NP.isinf(slope) # Check for infinite slope
     abscissae = (dvect - coeffs[1]*ordinates) / coeffs[0]
     abscissae[ind_zero_slope] = NP.nan
+    abscissae[ind_infinite_slope] = dvect / coeffs[0]
     return abscissae
 
 #################################################################################
@@ -659,8 +661,10 @@ def get_ordinate_from_abscissa_on_line(coeffs, dvect, abscissae):
 
     slope = -coeffs[0]/coeffs[1] # Check for infinite slope
     ind_infinite_slope = NP.isinf(slope) # Check for infinite slope
+    ind_zero_slope = NP.isinf(1/slope) # Check for zero slope
     ordinates = (dvect - coeffs[0]*abscissae) / coeffs[1]
     ordinates[ind_infinite_slope] = NP.nan
+    ordinates[ind_zero_slope] = dvect / coeffs[1]
     return ordinates
 
 #################################################################################

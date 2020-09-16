@@ -1,3 +1,13 @@
+From 1f29ce0 (geometry):
+=======================
+
+In astroutils/geometry.py,
+
+(*) In function get_ordinate_from_abscissa_on_line(), return
+appropriate values when input abscissae are NaN and slope is zero
+(*) In function get_abscissa_from_ordinate_on_line(), return
+appropriate values when input ordinates are NaN and slope is infinite
+
 From 346d42b (test):
 ===================
 
