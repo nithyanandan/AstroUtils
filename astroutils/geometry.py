@@ -397,13 +397,13 @@ class Point:
 
 #################################################################################
 
-def points_from_line2d_intersection(coeffs, dvect):
+def points_from_line2d_intersection(coeffs, dvect, ravel=True):
     """
     ----------------------------------------------------------------------------
     Find pairwise intersections between a system of equations denoting lines in 
     the Cartesian plane. If N equations are provided then N(N-1)/2 intersection 
-    points are determined and returned. The equations mut be represented by 
-    coeffs(dot)xyvect = dvect
+    points (from all pairwise line intersections) are determined and returned. 
+    The equations must be represented by coeffs(dot)xyvect = dvect
     
     Inputs:
     
@@ -412,6 +412,9 @@ def points_from_line2d_intersection(coeffs, dvect):
     
     dvect   [numpy array] Numpy array of shape (N,1) or (N,) denoting the 
             measured values
+
+    ravel   [boolean] If set to True (default), ravel the N(N-1)/2 points of
+            intersection into a (N(N-1)/2, 2) numpy array
     
     Output:
     
@@ -419,7 +422,10 @@ def points_from_line2d_intersection(coeffs, dvect):
     lines. The main diagonal and upper diagonal is set to NaN since that denotes 
     lines intersecting with themselves or transposes of the lower diagonal 
     respectively. If no intersection is found between any pair of lines, they 
-    are also denoted by NaN.
+    are also denoted by NaN. If ravel is set to True, the N(N-1)/2 points of
+    intersection are raveled into (N(N-1)/2,2) numpy array. The order of these
+    points is in the following order of intersection of lines: 2--1, 3--2, 3--1, 
+    4--3, 4--2, 4--1, 5--4, 5--3, 5--2, 5--1, ...,  N--(N-1), N--(N-2), ... N--1.
     ----------------------------------------------------------------------------
     """
     
@@ -451,7 +457,11 @@ def points_from_line2d_intersection(coeffs, dvect):
             except LA.LinAlgError as LAerr:
                 print('Encountered {0}. System of equations ({1:0d}) and ({2:0d}) are ill-conditioned. Proceeding...'.format(LAerr, i, j))
                 
-    return outarr
+    if not ravel:
+        return outarr
+    else:
+        raveled_outarr = NP.asarray([outarr[i,j,:] for i in range(outarr.shape[0]) for j in range(i-1,-1,-1)])
+        return raveled_outarr
 
 #################################################################################
 

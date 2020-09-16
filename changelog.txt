@@ -1,3 +1,12 @@
+From b559baa (geometry):
+=======================
+
+In astroutils/geometry.py,
+
+(*) In function points_from_line2d_intersection(), make it produce
+raveled or unraveled points of intersection between all pairwise
+combinations of lines. Update docstring accordingly
+
 From 677811a (test):
 ===================
 
