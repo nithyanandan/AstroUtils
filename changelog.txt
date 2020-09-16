@@ -1,3 +1,16 @@
+From e6ec731 (test):
+===================
+
+In astroutils/tests/conftest.py,
+
+(*) Add coeffs2, dvect2, xvals to test ordinates obtained using line
+equations and abscissae
+(*) Add fixtures get_ordinates_from_abscissa_on_line()
+
+In astroutils/test_geometry.py,
+
+(*) Add pytest fixture-based test_get_ordinates_from_abscissa_on_line(). 
+
 From 1f29ce0 (geometry):
 =======================
 

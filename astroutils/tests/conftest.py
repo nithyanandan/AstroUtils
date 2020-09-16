@@ -58,6 +58,27 @@ pts = [([[[NP.nan, NP.nan],
 def points_from_line2d_intersection(request):
     return request.param
 
+coeffs2 = [[0.0, 1.0],
+           [1.0, 0.0],
+           [1.0, 0.0],
+           [-1.0, 1.0]]
+dvect2 = [0.0,
+          0.0,
+          1.0,
+          1.0]
+xvals = [[NP.nan, 0.0, 1.0],
+         [0.0, NP.nan],
+         [0.0, NP.nan],
+         [-1.0, 0.0, 1.0]]
+expected_yvals = [[0.0, 0.0, 0.0],
+                  [NP.nan, NP.nan],
+                  [NP.nan, NP.nan],
+                  [0.0, 1.0, 2.0]]
+
+@pytest.fixture(scope='module', params=zip(coeffs2, dvect2, xvals, expected_yvals))
+def get_ordinate_from_abscissa_on_line(request):
+    return request.param
+
 polygon_vertices_2D = [([[0.0, 2.0], [85.0, -25.0], [40.0, 25.0]]),
                        ([[0.0, 0.0], [3.0, 0.0], [0.0, 4.0]]),
                        ([[0.0, 0.0], [3.0, 0.0], [6.0, 4.0], [3.0, 4.0]]),

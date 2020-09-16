@@ -29,6 +29,15 @@ def test_points_from_line2d_intersection(points_from_line2d_intersection):
     NP.testing.assert_allclose(pts, expected_pts, atol=1e-10, equal_nan=True, err_msg='Intersection points do not match', verbose=True)
     NP.testing.assert_allclose(pts_raveled,  expected_pts_raveled, atol=1e-10, equal_nan=True, err_msg='Intersection points do not match', verbose=True)
 
+def test_get_ordinate_from_abscissa_on_line(get_ordinate_from_abscissa_on_line):
+    coeffs, dvect, xvals, expected_yvals = get_ordinate_from_abscissa_on_line # Read from fixture in conftest.py
+    coeffs = NP.asarray(coeffs)
+    dvect = NP.asarray(dvect)
+    xvals = NP.asarray(xvals)
+    expected_yvals = NP.asarray(expected_yvals)
+    yvals = GEOM.get_ordinate_from_abscissa_on_line(coeffs, dvect, xvals)
+    NP.testing.assert_allclose(yvals, expected_yvals, atol=1e-10, equal_nan=True, err_msg='Abscissa values do not match', verbose=True)
+
 def test_polygonArea2D(polygonArea2D):
     vertices2D, expected_area2D = polygonArea2D # Read from fixture in conftest.py
     vertices2D = NP.asarray(vertices2D)
