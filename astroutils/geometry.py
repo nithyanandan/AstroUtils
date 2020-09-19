@@ -669,6 +669,82 @@ def get_ordinate_from_abscissa_on_line(coeffs, dvect, abscissae):
 
 #################################################################################
 
+def generate_parallel_lines_at_distance_from_line(coeffs, dvects, distances):
+    """
+    -------------------------------------------------------------------------
+    Given a set of equations of lines using coeff (dot) xyvect = dvect, find
+    new dvects such that the new lines are at the specified distances from 
+    the original lines. For each input line, two values of output dvects are
+    returned corresponding to the positive and negative distances.
+    
+    Inputs:
+    
+    coeffs      [numpy array] Array of shape (N,2) or (1,2) specifying the 
+                x and y coefficients of the N (or 1) lines.
+                
+    dvects      [scalar or numpy array] Array of shape (N,) or (1,) or scalar
+                specifying the dvect of the input lines corresponding to 
+                input coeffs.
+                
+    distances   [scalar or numpy array] Array of shape (N,) or (1,) or scalar
+                specifying the distances from the corresponding lines given
+                by coeffs and dvect. 
+                
+    Output:
+    
+    Output dvect array of shape (N,2) where [:,0] corresponds to negative
+    distance offsets, and [:,1] corresponds to positive distance offsets from
+    the original input lines. The coeffs remain the same as the slope is 
+    unchanged. If any of the inputs coeffs, dvects, or distances have only
+    1 inputs, then they are assumed to apply to all the N inputs and are 
+    broadcasted. 
+    -------------------------------------------------------------------------
+    """
+    
+    if not isinstance(coeffs, NP.ndarray):
+        raise TypeError('Input coeffs must be a numpy array')
+    if isinstance(dvects, (int,float)):
+        dvects = NP.asarray(dvects).reshape(-1)
+    if isinstance(distances, (int,float)):
+        distanes = NP.asarray(distances).reshape(-1)
+    if not isinstance(dvects, NP.ndarray):
+        raise TypeError('Input dvects must be a numpy array')
+    if not isinstance(distances, NP.ndarray):
+        raise TypeError('Input distances must be a numpy array')
+    if coeffs.size == 2:
+        coeffs = coeffs.reshape(-1,2)
+    if coeffs.ndim != 2:
+        raise ValueError('Input coeffs must be a 2D numpy array')
+    if coeffs.shape[1] != 2:
+        raise ValueError('Input coeffs must be a Nx2 array')
+        
+    dvects = dvects.reshape(-1)
+    distances = NP.abs(distances).reshape(-1)
+    
+    n_dvects = dvects.size
+    n_distances = distances.size
+    n_coeffs = coeffs.shape[0]
+    
+    if (n_dvects != n_distances) and ((n_dvects != 1) and (n_distances != 1)):
+        raise ValueError('Inputs dvects and distances must be equal in size or broadcastable')
+    if (n_dvects != n_coeffs) and ((n_dvects != 1) and (n_coeffs != 1)):
+        raise ValueError('Inputs dvects and number of coeffs must be equal in size or broadcastable')
+    if (n_distances != n_coeffs) and ((n_distances != 1) and (n_coeffs != 1)):
+        raise ValueError('Inputs distances and number of coeffs must be equal in size or broadcastable')
+        
+    n_max = NP.max([n_coeffs, n_dvects, n_distances])
+    coeffs = coeffs + NP.zeros((n_max,2), dtype=NP.float)
+    dvects = dvects + NP.zeros(n_max, dtype=NP.float)
+    distances = distances + NP.zeros(n_max, dtype=NP.float)
+    
+    pm_distances = NP.asarray([-1.0, 1.0]).reshape(1,2) * distances.reshape(-1,1)
+    
+    dvects_out_pm = dvects.reshape(-1,1) + pm_distances * NP.sqrt(NP.sum(coeffs**2, axis=1, keepdims=True))
+    
+    return dvects_out_pm
+
+#################################################################################
+
 def polygonArea2D(vertices, absolute=False):
     """
     ----------------------------------------------------------------------------

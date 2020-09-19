@@ -1,3 +1,12 @@
+From 1d540dd (geometry):
+=======================
+
+In astroutils/geometry.py,
+
+(*) Add function generate_parallel_lines_at_distance_from_line() along
+with docstring to create parallel lines at given distances from given
+lines. 
+
 From 2cc78d6 (test):
 ===================
 
