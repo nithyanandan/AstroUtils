@@ -1,3 +1,16 @@
+From d48a50e (test):
+===================
+
+In astroutils/tests/conftest.py,
+
+(*) Add displacements, dvects_from_displacement to test generation of
+dvects for parallel lines at a distance from a given line
+(*) Add fixtures generate_parallel_lines_at_distance_from_line()
+
+In astroutils/test_geometry.py,
+
+(*) Add pytest fixture-based test_generate_parallel_lines_at_distance_from_line()
+
 From 1d540dd (geometry):
 =======================
 

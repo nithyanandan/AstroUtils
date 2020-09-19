@@ -54,8 +54,16 @@ pts = [([[[NP.nan, NP.nan],
           [1.0, 2.0],
           [NP.nan, NP.nan]]])]
 
+displacements = [([1.0, 3.0, 2.0, 1.0])]
+
+dvects_from_displacement = [([[-1.0, 1.0], [-3.0, 3.0], [-1.0, 3.0], [1.0-NP.sqrt(2.0), 1.0+NP.sqrt(2.0)]])]
+
 @pytest.fixture(scope='module', params=zip(coeffs, dvect, pts))
 def points_from_line2d_intersection(request):
+    return request.param
+
+@pytest.fixture(scope='module', params=zip(coeffs, dvect, displacements, dvects_from_displacement))
+def generate_parallel_lines_at_distance_from_line(request):
     return request.param
 
 coeffs2 = [[0.0, 1.0],

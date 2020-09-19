@@ -47,6 +47,15 @@ def test_get_ordinate_from_abscissa_on_line(get_ordinate_from_abscissa_on_line):
     yvals = GEOM.get_ordinate_from_abscissa_on_line(coeffs, dvect, xvals)
     NP.testing.assert_allclose(yvals, expected_yvals, atol=1e-10, equal_nan=True, err_msg='Ordinate values do not match', verbose=True)
 
+def test_generate_parallel_lines_at_distance_from_line(generate_parallel_lines_at_distance_from_line):
+    coeffs, dvect, displacements, expected_output_dvects = generate_parallel_lines_at_distance_from_line # Read from fixture in conftest.py
+    coeffs = NP.asarray(coeffs)
+    dvect = NP.asarray(dvect)
+    displacements = NP.asarray(displacements)
+    expected_output_dvects = NP.asarray(expected_output_dvects)
+    output_dvects = GEOM.generate_parallel_lines_at_distance_from_line(coeffs, dvect, displacements)
+    NP.testing.assert_allclose(output_dvects, expected_output_dvects, atol=1e-10, equal_nan=True, err_msg='dvect values do not match', verbose=True)
+
 def test_polygonArea2D(polygonArea2D):
     vertices2D, expected_area2D = polygonArea2D # Read from fixture in conftest.py
     vertices2D = NP.asarray(vertices2D)
