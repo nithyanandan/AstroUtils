@@ -1,3 +1,10 @@
+From 9f3a370 (ephemeris):
+========================
+
+In astroutils/ephemeris_timing.py,
+
+(*) Check and update IERS tables
+
 From d48a50e (test):
 ===================
 

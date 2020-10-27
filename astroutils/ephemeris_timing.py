@@ -5,6 +5,51 @@ from astropy import units as U
 import numpy as NP
 import constants as CNST
 
+# Perform some IERS adjustments
+
+from astropy.utils import iers
+
+tnow = Time.now()
+try:
+    print('Checking if some IERS related adjustments are required...')
+    tnow_ut1 = tnow.ut1
+except iers.IERSRangeError as exception:
+    default_iers_auto_url = 'http://maia.usno.navy.mil/ser7/finals2000A.all'
+    secondary_iers_auto_url = 'ftp://cddis.gsfc.nasa.gov/pub/products/iers/finals2000A.all'
+    
+    try:    
+    #     iers.conf.iers_auto_url = default_iers_auto_url
+        iers.conf.remote_timeout = 120.0
+        iers.IERS_A.open(iers.IERS_A_URL)
+    except Exception as err:
+        if ('url' in str(err).lower()) or (('connection' in str(err).lower())):
+            print(err)
+            print('Original source URL for IERS_A: {0} FAILED!'.format(iers.conf.iers_auto_url))
+            print('Original IERS Configuration:')
+            print(iers.conf.__class__.__dict__)
+            print('Modifying the source URL for IERS_A table to {0}'.format(secondary_iers_auto_url))
+    #         iers.IERS_A_URL = 'ftp://cddis.gsfc.nasa.gov/pub/products/iers/finals2000A.all'
+            iers.conf.auto_download = True
+            iers.conf.iers_auto_url = secondary_iers_auto_url
+    #         iers.conf.iers_auto_url = 'ftp://cddis.gsfc.nasa.gov/pub/products/iers/finals2000A.all'
+            try:
+                print('Now testing {0}'.format(secondary_iers_auto_url))
+                iers_a = iers.IERS_A.open(secondary_iers_auto_url)
+            except Exception as newerr:
+                if ('url' in str(err).lower()):
+                    print(newerr)
+                    print('Modified URL also did not work. Computation of LST may be affected or will completely fail.')
+    #                 raise newerr
+            else:
+                print('Updated source URL {0} worked!'.format(secondary_iers_auto_url))
+                print('Modified IERS Configuration:')
+                print(iers.conf.__class__.__dict__)
+                try:
+                    tnow_ut1 = tnow.ut1
+                except iers.IERARangeError as exception:
+                    print(exception)
+                    warnings.warn('Ephemeris predictions will be unreliable despite a successful download of IERS tables')
+            
 ################################################################################
 
 def equation_of_equinoxes(jd):
