@@ -1,3 +1,11 @@
+From febf9ab (ephemeris):
+========================
+
+In astroutils/ephemeris_timing.py,
+
+(*) Update secondary IERS URL to
+'https://datacenter.iers.org/data/9/finals2000A.all'
+
 From 9f3a370 (ephemeris):
 ========================
 

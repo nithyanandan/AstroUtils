@@ -15,7 +15,8 @@ try:
     tnow_ut1 = tnow.ut1
 except iers.IERSRangeError as exception:
     default_iers_auto_url = 'http://maia.usno.navy.mil/ser7/finals2000A.all'
-    secondary_iers_auto_url = 'ftp://cddis.gsfc.nasa.gov/pub/products/iers/finals2000A.all'
+    secondary_iers_auto_url = 'https://datacenter.iers.org/data/9/finals2000A.all'
+    tertiary_iers_auto_url = 'ftp://cddis.gsfc.nasa.gov/pub/products/iers/finals2000A.all'
     
     try:    
     #     iers.conf.iers_auto_url = default_iers_auto_url
