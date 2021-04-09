@@ -1393,10 +1393,12 @@ class SkyModel(object):
                                 raise ValueError('Value specified for input extspec_action invalid')
                             if extspec_action.lower() == 'unload':
                                 self.spectrum = None
+                                self.spec_extfile = outfile
+                                spec_group['spec_extfile'] = outfile
                     elif self.spec_extfile is None:
                         raise AttributeError('Neither attribute "spectrum" nor "spec_extfile" found in the instance')
-                    self.spec_extfile = outfile
-                    spec_group['spec_extfile'] = outfile
+                    else:
+                        spec_group['spec_extfile'] = self.spec_extfile
         else:
             outfile = outfile + '.txt'
             frmts = {}

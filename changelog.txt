@@ -1,3 +1,11 @@
+From f94241f (master):
+=====================
+
+In astroutils/catalog.py,
+
+(*) Fix bug in assigning value to spec_extfile in the output file in member
+function save() of class SkyModel
+
 From febf9ab (ephemeris):
 ========================
 
