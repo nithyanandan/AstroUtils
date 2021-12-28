@@ -22,7 +22,6 @@ For additional information about the original IDL routines, see:
 """
 
 from __future__ import print_function, division, unicode_literals, absolute_import
-from builtins import range
 import math
 import numpy as NP
 
@@ -167,7 +166,7 @@ def robust_mode(inputData, axis=None, dtype=None):
             else:
                 wMin = data[-1] - data[0]
                 N = data.size / 2 + data.size % 2 
-                for i in range(0, N):
+                for i in xrange(0, N):
                     w = data[i+N-1] - data[i] 
                     if w < wMin:
                         wMin = w

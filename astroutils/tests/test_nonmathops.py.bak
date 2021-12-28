@@ -1,5 +1,4 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
-from past.builtins import cmp
 from astroutils import nonmathops as NMO
 
 def test_recursive_find_notNone_in_dict():

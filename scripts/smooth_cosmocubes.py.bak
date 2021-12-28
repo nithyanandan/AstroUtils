@@ -1,7 +1,6 @@
 #!python
 
 from __future__ import print_function, division, unicode_literals, absolute_import
-from builtins import map
 import os, sys, glob
 import argparse
 import yaml
@@ -123,7 +122,7 @@ if __name__ == '__main__':
         zstr = [fname.split(fname_delimiter)[z_placeholder].split(z_identifier)[redshift_value_place] for fname in fnames]
     else:
         zstr = [fname.split(fname_delimiter)[z_placeholder] for fname in fnames]
-    zin = NP.asarray(list(map(float, zstr)))
+    zin = NP.asarray(map(float, zstr))
 
     sigma_angres = fwhm_angres / (2 * NP.sqrt(2.0 * NP.log(2.0)))
     cmv_trns_dist_sigma = sigma_angres * cosmo.kpc_comoving_per_arcmin(zin)

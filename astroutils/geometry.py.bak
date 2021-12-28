@@ -1,7 +1,4 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
-from builtins import zip
-from builtins import range
-from builtins import object
 import sys
 import numpy as NP
 import numpy.linalg as LA
@@ -18,7 +15,7 @@ epsilon = sys.float_info.epsilon # typical floating-point calculation error
 
 #################################################################################
 
-class Point(object):
+class Point:
 
     """
     ----------------------------------------------------------------------------
@@ -852,7 +849,7 @@ def altaz2dircos(altaz, units=None):
     m = NP.cos(altaz[:,0])*NP.sin(phi) # towards north
     n = NP.sin(altaz[:,0])             # towards zenith
 
-    return NP.asarray(list(zip(l,m,n)))
+    return NP.asarray(zip(l,m,n))
 
 #################################################################################
 
@@ -1021,7 +1018,7 @@ def hadec2altaz(hadec, latitude, units=None):
     if units == 'degrees':
         altitude = NP.degrees(altitude)
         azimuth = NP.degrees(azimuth)
-    return NP.asarray(list(zip(altitude, azimuth)))
+    return NP.asarray(zip(altitude, azimuth))
 
 #################################################################################
 
@@ -1132,7 +1129,7 @@ def altaz2hadec(altaz, latitude, units=None):
     if units == 'degrees':
         ha *= 180.0/NP.pi
         dec *= 180.0/NP.pi
-    return NP.asarray(list(zip(ha, dec)))
+    return NP.asarray(zip(ha, dec))
 
 #################################################################################
 
@@ -1977,13 +1974,13 @@ def spherematch(lon1, lat1, lon2=None, lat2=None, matchrad=None, nnearest=0,
         if not self_match:
             kdt2 = KDT(coords2)
             ngbr_of_first_in_second = kdt1.query_ball_tree(kdt2, matchrad_cartesian)
-            m1 = [i for i in range(len(ngbr_of_first_in_second)) for j in ngbr_of_first_in_second[i] if ngbr_of_first_in_second[i] != []]
-            m2 = [j for i in range(len(ngbr_of_first_in_second)) for j in ngbr_of_first_in_second[i] if ngbr_of_first_in_second[i] != []]
+            m1 = [i for i in xrange(len(ngbr_of_first_in_second)) for j in ngbr_of_first_in_second[i] if ngbr_of_first_in_second[i] != []]
+            m2 = [j for i in xrange(len(ngbr_of_first_in_second)) for j in ngbr_of_first_in_second[i] if ngbr_of_first_in_second[i] != []]
             d12 = sphdist(lon1[m1], lat1[m1], lon2[m2], lat2[m2])
         else:
             ngbr_of_first_in_itself = kdt1.query_ball_tree(kdt1, matchrad_cartesian)
-            m1 = [i for i in range(len(ngbr_of_first_in_itself)) for j in ngbr_of_first_in_itself[i] if ngbr_of_first_in_itself[i] != [] and i != j]
-            m2 = [j for i in range(len(ngbr_of_first_in_itself)) for j in ngbr_of_first_in_itself[i] if ngbr_of_first_in_itself[i] != [] and i != j]
+            m1 = [i for i in xrange(len(ngbr_of_first_in_itself)) for j in ngbr_of_first_in_itself[i] if ngbr_of_first_in_itself[i] != [] and i != j]
+            m2 = [j for i in xrange(len(ngbr_of_first_in_itself)) for j in ngbr_of_first_in_itself[i] if ngbr_of_first_in_itself[i] != [] and i != j]
             d12 = sphdist(lon1[m1], lat1[m1], lon1[m2], lat1[m2])
     else:
         if not self_match:

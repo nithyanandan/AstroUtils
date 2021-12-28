@@ -1,6 +1,4 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
-from builtins import zip
-from builtins import range
 import numpy as NP
 import numpy.ma as MA
 import scipy as SP
@@ -506,7 +504,7 @@ def healpix_interp_along_axis(indata, theta_phi=None, inloc_axis=None,
         
         intermediate_data = NP.zeros(intermediate_data_shape, dtype=NP.float64)
         for ax in range(1,indata.ndim):
-            for i in range(indata.shape[ax]):
+            for i in xrange(indata.shape[ax]):
                 intermediate_data[:,i] = HP.get_interp_val(indata[:,i], theta_phi[:,0], theta_phi[:,1], nest=nest)
     else:
         intermediate_data = NP.copy(indata)

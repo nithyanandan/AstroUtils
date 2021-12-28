@@ -1,3 +1,9 @@
+From 599b387 (py3):
+==================
+
+(*) Apply futurize stage 2 to entire repository
+(*) Add .bak files produced above to repo
+
 From 7b24e5e (py3), 97473f5 (main):
 ==================================
 

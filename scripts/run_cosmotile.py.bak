@@ -1,8 +1,6 @@
 #!python
 
 from __future__ import print_function, division, unicode_literals, absolute_import
-from builtins import map
-from builtins import range
 import os, sys, glob
 import argparse
 import yaml
@@ -172,7 +170,7 @@ if __name__ == '__main__':
         zstr = [fname.split(fname_delimiter)[z_placeholder].split(z_identifier)[redshift_value_place] for fname in fnames]
     else:
         zstr = [fname.split(fname_delimiter)[z_placeholder] for fname in fnames]
-    zin = NP.asarray(list(map(float, zstr)))
+    zin = NP.asarray(map(float, zstr))
     infreqs = rest_freq / (1+zin)
 
     # ind = NP.logical_and(infreqs >= freq_min, infreqs <= freq_max)
@@ -260,7 +258,7 @@ if __name__ == '__main__':
         
     if not parallel:
         progress = PGB.ProgressBar(widgets=[PGB.Percentage(), PGB.Bar(marker='-', left=' |', right='| '), PGB.Counter(), '/{0:0d} Frequency channels '.format(ofreqs.size), PGB.ETA()], maxval=ofreqs.size).start()
-        for ind in range(len(interpdicts)):
+        for ind in xrange(len(interpdicts)):
             # sphsurfaces += [cosmotile.coeval_interp_cube_to_sphere_surface_wrapper(interpdicts[ind], tiledicts[ind])]
             if write_mode == 'append':
                 sphsurface = cosmotile.coeval_interp_cube_to_sphere_surface_wrapper(interpdicts[ind], tiledicts[ind])

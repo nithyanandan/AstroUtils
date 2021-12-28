@@ -1,7 +1,4 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
-from builtins import zip
-from builtins import range
-from builtins import object
 import multiprocessing as MP
 import itertools as IT
 import progressbar as PGB
@@ -1065,10 +1062,10 @@ class SkyModel(object):
 
             uniq_names, invind = NP.unique(self.spec_parms['name'][ind], return_inverse=True)
             if len(uniq_names) > 1:
-                counts, edges, bnum, ri = OPS.binned_statistic(invind, statistic='count', bins=list(range(len(uniq_names))))
+                counts, edges, bnum, ri = OPS.binned_statistic(invind, statistic='count', bins=range(len(uniq_names)))
             else:
                 counts = len(invind)
-                ri = list(range(counts))
+                ri = range(counts)
 
             for i, name in enumerate(uniq_names):
                 if len(uniq_names) > 1:
@@ -1083,8 +1080,8 @@ class SkyModel(object):
                     spectrum[ind_to_be_filled,:] = 0.0
                     inpind, refind, dNN = LKP.find_1NN(frequency, self.spec_parms['freq-ref'][ind_to_be_used], distance=frequency[1]-frequency[0], remove_oob=True) 
                     ind_match = ind_to_be_used[inpind]
-                    ind2d = list(zip(ind_match, refind))
-                    spectrum[list(zip(*ind2d))] = self.spec_parms['flux-scale'][ind_match]
+                    ind2d = zip(ind_match, refind)
+                    spectrum[zip(*ind2d)] = self.spec_parms['flux-scale'][ind_match]
                 if name == 'power-law':
                     spectrum[ind_to_be_filled,:] = self.spec_parms['flux-offset'][ind_to_be_used].reshape(-1,1) + self.spec_parms['flux-scale'][ind_to_be_used].reshape(-1,1) * (frequency.reshape(1,-1)/self.spec_parms['freq-ref'][ind_to_be_used].reshape(-1,1))**self.spec_parms['power-law-index'][ind_to_be_used].reshape(-1,1)
                 if name == 'tanh':

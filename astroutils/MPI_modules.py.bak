@@ -1,5 +1,4 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
-from builtins import object
 from mpi4py import MPI
 from array import array as _array
 import struct as _struct
@@ -31,7 +30,7 @@ class Counter(object):
         self.win.Free()
         if mem: MPI.Free_mem(mem)
 
-    def __next__(self):
+    def next(self):
         #
         group  = self.win.Get_group()
         size = group.Get_size()

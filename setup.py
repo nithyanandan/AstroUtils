@@ -9,10 +9,10 @@ if os.path.isdir(os.path.dirname(os.path.abspath(__file__))+'/.git'):
         gitproc = Popen(['git', 'rev-parse', 'HEAD'], stdout = PIPE)
         githash = gitproc.communicate()[0]
         if gitproc.returncode != 0:
-            print "unable to run git, assuming githash to be unknown"
+            print("unable to run git, assuming githash to be unknown")
             githash = 'unknown'
     except EnvironmentError:
-        print "unable to run git, assuming githash to be unknown"
+        print("unable to run git, assuming githash to be unknown")
 githash = githash.replace('\n', '')
 
 with open(os.path.dirname(os.path.abspath(__file__))+'/astroutils/githash.txt', 'w+') as githash_file:

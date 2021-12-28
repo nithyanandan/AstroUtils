@@ -374,7 +374,7 @@ def interp_coevalcubes_inpdict(inpdict):
     if not isinstance(inpdict, dict):
         raise TypeError('Input inpdict must be a dictionary')
 
-    for key,val in list(inpdict.items()):
+    for key,val in inpdict.items():
         exec(key + '=val')
 
     try:
@@ -668,7 +668,7 @@ def convert_coevalcube_to_sphere_surface_inpdict(inpdict):
     if not isinstance(inpdict, dict):
         raise TypeError('Input inpdict must be a dictionary')
 
-    for key,val in list(inpdict.items()):
+    for key,val in inpdict.items():
         exec(key + '=val')
 
     try:

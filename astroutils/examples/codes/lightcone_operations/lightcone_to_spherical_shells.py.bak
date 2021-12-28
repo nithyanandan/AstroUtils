@@ -1,6 +1,4 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
-from builtins import map
-from builtins import range
 import glob, copy
 import argparse
 import yaml, h5py
@@ -97,8 +95,8 @@ def read_raw_lightcone_cube(parms):
     else:
         zend_str = [fname.replace(fname_delimiter,' ').split()[zend_pos] for fname in fnames]
     
-    zstart = NP.asarray(list(map(float, zstart_str)))
-    zend = NP.asarray(list(map(float, zend_str)))
+    zstart = NP.asarray(map(float, zstart_str))
+    zend = NP.asarray(map(float, zend_str))
     sortind = NP.argsort(zstart)
     zstart = zstart[sortind]
     zend = zend[sortind]
@@ -1431,8 +1429,8 @@ if __name__ == '__main__':
     else:
         zend_str = [fname.replace(fname_delimiter,' ').split()[zend_pos] for fname in fnames]
     
-    zstart = NP.asarray(list(map(float, zstart_str)))
-    zend = NP.asarray(list(map(float, zend_str)))
+    zstart = NP.asarray(map(float, zstart_str))
+    zend = NP.asarray(map(float, zend_str))
     sortind = NP.argsort(zstart)
     zstart = zstart[sortind]
     zend = zend[sortind]

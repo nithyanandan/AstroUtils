@@ -1,5 +1,4 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
-from builtins import map
 import numpy as NP
 import scipy.sparse
 import scipy.ndimage
@@ -100,7 +99,7 @@ def fast_kde(x, y, gridsize=(400, 400), extents=None, weights=None,
         xmin, xmax = x.min(), x.max()
         ymin, ymax = y.min(), y.max()
     else:
-        xmin, xmax, ymin, ymax = list(map(float, extents))
+        xmin, xmax, ymin, ymax = map(float, extents)
     extents = xmin, xmax, ymin, ymax
     dx = (xmax - xmin) / (nx - 1)
     dy = (ymax - ymin) / (ny - 1)

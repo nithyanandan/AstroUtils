@@ -39,7 +39,7 @@ def power_law_spectral_index(freq, flux, verbose=True):
     """
 
     if verbose:
-        print '\nRunning power_law_spectral_index() for estimating a single power law spectral index...'
+        print('\nRunning power_law_spectral_index() for estimating a single power law spectral index...')
 
     try:
         freq, flux
@@ -47,7 +47,7 @@ def power_law_spectral_index(freq, flux, verbose=True):
         raise NameError('freq and flux must be defined.')
 
     if verbose:
-        print '\tVerifying input data parameters for compatibility...'
+        print('\tVerifying input data parameters for compatibility...')
 
     if isinstance(freq, (list, tuple)):
         freq = NP.asarray(freq).ravel()
@@ -74,23 +74,23 @@ def power_law_spectral_index(freq, flux, verbose=True):
         raise ValueError('All elements in flux must be positive.')
 
     if verbose:
-        print '\tInput data parameters verified to be compatible.'
-        print '\tProceeding with power law spectral index estimation...'
+        print('\tInput data parameters verified to be compatible.')
+        print('\tProceeding with power law spectral index estimation...')
 
     flux = flux.reshape(-1,freq.size)
 
     if freq.size == 2:
         alpha = NP.log10(flux[:,1]/flux[:,0]) / NP.log10(freq[1]/freq[0])
         if verbose:
-            print '\tPower law spectral index estimated for {0} objects.'.format(flux.shape[0])
+            print('\tPower law spectral index estimated for {0} objects.'.format(flux.shape[0]))
     else:
         coeffs = NP.polyfit(NP.log10(freq), NP.log10(flux.T), 1)
         alpha = coeffs[0,:]
         if verbose:
-            print '\tPower law spectral index estimated for {0} objects by a linear \n\t\tpolynomial in log-log units.'.format(flux.shape[0])
+            print('\tPower law spectral index estimated for {0} objects by a linear \n\t\tpolynomial in log-log units.'.format(flux.shape[0]))
         
     if verbose:
-        print 'Power law spectral index estimation completed successfully.\n'
+        print('Power law spectral index estimation completed successfully.\n')
     return alpha
     
 #################################################################################

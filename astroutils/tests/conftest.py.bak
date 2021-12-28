@@ -1,6 +1,4 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
-from builtins import zip
-from builtins import range
 import pytest
 import numpy as NP
 
@@ -24,11 +22,11 @@ eqns = [([0.0, 1.0, 1.0]),
           [1.0, 0.0, 1.0],
           [1.0, 1.0, -1.0]])]
 
-@pytest.fixture(scope='module', params=list(zip(points1, slopes, eqns)))
+@pytest.fixture(scope='module', params=zip(points1, slopes, eqns))
 def generate_line_from_point_and_slope(request):
     return request.param
 
-@pytest.fixture(scope='module', params=list(zip(points1, points2, eqns)))
+@pytest.fixture(scope='module', params=zip(points1, points2, eqns))
 def generate_line_from_two_points(request):
     return request.param
 
@@ -61,11 +59,11 @@ displacements = [([1.0, 3.0, 2.0, 1.0])]
 
 dvects_from_displacement = [([[-1.0, 1.0], [-3.0, 3.0], [-1.0, 3.0], [1.0-NP.sqrt(2.0), 1.0+NP.sqrt(2.0)]])]
 
-@pytest.fixture(scope='module', params=list(zip(coeffs, dvect, pts)))
+@pytest.fixture(scope='module', params=zip(coeffs, dvect, pts))
 def points_from_line2d_intersection(request):
     return request.param
 
-@pytest.fixture(scope='module', params=list(zip(coeffs, dvect, displacements, dvects_from_displacement)))
+@pytest.fixture(scope='module', params=zip(coeffs, dvect, displacements, dvects_from_displacement))
 def generate_parallel_lines_at_distance_from_line(request):
     return request.param
 
@@ -94,11 +92,11 @@ expected_xvals = [[NP.nan, NP.nan],
                   [1.0, 1.0, 1.0],
                   [-1.0, 0.0, 1.0]]
 
-@pytest.fixture(scope='module', params=list(zip(coeffs2, dvect2, xvals, expected_yvals)))
+@pytest.fixture(scope='module', params=zip(coeffs2, dvect2, xvals, expected_yvals))
 def get_ordinate_from_abscissa_on_line(request):
     return request.param
 
-@pytest.fixture(scope='module', params=list(zip(coeffs2, dvect2, yvals, expected_xvals)))
+@pytest.fixture(scope='module', params=zip(coeffs2, dvect2, yvals, expected_xvals))
 def get_abscissa_from_ordinate_on_line(request):
     return request.param
 
@@ -110,7 +108,7 @@ polygon_vertices_2D = [([[0.0, 2.0], [85.0, -25.0], [40.0, 25.0]]),
                        ([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])]
 polygon_areas_2D = [1517.5, 6.0, 12.0, 0.0, 0.0, NP.nan]
 
-@pytest.fixture(scope='module', params=list(zip(polygon_vertices_2D, polygon_areas_2D)))
+@pytest.fixture(scope='module', params=zip(polygon_vertices_2D, polygon_areas_2D))
 def polygonArea2D(request):
     return request.param
 
@@ -120,19 +118,19 @@ hadec = [(180.0, -90.0), (-90.0, 0.0), (180.0, 30.0), (90.0, 0.0), (0.0, -60.0),
 
 latitude = [-90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0]
 
-@pytest.fixture(scope='module', params=list(zip(altaz, dircos)))
+@pytest.fixture(scope='module', params=zip(altaz, dircos))
 def altaz_to_dircos(request):
     return request.param
 
-@pytest.fixture(scope='module', params=list(zip(dircos, altaz)))
+@pytest.fixture(scope='module', params=zip(dircos, altaz))
 def dircos_to_altaz(request):
     return request.param
 
-@pytest.fixture(scope='module', params=list(zip(altaz, hadec, latitude)))
+@pytest.fixture(scope='module', params=zip(altaz, hadec, latitude))
 def altaz_to_hadec(request):
     return request.param
 
-@pytest.fixture(scope='module', params=list(zip(hadec, altaz, latitude)))
+@pytest.fixture(scope='module', params=zip(hadec, altaz, latitude))
 def hadec_to_altaz(request):
     return request.param
 
@@ -143,7 +141,7 @@ enu = dircos
 x = [NP.dot(NP.asarray(dircos[i]), NP.asarray([0.0, -NP.sin(NP.radians(latitude[i])), NP.cos(NP.radians(latitude[i]))])) for i in range(len(latitude))]
 y = [NP.dot(NP.asarray(dircos[i]), NP.asarray([1.0, 0.0, 0.0])) for i in range(len(latitude))]
 z = [NP.dot(NP.asarray(dircos[i]), NP.asarray([0.0, NP.cos(NP.radians(latitude[i])), NP.sin(NP.radians(latitude[i]))])) for i in range(len(latitude))]
-xyz = list(zip(x,y,z))
+xyz = zip(x,y,z)
 
 r = NP.sqrt(NP.asarray(x)**2 + NP.asarray(y)**2 + NP.asarray(z)**2)
 latang = NP.pi/2 - NP.arccos(NP.asarray(z)/r)
@@ -153,21 +151,21 @@ r = r.tolist()
 latang = latang.tolist()
 lonang = lonang.tolist()
 
-r_lat_lon = list(zip(r, latang, lonang))
+r_lat_lon = zip(r, latang, lonang)
 
-@pytest.fixture(scope='module', params=list(zip(enu, xyz, latitude)))
+@pytest.fixture(scope='module', params=zip(enu, xyz, latitude))
 def enu_to_xyz(request):
     return request.param
 
-@pytest.fixture(scope='module', params=list(zip(xyz, enu, latitude)))
+@pytest.fixture(scope='module', params=zip(xyz, enu, latitude))
 def xyz_to_enu(request):
     return request.param
 
-@pytest.fixture(scope='module', params=list(zip(xyz, r_lat_lon)))
+@pytest.fixture(scope='module', params=zip(xyz, r_lat_lon))
 def xyz_to_sph(request):
     return request.param
 
-@pytest.fixture(scope='module', params=list(zip(r_lat_lon, xyz)))
+@pytest.fixture(scope='module', params=zip(r_lat_lon, xyz))
 def sph_to_xyz(request):
     return request.param
 

@@ -1,5 +1,4 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
-from builtins import zip
 import numpy as NP
 from astropy.io import ascii
 import multiprocessing as MP
@@ -214,7 +213,7 @@ def lookup(x, y, val, xin, yin, distance_ULIM=NP.inf, oob_value=0.0,
         else:
             raise TypeError('tol must be a scalar integer or float')
 
-    kdt = KDT(list(zip(x,y)))
+    kdt = KDT(zip(x,y))
     dist, ind = kdt.query(NP.hstack((xin.reshape(-1,1), yin.reshape(-1,1))), k=1, distance_upper_bound=distance_ULIM)
     nnval = NP.zeros(ind.size, dtype=val.dtype)
     nnval[dist < distance_ULIM] = val[ind[dist < distance_ULIM]]
@@ -1147,7 +1146,7 @@ def find_NN(ngbrof, ngbrin, distance_ULIM=NP.inf, flatten=False, parallel=False,
     ind_ngbrin = None
     if flatten:
         list_of_ind_tuples = [(i,ind) for i,item in enumerate(indNN_list) for ind in item]
-        ind_ngbrof, ind_ngbrin = list(zip(*list_of_ind_tuples))
+        ind_ngbrof, ind_ngbrin = zip(*list_of_ind_tuples)
 
     return [indNN_list, NP.asarray(ind_ngbrof), NP.asarray(ind_ngbrin)]
     

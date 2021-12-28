@@ -1,5 +1,4 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
-from builtins import range
 import numpy as NP
 from scipy import signal
 from scipy import interpolate
@@ -908,7 +907,7 @@ def downsampler(inp, factor, axis=-1, verbose=True, method='interp',
     if inp.ndim > 8:
         raise ValueError('The routine cannot handle inputs with more than 8 dimensions. Aborting downsampler().')
 
-    axis = list(range(inp.ndim))[axis]
+    axis = range(inp.ndim)[axis]
     if (factor % 1) == 0:
         factor = int(factor)
         if inp.ndim == 1:
