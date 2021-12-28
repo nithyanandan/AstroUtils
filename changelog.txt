@@ -1,4 +1,12 @@
-From ca0ab4e (master):
+From 32b8b34 (py3):
+==================
+
+In changelog.txt,
+
+(*) Update all occurrences of master to main after master branch was
+renamed to main
+
+From ca0ab4e (main):
 =====================
 
 (*) Import __future__ modules in all modules of AstroUtils
@@ -23,7 +31,7 @@ In astroutils/catalog.py,
 initialization parameters in call to GlobalSkyModel() of the
 PyGSM module
 
-From eb82f6b (master):
+From eb82f6b (main):
 =====================
 
 In astroutils/catalog.py,
@@ -77,7 +85,7 @@ In astroutils/tests/test_geometry.py,
 
 (*) Remove obsolete, commented lines of code 
 
-From 2ee45cd (master):
+From 2ee45cd (main):
 =====================
 
 In astroutils/tests/conftest.py,
@@ -89,7 +97,7 @@ In astroutils/tests/test_geometry.py,
 
 (*) Update test_sphdist() to be pytest fixture-based
 
-From a6a80db (master):
+From a6a80db (main):
 =====================
 
 In astroutils/catalog.py,
@@ -160,7 +168,7 @@ In astroutils/tests/test_geometry.py,
 (*) Update test_hadec2altaz() with pytest's fixture-based
 test_hadec2altaz()
 
-From 2c3a326 (master):
+From 2c3a326 (main):
 =====================
 
 In astroutils/tests/conftest.py,
@@ -192,7 +200,7 @@ In astroutils/geometry.py,
 both latitude and dec are pointed at the poles.
 (*) Replace calls to NP.absolute() with NP.abs()
 
-From a385a37 (master):
+From a385a37 (main):
 =====================
 
 In astroutils/geometry.py,
@@ -223,7 +231,7 @@ In astroutils/tests/test_geometry.py,
 
 (*) Use pytest parametrize to test_altaz2dircos()
 
-From 34489fc (master):
+From 34489fc (main):
 =====================
 
 (*) Rename astroutils/test/ to astroutils/tests/
@@ -234,7 +242,7 @@ astroutils/tests/test_mathops.py
 (*) Rename astroutils/tests/nonmathops_test.py to
 astroutils/tests/test_nonmathops.py
 
-From e20307e (master):
+From e20307e (main):
 =====================
 
 In astroutils/ephemeris_timing.py,
@@ -246,17 +254,17 @@ In setup.py,
 
 (*) Remove pyephem requirements in install and setup
 
-From b9af280 (master), b254cdb (skymod):
+From b9af280 (main), b254cdb (skymod):
 =======================================
 
-(*) Bring updates in master branch on to skymod branch 
+(*) Bring updates in main branch on to skymod branch 
 
-From a431233 (master):
+From a431233 (main):
 =====================
 
 (*) Add 21cmforest codes under astroutils/examples/codes/21cmforest/
 
-From 6dfe91e (master):
+From 6dfe91e (main):
 =====================
 
 In astroutils/geometry.py,
@@ -266,7 +274,7 @@ prepare it to the right shape before the transformation.
 (*) In function hadec2altaz(), check for input shape of hadec and
 prepare it to the right shape before transformation
 
-From 1be7583 (master):
+From 1be7583 (main):
 =====================
 
 (*) Add folders astroutils/examples/codes/lightcone_operations/ and
@@ -279,7 +287,7 @@ installation
 (*) Make changes to install examples/catalogops/*.yaml during the
 installation
 
-From 948c4d5 (master):
+From 948c4d5 (main):
 =====================
 
 In astroutils/__init__.py,
@@ -310,7 +318,7 @@ In setupy.py,
 
 (*) Update scikit-image version to <0.15 for compatibility
 
-From 53865f0 (master):
+From 53865f0 (main):
 =====================
 
 In setupy.py,
@@ -341,7 +349,7 @@ radec2hadec()
 (*) Fix bugs in checking of input time_type in function hadec2radec() 
 and radec2hadec()
 
-From a8c1dde (master):
+From a8c1dde (main):
 =====================
 
 In astroutils/ephemeris_timing.py,
@@ -350,7 +358,7 @@ In astroutils/ephemeris_timing.py,
 convert between RA-Dec and HA-Dec with accurate ephemeris based on
 Astropy routines.
 
-From bb6acdb (master):
+From bb6acdb (main):
 =====================
 
 In astroutils/mathops.py,
@@ -359,7 +367,7 @@ In astroutils/mathops.py,
 of the offset diagonals over which trace was computed. Update function
 docstring accordingly
 
-From 2182a2f (master):
+From 2182a2f (main):
 =====================
 
 In astroutils/mathops.py,
@@ -367,7 +375,7 @@ In astroutils/mathops.py,
 (*) In function tile(), typecast input reps to floating point to
 avoid rounding errors
 
-From cd243a5 (master):
+From cd243a5 (main):
 =====================
 
 In astroutils/mathops.py,
@@ -376,7 +384,7 @@ In astroutils/mathops.py,
 generalized version of numpy.tile() including mirrored repeats of
 specified axes and non-integer number of tiles.
 
-From df9477f (master):
+From df9477f (main):
 =====================
 
 In astroutils/catalog.py,
@@ -400,14 +408,14 @@ In astroutils/ephemeris_timing.py,
 (*) Add function julian_date_from_LAST() with docstring
 (*) Update docstring of function equation_of_equinoxes()
 
-From a9bfc25 (master):
+From a9bfc25 (main):
 =====================
 
 In astroutils/ephemeris_timing.py,
 
 (*) Add function equation_of_equinoxes() with docstring
 
-From d979f46 (master):
+From d979f46 (main):
 =====================
 
 In astroutils/mathops.py,
@@ -418,14 +426,14 @@ In astroutils/DSP_modules.py,
 
 (*) Change call to interpolation in function downsampler()
 
-From 922bc14 (master):
+From 922bc14 (main):
 =====================
 
 In astroutils/mathops.py,
 
 (*) Fix sorting bug in function interpolate_array()
 
-From 046b67f (master):
+From 046b67f (main):
 =====================
 
 In astroutils/geometry.py,
@@ -434,7 +442,7 @@ In astroutils/geometry.py,
 'alt'. Calculate ECEF coordinates from this updated information.
 Update docstring accordingly
 
-From 6e4ce32 (master):
+From 6e4ce32 (main):
 =====================
 
 In astroutils/geometry.py,
@@ -442,7 +450,7 @@ In astroutils/geometry.py,
 (*) Fix bug in function enu2ecef() by rectifying keys of input
 dictionary ref_info
 
-From c83304b (master):
+From c83304b (main):
 =====================
 
 In astroutils/mathops.py,
@@ -463,7 +471,7 @@ In astroutils/mathops.py,
 
 (*) Remove commented block in function interpolate_masked_array_1D()
 
-From 7089a3a (master):
+From 7089a3a (main):
 =====================
 
 In astroutils/mathops.py,
@@ -471,14 +479,14 @@ In astroutils/mathops.py,
 (*) Update inputs and processing under function
 interpolate_masked_array_1D(). Update function docstring accordingly
 
-From fe60fc4 (master):
+From fe60fc4 (main):
 =====================
 
 In astroutils/lookup_operations.py,
 
 (*) Update docstring of function find_1NN()
 
-From 98a51ca (master):
+From 98a51ca (main):
 =====================
 
 In astroutils/mathops.py,
@@ -542,12 +550,12 @@ In scripts/retrieve_image_cutouts.py,
 are found.
 (*) Remove import of copy module
 
-From daf34bf (master), 3e44666 (imgcutout):
+From daf34bf (main), 3e44666 (imgcutout):
 ==========================================
 
-(*) Merge imgcutout branch onto master
+(*) Merge imgcutout branch onto main
 
-From 3d39189 (master):
+From 3d39189 (main):
 =====================
 
 In setup.py,
@@ -556,7 +564,7 @@ In setup.py,
 can now range from >=1.0 to <3.0. It avoids requirement of Astropy
 version that requires Python 3.
 
-From 3d39189 (master):
+From 3d39189 (main):
 =====================
 
 (*) Add retrieve_image_cutouts.py in scripts/
@@ -616,7 +624,7 @@ to interpolate complex arrays or complex exponentials constrained to
 unit amplitude that are masked arrays which contain missing values
 along a specified axis
 
-From 27f3a7b (master):
+From 27f3a7b (main):
 =====================
 
 In astroutils/mathops.py,
@@ -634,10 +642,10 @@ In astroutils/examples/cosmotile_parms.yaml,
 (*) Minor update to description of parameter infile_suffix
 (*) Minor update to description of parameter z_identifier
 
-From 06a9378 (cosmotiling-adv), 971d0be (master):
+From 06a9378 (cosmotiling-adv), 971d0be (main):
 ================================================
 
-(*) Merge updates on master branch onto cosmotiling-adv branch
+(*) Merge updates on main branch onto cosmotiling-adv branch
 
 From e5e2950 (cosmotiling-adv):
 ==============================
@@ -691,14 +699,14 @@ In astroutils/mathops.py,
 (*) In interpolate_array(), update comparison of inploc and outloc
 to determine if interpolation is required
 
-From 7c5ac03 (master):
+From 7c5ac03 (main):
 =====================
 
 In astroutils/geometry.py,
 
 (*) Remove import of ipdb
 
-From f3fb63b (master):
+From f3fb63b (main):
 =====================
 
 In astroutils/DSP_modules.py,
@@ -709,16 +717,16 @@ respectively
 
 In changelog.txt,
 
-(*) Correct message of commit ff23f91 (master)
+(*) Correct message of commit ff23f91 (main)
 
-From ff23f91 (master):
+From ff23f91 (main):
 =====================
 
 In astroutils/cosmotile.py,
 
 (*) Minor update to docstring of function write_coeval_cube()
 
-From ad56efa (master):
+From ad56efa (main):
 =====================
 
 (*) Add astroutils/statistics.py to the repository
@@ -780,7 +788,7 @@ In astroutils/catalog.py,
 (*) Create resizeable data sets when instance of class SkyModel is
 written to HDF5 file
 
-From 9f0ce1b (master):
+From 9f0ce1b (main):
 =====================
 
 In scripts/run_cosmotile.py,
@@ -793,51 +801,51 @@ In astroutils/examples/cosmotile/cosmotile_parms.yaml,
 
 (*) Update description for angres
 
-From 39d70c7 (master):
+From 39d70c7 (main):
 =====================
 
 In README.rst,
 
 (*) Minor updates to documentation
 
-From f452eaa (master):
+From f452eaa (main):
 =====================
 
 In README.rst,
 
 (*) Minor updates to documentation
 
-From 13eced4 (master):
+From 13eced4 (main):
 =====================
 
 In setup.py,
 
 (*) Replace README.txt with README.rst
 
-From 80a5fad (master):
+From 80a5fad (main):
 =====================
 
 (*) Rename changelog_general.txt to changelog.txt
 
-From 95b284e (master):
+From 95b284e (main):
 =====================
 
 (*) Add README.rst to the repo with basic installation and usage
 instructions
 
-From 1149682 (master):
+From 1149682 (main):
 =====================
 
 (*) Update and add .gitignore to repo
 
-From 82519d5 (master):
+From 82519d5 (main):
 =====================
 
 In astroutils/test/geometry_test.py,
 
 (*) Add test_xyz2sph() to test xyz2sph() in geometry.py
 
-From eb6a5d4 (master):
+From eb6a5d4 (main):
 =====================
 
 In astroutils/geometry.py,
@@ -847,7 +855,7 @@ sss(), sas(), ssa(), and trisolve()
 (*) Import print_function, absolute_import, sys and warnings
 (*) Insert system-generated tolerance variable called epsilon
 
-From dce1a17 (master):
+From dce1a17 (main):
 =====================
 
 In astroutils/constants.py,
@@ -1173,10 +1181,10 @@ In astroutils/tilesky.py,
 
 (*) Minor changes to docstrings throughout
 
-From 0111f5b (cosmotiling), 82c61a3 (master):
+From 0111f5b (cosmotiling), 82c61a3 (main):
 ============================================
 
-(*) Merge updates from master branch onto cosmotiling branch
+(*) Merge updates from main branch onto cosmotiling branch
 
 From c3b498b (cosmotiling):
 ==========================
@@ -1211,7 +1219,7 @@ In astroutils/mathops.py,
 (*) Update docstring of function interpolate_array() with a
 description of its functionality
 
-From 6e1825b (master):
+From 6e1825b (main):
 =====================
 
 In astroutils/mathops.py,
@@ -1221,17 +1229,17 @@ interpolate a multi-dimensional array along a given axis (this is
 essentially a wrapper to scipy.interpolate.interp1d with some 
 modifications for out of bound conditions)
 
-From 06e5b12 (master):
+From 06e5b12 (main):
 =====================
 
 In astroutils/geometry.py,
 
 (*) Fix bugs in parabola angles in case of non-zero tilt
 
-From e87c485 (skymod), 06e5b12 (master):
+From e87c485 (skymod), 06e5b12 (main):
 =======================================
 
-(*) Bring updates in master branch onto skymod branch
+(*) Bring updates in main branch onto skymod branch
 
 From 2984b41 (skymod):
 =====================
@@ -1423,7 +1431,7 @@ attribute spec_type is set to 'spectrum'. For this case, it now
 returns spectra generated for a subset of all object locations.
 Update docstring of member function accordingly
 
-From a401254 (master):
+From a401254 (main):
 =====================
 
 In astroutils/catalog.py,
@@ -1432,7 +1440,7 @@ In astroutils/catalog.py,
 SkyModel. It now returns spectra generated for a subset of all
 object locations. Update docstring of member function accordingly
 
-From 8077339 (master):
+From 8077339 (main):
 =====================
 
 In astroutils/geometry.py,
@@ -1444,7 +1452,7 @@ In MANIFEST.in,
 
 (*) Add syntax changes in recursive-include statements
 
-From af06c0f (master):
+From af06c0f (main):
 =====================
 
 In astroutils/geometry.py,
@@ -1452,7 +1460,7 @@ In astroutils/geometry.py,
 (*) Add function sample_parabola() along with docstring to sample
 a parabolic curve specified by focal length and opening angle. 
 
-From 218efbc (master):
+From 218efbc (main):
 =====================
 
 In astroutils/geometry.py,
@@ -1461,7 +1469,7 @@ In astroutils/geometry.py,
 XYZ coordinates to spherical coordinates in radius, latitude and
 longitude
 
-From 7337df6 (master):
+From 7337df6 (main):
 =====================
 
 In astroutils/geometry.py,
@@ -1469,21 +1477,21 @@ In astroutils/geometry.py,
 (*) Add function parabola_parameters() along with docstring to
 compute parameters of a parabola
 
-From a9c49d1 (master):
+From a9c49d1 (main):
 =====================
 
 In astroutils/geometry.py,
 
 (*) Handle scalar or vector inputs in ecef2lla() and lla2ecef()
 
-From a401254 (master):
+From a401254 (main):
 =====================
 
 In astroutils/geometry.py,
 
 (*) Add value checks in ecef2lla()
 
-From eee7159 (master):
+From eee7159 (main):
 =====================
 
 In astroutils/nonmathops.py,
@@ -1494,7 +1502,7 @@ save_dict_to_hdf5(), recursively_load_dict_contents_from_group() and
 load_dict_from_hdf5() along with docstrings to convert to and from
 HDF5 format and python dictionaries
 
-From 6e1825b (master):
+From 6e1825b (main):
 =====================
 
 In astroutils/mathops.py,
@@ -1503,13 +1511,13 @@ In astroutils/mathops.py,
 docstring to convert from percentiles to 2D contour levels given a
 probability density function
 
-From 0a0a26c (master):
+From 0a0a26c (main):
 =====================
 
 (*) Add kernel density estimator kernel_density_estimator.py under
 astroutils/ and to the repository
 
-From a53e00e (master):
+From a53e00e (main):
 =====================
 
 In astroutils/nonmathops.py,
@@ -1524,7 +1532,7 @@ In astroutils/geometry.py,
 
 (*) Take care of small angles and precision issues in altaz2hadec()
 
-From ee98209 (master):
+From ee98209 (main):
 =====================
 
 In astroutils/nonmathops.py,
@@ -1532,35 +1540,35 @@ In astroutils/nonmathops.py,
 (*) Add function find_list_in_list() to find index of elements in
 input list in a reference list. Added docstring accordingly
 
-From b14d469 (master):
+From b14d469 (main):
 =====================
 
 In astroutils/DSP_modules.py,
 
 (*) Fix typechecking for padding in windowing(), window_fftpow()
 
-From 8f47f75 (master):
+From 8f47f75 (main):
 =====================
 
 In astroutils/geometry.py,
 
 (*) Fix bug by correcting value of gps_N in ecef2lla() 
 
-From 546f922 (master):
+From 546f922 (main):
 =====================
 
 In astroutils/DSP_modules.py,
 
 (*) Fix typechecking for padding in windowing()
 
-From 44aa517 (master):
+From 44aa517 (main):
 =====================
 
 In astroutils/geometry.py,
 
 (*) Fix typechecking bugs in ECEF <--> ENU conversions
 
-From 8464c90 (master):
+From 8464c90 (main):
 =====================
 
 In astroutils/geometry.py,
@@ -1568,7 +1576,7 @@ In astroutils/geometry.py,
 (*) Add function enu2ecef() along with docstring to convert from
 local ENU coordinates to XYZ in ECEF coordinates
 
-From 5ad929b (master):
+From 5ad929b (main):
 =====================
 
 In astroutils/geometry.py,
@@ -1576,7 +1584,7 @@ In astroutils/geometry.py,
 (*) Add function ecef2enu() along with docstring to convert from
 ECEF XYZ coordinates to local ENU coordinates
 
-From 65668ef (master):
+From 65668ef (main):
 =====================
 
 In astroutils/geometry.py,
@@ -1585,7 +1593,7 @@ In astroutils/geometry.py,
 to convert back and forth between geodetic latitude, longitude,
 altitude and XYZ in ECEF coordinates
 
-From 534df49 (master):
+From 534df49 (main):
 =====================
 
 In astroutils/catalog.py,
@@ -1593,10 +1601,10 @@ In astroutils/catalog.py,
 (*) Update docstrings of member function __init__() and of class
 SkyModel
 
-Merge 75abfe4 (master,catalog-save) + 3ea71e1 (pkg):
+Merge 75abfe4 (main,catalog-save) + 3ea71e1 (pkg):
 ===================================================
 
-(*) Merge branch pkg onto master
+(*) Merge branch pkg onto main
 
 From e04d796 (catalog-save):
 ===========================
@@ -1624,7 +1632,7 @@ In catalog.py,
 (*) Add option init_file in member function __init__() of class
 SkyModel. Update docstring accordingly.
 
-From 2a882ab (master):
+From 2a882ab (main):
 =====================
 
 In catalog.py,
@@ -1633,14 +1641,14 @@ In catalog.py,
 save() of class SkyModel. Update docstring accordingly.
 (*) Import module h5py to save sky model information in HDF5 format
 
-From 607728a (master):
+From 607728a (main):
 =====================
 
 In my_operations.py,
 
 (*) Insignificant update in docstring of healpix_interp_along_axis()
 
-From c1a87db (master):
+From c1a87db (main):
 =====================
 
 In my_gridding_modules.py,
@@ -1789,21 +1797,21 @@ From c1a87db (pkg):
 
 (*) Start making it an installable package
 
-From f7d0b72 (master):
+From f7d0b72 (main):
 =====================
 
 In my_operations.py,
 
 (*) Enforce double precision in healpix_interp_along_axis()
 
-From 0e76f8d (master):
+From 0e76f8d (main):
 =====================
 
 In my_DSP_modules.py,
 
 (*) Typecast returned window function in window_fftpow() to float64
 
-From 7a1ebc1 (master):
+From 7a1ebc1 (main):
 =====================
 
 In my_DSP_modules.py,
@@ -1813,7 +1821,7 @@ accordingly.
 (*) Modify window_N2width() to use newly created function
 window_fftpow()
 
-From de4ac5a (master):
+From de4ac5a (main):
 =====================
 
 In my_DSP_modules.py,
@@ -1823,7 +1831,7 @@ specified shapes whose FFT is raised to a given power. In the
 original domain this can be considered as multiple convolutions
 of the power is an integer.
 
-From ca84415 (master):
+From ca84415 (main):
 =====================
 
 In my_DSP_modules.py,
@@ -1833,7 +1841,7 @@ docstring accordingly
 (*) Add ability to function downsampler() to resample based on both
 FFT-based and interpolation-based methods
 
-From 9a029b0 (master):
+From 9a029b0 (main):
 =====================
 
 In my_DSP_modules.py,
@@ -1842,7 +1850,7 @@ In my_DSP_modules.py,
 window_N2width(). Add conditions to compute fractional width
 depending on these keywords. Update docstring accordingly
 
-From dc62745 (master):
+From dc62745 (main):
 =====================
 
 In my_DSP_modules.py,
@@ -1850,7 +1858,7 @@ In my_DSP_modules.py,
 (*) Add normalization by power by using keyword input power_normalize
 in function windowing(). Update docstring accordingly
 
-From ee57554 (master):
+From ee57554 (main):
 =====================
 
 In constants.py,
@@ -1862,7 +1870,7 @@ In catalog.py,
 (*) Minor change in docstring in member function generate_spectrum()
 of class SkyModel
 
-From 64fa4b3 (master):
+From 64fa4b3 (main):
 =====================
 
 In my_operations.py,
@@ -1871,7 +1879,7 @@ In my_operations.py,
 entire column to ensure the inverse FFT is real while using FFT-based
 interpolation
 
-From 86f12df (master):
+From 86f12df (main):
 =====================
 
 (*) Add writer_module.py to git repo
