@@ -1,3 +1,4 @@
+from __future__ import print_function, division, unicode_literals, absolute_import
 import setuptools, re, glob, os
 from setuptools import setup, find_packages
 from subprocess import Popen, PIPE

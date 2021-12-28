@@ -1,3 +1,21 @@
+From 7b24e5e (py3), 97473f5 (main):
+==================================
+
+(*) Merge py3 branch into main
+
+From 32b8b34 (py3):
+==================
+
+In changelog.txt,
+
+(*) Update all occurrences of master to main after master branch was
+renamed to main
+
+From ca0ab4e (main):
+=====================
+
+(*) Import __future__ modules in all modules of AstroUtils
+
 From 035f739 (main):
 ===================
 
