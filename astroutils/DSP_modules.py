@@ -1,4 +1,4 @@
-from __future__ import print_function, division, unicode_literals, absolute_import
+from __future__ import print_function, division, unicode_literals
 from builtins import range
 import numpy as NP
 from scipy import signal

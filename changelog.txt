@@ -1,3 +1,12 @@
+From 836d8bb (py3):
+==================
+
+(*) Remove "from __future__ import absolute_import" in astroutils/DSP_modules.py, astroutils/catalog.py, astroutils/cosmotile.py, astroutils/ephemeris_timing.py, astroutils/kernel_density_estimator.py, astroutils/mathops.py
+
+In setup.py,
+
+(*) Modify handling of unicode_literals for package_data
+
 From 599b387 (py3):
 ==================
 

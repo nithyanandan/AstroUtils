@@ -1,5 +1,5 @@
-from __future__ import print_function, division, unicode_literals, absolute_import
-import setuptools, re, glob, os
+from __future__ import print_function, division, absolute_import
+import setuptools, re, glob, os, sys
 from setuptools import setup, find_packages
 from subprocess import Popen, PIPE
 
@@ -21,6 +21,19 @@ with open(os.path.dirname(os.path.abspath(__file__))+'/astroutils/githash.txt', 
 metafile = open('./astroutils/__init__.py').read()
 metadata = dict(re.findall("__([a-z]+)__\s*=\s*'([^']+)'", metafile))
 
+if sys.version_info.major == 2:
+    pkg_data={b'astroutils': ['*.txt', 'examples/cosmotile/*.yaml',
+                              'examples/image_cutout/*.yaml',
+                              'examples/catalogops/*.yaml',
+                              'examples/codes/lightcone_operations/*.py',
+                              'examples/codes/lightcone_operations/*.yaml']}
+else:
+    pkg_data={'astroutils': ['*.txt', 'examples/cosmotile/*.yaml',
+                             'examples/image_cutout/*.yaml',
+                             'examples/catalogops/*.yaml',
+                             'examples/codes/lightcone_operations/*.py',
+                             'examples/codes/lightcone_operations/*.yaml']}
+
 setup(name='AstroUtils',
     version=metadata['version'],
     description=metadata['description'],
@@ -39,11 +52,7 @@ setup(name='AstroUtils',
                  'Topic :: Scientific/Engineering :: Astronomy',
                  'Topic :: Utilities'],
     packages=find_packages(),
-    package_data={'astroutils': ['*.txt', 'examples/cosmotile/*.yaml',
-                                 'examples/image_cutout/*.yaml',
-                                 'examples/catalogops/*.yaml',
-                                 'examples/codes/lightcone_operations/*.py',
-                                 'examples/codes/lightcone_operations/*.yaml']},
+    package_data = pkg_data,
     include_package_data=True,
     scripts=glob.glob('scripts/*.py'),
     install_requires=['astropy>=1.0, <3.0', 'blessings>=1.6', 'healpy>=1.5.3',

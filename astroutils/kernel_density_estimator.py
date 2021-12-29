@@ -5,7 +5,6 @@ import scipy.sparse
 import scipy.ndimage
 import scipy.stats
 import scipy.signal
-
 import matplotlib.pyplot as PLT
 
 def main():
