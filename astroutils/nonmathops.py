@@ -1,5 +1,5 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
-from past.builtins import cmp
+# from past.builtins import cmp
 from builtins import str
 import numpy as NP
 import h5py
@@ -76,20 +76,17 @@ def is_dict1_subset_of_dict2(dict1, dict2, ignoreNone=True):
         dict1 = recursive_find_notNone_in_dict(dict1)
         dict2 = recursive_find_notNone_in_dict(dict2)
 
-    if cmp(dict1, dict2) == 0:
-        return True
-    else:
-        dict2sub = {}
-        for k, v in list(dict1.items()):
-            if k in dict2:
-                dict2sub[k] = dict2[k]
-            else:
+    for key, value in dict1.items():
+        if key in dict2:
+            if isinstance(dict1[key], dict):
+                if not is_dict1_subset_of_dict2(dict1[key], dict2[key]):
+                    return False
+            elif value != dict2[key]:
                 return False
-        if cmp(dict1, dict2sub) == 0:
-            return True
         else:
             return False
-
+    return True
+    
 ################################################################################
 
 def find_list_in_list(reference_array, inp):

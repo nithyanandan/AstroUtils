@@ -1,5 +1,5 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
-from astroutils import mathops as OPS
+from .. import mathops as OPS
 import numpy as NP
 
 def test_reverse():

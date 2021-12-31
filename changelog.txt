@@ -1,3 +1,49 @@
+From 980a613 (py3):
+==================
+
+In astroutils/DSP_modules.py,
+
+(*) Remove absolute imports of mathops and lookup_operations
+(*) Use explicit relative import of lookup_operations
+(*) Use explicit relative import of mathops inside functions as needed to
+break circular dependency
+
+In astroutils/geometry.py,
+
+(*) Remove import of ipdb
+(*) Fix bug in function altaz2hadec(), enu2xyz(), xyz2enu()
+
+In astroutils/mathops.py,
+
+(*) Remove absolute imports of DSP_modules and lookup_operations
+(*) Use explicit relative import of lookup_operations
+(*) Use explicit relative import of DSP_modules inside functions as 
+needed to break circular dependency
+
+In astroutils/nonmathops.py,
+
+(*) Remove import of cmp() from past.builtins module
+(*) Update function is_dict1_subset_of_dict2()
+
+In astroutils/tests/test_geometry.py,
+
+(*) Remove absolute import of geometry and instead use explicit relative
+import
+(*) Import TestCase from unittest
+(*) Use assertDictEqual() from TestCase for comparing dictionaries
+
+In astroutils/tests/test_mathops.py,
+
+(*) Remove absolute import of mathops and instead use explicit relative
+import
+
+In astroutils/tests/test_nonmathops.py,
+
+(*) Remove absolute import of nonmathops and instead use explicit
+relative import
+(*) Import TestCase from unittest
+(*) Use assertDictEqual() from TestCase for comparing dictionaries
+
 From 6f86e95 (py3):
 ==================
 
@@ -8,7 +54,10 @@ In setup.py,
 From 836d8bb (py3):
 ==================
 
-(*) Remove "from __future__ import absolute_import" in astroutils/DSP_modules.py, astroutils/catalog.py, astroutils/cosmotile.py, astroutils/ephemeris_timing.py, astroutils/kernel_density_estimator.py, astroutils/mathops.py
+(*) Remove "from __future__ import absolute_import" in
+astroutils/DSP_modules.py, astroutils/catalog.py,
+astroutils/cosmotile.py, astroutils/ephemeris_timing.py,
+astroutils/kernel_density_estimator.py, astroutils/mathops.py
 
 In setup.py,
 

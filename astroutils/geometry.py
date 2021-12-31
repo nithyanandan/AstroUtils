@@ -1,13 +1,10 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
-from builtins import zip
-from builtins import range
-from builtins import object
+from builtins import zip, range, object
 import sys
 import numpy as NP
 import numpy.linalg as LA
 import healpy as HP
 import warnings
-import ipdb as PDB
 
 try:
     from scipy.spatial import cKDTree as KDT
@@ -1085,7 +1082,7 @@ def altaz2hadec(altaz, latitude, units=None):
             altaz = altaz.reshape(1,-1)
         if altaz.shape[1] < 2:
             raise TypeError('altaz should be a 2-element tuple, a list of 2-element tuples, a 2-element list of scalars, or a Nx2 numpy array. Check inputs.')
-        elif altaz.shape > 2:
+        elif altaz.shape[1] > 2:
             altaz = altaz[:,0:2]
 
     altaz = NP.asarray(altaz)
@@ -1199,7 +1196,7 @@ def enu2xyz(enu, latitude, units='radians'):
     else:
         if enu.shape[1] < 3:
             raise TypeError('enu should be a 3-element tuple, a list of 3-element tuples, a 3-element list of scalars, or a Nx3 numpy array. Check inputs.')
-        elif enu.shape > 3:
+        elif enu.shape[1] > 3:
             enu = enu[:,0:3]
 
     enu = NP.asarray(enu)
@@ -1280,7 +1277,7 @@ def xyz2enu(xyz, latitude, units='radians'):
     else:
         if xyz.shape[1] < 3:
             raise TypeError('xyz should be a 3-element tuple, a list of 3-element tuples, a 3-element list of scalars, or a Nx3 numpy array. Check inputs.')
-        elif xyz.shape > 3:
+        elif xyz.shape[1] > 3:
             xyz = xyz[:,0:3]
 
     xyz = NP.asarray(xyz)

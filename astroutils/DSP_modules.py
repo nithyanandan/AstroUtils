@@ -3,8 +3,8 @@ from builtins import range
 import numpy as NP
 from scipy import signal
 from scipy import interpolate
-import mathops as OPS
-import lookup_operations as LKP
+# import mathops as OPS
+from . import lookup_operations as LKP
 
 #################################################################################
 
@@ -143,6 +143,7 @@ def rfft_append(inp, axis=0):
     -----------------------------------------------------------------------------
     """
 
+    from . import mathops as OPS
     try:
         inp
     except NameError:
@@ -881,6 +882,7 @@ def downsampler(inp, factor, axis=-1, verbose=True, method='interp',
     -----------------------------------------------------------------------------
     """
 
+    from . import mathops as OPS
     try:
         inp
     except NameError:

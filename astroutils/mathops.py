@@ -1,6 +1,5 @@
 from __future__ import print_function, division, unicode_literals
-from builtins import zip
-from builtins import range
+from builtins import zip, range
 import numpy as NP
 import numpy.ma as MA
 import scipy as SP
@@ -12,8 +11,7 @@ from skimage.filters.rank import mean
 from skimage.restoration import unwrap_phase
 import astropy.convolution as CONV
 import healpy as HP
-import DSP_modules as DSP
-import lookup_operations as LKP
+from . import lookup_operations as LKP
 
 #################################################################################
 
@@ -322,6 +320,7 @@ def rms(inp, axis=None, filter_dict=None, mask=None, verbose=True):
     -----------------------------------------------------------------------------
     """
 
+    from . import DSP_modules as DSP
     try:
         inp
     except NameError:
@@ -478,6 +477,7 @@ def healpix_interp_along_axis(indata, theta_phi=None, inloc_axis=None,
     -----------------------------------------------------------------------------
     """
 
+    from . import DSP_modules as DSP
     try:
         indata
     except NameError:
