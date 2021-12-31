@@ -1,9 +1,17 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
 from builtins import range
+import sys
 import pytest
-from unittest import TestCase
 from .. import geometry as GEOM
 import numpy as NP
+
+if sys.version_info.major == 2:
+    def assert_dict_equal(d1, d2):
+        assert d1==d2
+else:
+    from unittest import TestCase
+    tc = TestCase()
+    assert_dict_equal = tc.assertDictEqual
 
 def test_generate_line_from_point_and_slope(generate_line_from_point_and_slope):
     points, slopes, expected_eqns = generate_line_from_point_and_slope # Read from fixture in conftest.py
@@ -192,9 +200,5 @@ def test_parabola_parameters(parabola_parms):
         outdict = GEOM.parabola_parameters(depth=indict['h'], dia=indict['D'])
     if ('f' in indict) and ('h' in indict):
         outdict = GEOM.parabola_parameters(depth=indict['h'], f=indict['f'])
-    test_case = TestCase()
-    test_case.assertDictEqual(fulldict, outdict)
+    assert_dict_equal(fulldict, outdict)
 
-
-        
-    

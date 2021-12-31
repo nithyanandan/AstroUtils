@@ -1,3 +1,14 @@
+From 30f7fb6 (py3):
+==================
+
+In astroutils/tests/test_geometry.py,
+
+(*) Create function assert_dict_equal() to be compatible with Python 2.7
+
+In astroutils/tests/test_nonmathops.py,
+
+(*) Create function assert_dict_equal() to be compatible with Python 2.7
+
 From 12ca89f (py3):
 ==================
 
