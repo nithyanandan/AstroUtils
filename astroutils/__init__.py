@@ -6,7 +6,7 @@ __author__='Nithyanandan Thyagarajan'
 __authoremail__='nithyanandan.t@gmail.com'
 __maintainer__='Nithyanandan Thyagarajan'
 __maintaineremail__='nithyanandan.t@gmail.com'
-__url__='http://github.com/nithyanandan/general'
+__url__='https://github.com/nithyanandan/AstroUtils'
 
 with open(_os.path.dirname(_os.path.abspath(__file__))+'/githash.txt', 'r') as _githash_file:
     __githash__ = _githash_file.readline()

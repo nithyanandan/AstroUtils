@@ -1,3 +1,14 @@
+From 9d6e95a (py3):
+==================
+
+In astroutils/__init__.py,
+
+(*) Update repository URL in metadata
+
+In setup.py,
+
+(*) Read metadata file using "with" statement
+
 From 30f7fb6 (py3):
 ==================
 
