@@ -192,7 +192,6 @@ def test_parabola_parameters(parabola_parms):
         outdict = GEOM.parabola_parameters(depth=indict['h'], dia=indict['D'])
     if ('f' in indict) and ('h' in indict):
         outdict = GEOM.parabola_parameters(depth=indict['h'], f=indict['f'])
-    # assert fulldict == outdict
     test_case = TestCase()
     test_case.assertDictEqual(fulldict, outdict)
 

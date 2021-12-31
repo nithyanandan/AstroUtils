@@ -165,9 +165,6 @@ class Point(object):
 
         return Point((self.x-other.x, self.y-other.y, self.z-other.z))
 
-    # def __mul__(self, value):
-    #     return Point(value*self.x, value*self.y, value*self.z)
-
     #############################################################################
 
     def __mul__(self, other): # Dot product
@@ -196,8 +193,6 @@ class Point(object):
             raise TypeError('Object type is incompatible.')
 
         return self.x*other.x + self.y*other.y + self.z*other.z
-
-    # __rmul__ = __mul__
 
     #############################################################################
 
@@ -1091,9 +1086,6 @@ def altaz2hadec(altaz, latitude, units=None):
     if units == 'degrees':
         altaz = NP.radians(altaz)
         latitude = NP.radians(latitude)
-
-    # if (NP.any(altaz[:,0] > NP.pi/2)) or (NP.any(altaz[:,0] < 0.0)):
-    #     raise ValueError('Altitude(s) should lie between 0 and 90 degrees. Check inputs and units.')
 
     if NP.any(NP.abs(altaz[:,0]) > NP.pi/2):
         raise ValueError('Altitude(s) magnitude should be <= 90 degrees. Check inputs and units.')

@@ -45,15 +45,11 @@ def reverse(inp, axis=0, ind_range=None):
     """
 
     inp = NP.asarray(inp)
+    if not isinstance(inp, NP.ndarray):
+        raise TypeError('Input inp must beb a numpy array')
 
-    try:
-        isinstance(inp, NP.ndarray)
-        # type(inp) is numpy.ndarray
-    except TypeError: 
-        raise TypeError('Unable to convert to Numpy array data type')
-
-    shp = NP.shape(inp)
-    ndim = len(shp)
+    shp = inp.shape
+    ndim = inp.ndim
     
     if ndim > 8:
         raise ValueError("Input data with more than 8 dimensions not supported. Aborted execution in my_operations.reverse()")

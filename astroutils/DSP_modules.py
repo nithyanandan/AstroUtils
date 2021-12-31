@@ -3,7 +3,6 @@ from builtins import range
 import numpy as NP
 from scipy import signal
 from scipy import interpolate
-# import mathops as OPS
 from . import lookup_operations as LKP
 
 #################################################################################
@@ -387,8 +386,6 @@ def windowing(N_window, shape='rect', pad_width=0, pad_value=0.0,
     num_norms = area_normalize + power_normalize + (peak is not None)
     if num_norms > 1:
         raise ValueError('Only one of peak, area_normalize or power_normalize can be set at the same time in windowing().')
-    # if (area_normalize) and (peak is not None):
-    #     raise ValueError('Both area_normalize and peak cannot be set at the same time in windowing().')
 
     if not isinstance(N_window, (int, float)):
         raise TypeError('N_window should be a positive integer. Aborting windowing().')
@@ -536,8 +533,6 @@ def window_fftpow(N_window, shape='rect', pad_width=0, pad_value=0.0,
     num_norms = area_normalize + power_normalize + (peak is not None)
     if num_norms > 1:
         raise ValueError('Only one of peak, area_normalize or power_normalize can be set at the same time in windowing().')
-    # if (area_normalize) and (peak is not None):
-    #     raise ValueError('Both area_normalize and peak cannot be set at the same time in windowing().')
 
     if not isinstance(N_window, (int, float)):
         raise TypeError('N_window should be a positive integer. Aborting windowing().')
@@ -794,47 +789,12 @@ def window_N2width(n_window=None, shape='rect', area_normalize=True,
         window = window_fftpow(n_window, shape=shape, peak=None, fftpow=fftpow,
                                area_normalize=False, power_normalize=False)
 
-        # window = windowing(n_window, shape=shape, peak=None,
-        #                    area_normalize=False, power_normalize=False)
-
     if area_normalize:
         frac_width = NP.sum(window/window.max())/n_window
     elif power_normalize:
         frac_width = NP.sqrt(NP.sum((window/window.max())**2)/n_window)
 
     return frac_width
-
-#################################################################################
-
-# def window_width2N(shape='rect'):
-
-#     """
-#     -----------------------------------------------------------------------------
-#     Determine total fractional width to produce a window of a specified shape.
-
-#     Inputs:
-
-#     shape     [string] Specifies window shape. Accepted values are 'rect' 
-#               (rectangular, default), 'bnw' (Blackman-Nuttall) and 'bhw' 
-#               (Blackman-Harris)
-
-#     Output:
-
-#     f_window is the fractional width of the full window relative to the required 
-#     effective width for a given window shape. For instance, f_window = 1 for 
-#     shape = 'rect'
-#     -----------------------------------------------------------------------------
-#     """
-
-#     if not isinstance(shape, str):
-#         raise TypeError('Window shape must be a string')
-#     elif shape not in ['rect', 'RECT', 'bnw', 'BNW', 'bhw', 'BHW']:
-#         raise ValueError('Invalid window shape specified')
-
-#     frac_width = window_N2width(shape=shape)
-#     f_window = 1 / frac_width
-
-#     return f_window
 
 #################################################################################
 
@@ -999,11 +959,6 @@ def downsampler(inp, factor, axis=-1, verbose=True, method='interp',
             tol = 1e-10
             reqd_inds = NP.arange(0, inp.shape[axis]-1+tol, factor)
 
-            # intpfunc = interpolate.interp1d(NP.arange(inp.shape[axis]), inp,
-            #                                 kind=kind, fill_value=fill_value,
-            #                                 axis=axis) 
-            # result = intpfunc(reqd_inds)
-
             result = OPS.interpolate_array(inp, NP.arange(inp.shape[axis]), reqd_inds, axis=axis, kind=kind)
         elif method in ['FFT', 'fft']:
             nout = NP.round(inp.shape[axis] / factor).astype(int)
@@ -1152,9 +1107,7 @@ def XC(inp1, inp2=None, pow2=False, shift=True):
 
     xc = NP.pad(NP.correlate(inp1, inp2, mode='full'), (zero_pad_length,0), mode='constant', constant_values=(0.0,0.0))
     xc = NP.roll(xc, -int(NP.floor(0.5*zero_pad_length)))
-    # xc = NP.append(NP.correlate(inp1, inp2, mode='full'), NP.zeros(zero_pad_length))
     if shift:
-        # xc = NP.roll(xc, -(inp2.size-1))
         xc = NP.fft.ifftshift(xc)
 
     return xc
