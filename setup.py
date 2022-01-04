@@ -21,8 +21,6 @@ with open(os.path.dirname(os.path.abspath(__file__))+'/astroutils/githash.txt', 
 with open('./astroutils/__init__.py', 'r') as metafile:
     metafile_contents = metafile.read()
     metadata = dict(re.findall("__([a-z]+)__\s*=\s*'([^']+)'", metafile_contents))
-# metafile = open('./astroutils/__init__.py').read()
-# metadata = dict(re.findall("__([a-z]+)__\s*=\s*'([^']+)'", metafile))
 
 if sys.version_info.major == 2:
     pkg_data={b'astroutils': ['*.txt', 'examples/cosmotile/*.yaml',
@@ -58,7 +56,6 @@ else:
                     'healpy', 'mpi4py', 'numpy',
                     'scipy', 'astroquery', 'beautifulsoup4',
                     'scikit-image']
-    
     
 setup(name='AstroUtils',
     version=metadata['version'],

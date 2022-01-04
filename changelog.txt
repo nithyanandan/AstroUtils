@@ -1,3 +1,10 @@
+From e983f48 (py3):
+==================
+
+In setup.py,
+
+(*) Remove obsolete commented lines
+
 From 9d6e95a (py3):
 ==================
 
