@@ -38,24 +38,24 @@ else:
 if sys.version_info.major == 2:
     install_req_list=['astropy>=1.0, <3.0', 'blessings>=1.6', 'healpy>=1.5.3',
                       'ipdb>=0.6.1', 'mpi4py>=1.2.2', 'numpy>=1.8.1',
-                      'scipy>=0.15.1', 'astroquery>=0.3.8',
+                      'scipy>=0.15.1', 'astroquery>=0.3.8', 'progressbar2',
                       'beautifulsoup4>=4.6', 'scikit-image']
 else:
     install_req_list=['astropy', 'blessings', 'healpy',
                       'ipdb', 'mpi4py', 'numpy',
-                      'scipy', 'astroquery',
+                      'scipy', 'astroquery', 'progressbar2',
                       'beautifulsoup4', 'scikit-image']
 
 if sys.version_info.major == 2:
     setup_req_list = ['astropy>=1.0, <3.0', 'blessings>=1.6', 'ipdb>=0.6.1',
                     'healpy>=1.5.3', 'mpi4py>=1.2.2', 'numpy>=1.8.1',
                     'scipy>=0.15.1', 'astroquery>=0.3.8', 'beautifulsoup4>=4.6',
-                    'scikit-image<0.15']
+                    'progressbar2', 'scikit-image<0.15']
 else:
     setup_req_list = ['astropy', 'blessings', 'ipdb',
                     'healpy', 'mpi4py', 'numpy',
                     'scipy', 'astroquery', 'beautifulsoup4',
-                    'scikit-image']
+                    'progressbar2', 'scikit-image']
     
 setup(name='AstroUtils',
     version=metadata['version'],
@@ -70,7 +70,7 @@ setup(name='AstroUtils',
     classifiers=['Development Status :: 4 - Beta',
                  'Intended Audience :: Science/Research',
                  'License :: OSI Approved :: MIT License',
-                 'Programming Language :: Python :: 3.8+',
+                 'Programming Language :: Python :: 3.7+',
                  'Topic :: Scientific/Engineering',
                  'Topic :: Scientific/Engineering :: Astronomy',
                  'Topic :: Utilities'],

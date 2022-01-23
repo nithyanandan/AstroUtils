@@ -1,3 +1,11 @@
+From 74904ce (py3):
+==================
+
+In setup.py,
+
+(*) Add progressbar2 as a required package
+(*) Update Python version to 3.7+
+
 From e983f48 (py3):
 ==================
 
