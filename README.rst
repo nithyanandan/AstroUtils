@@ -8,7 +8,7 @@ miscellaneous routines.
 
 Installation
 ============
-Note that currently this package only supports Python 2.6+, and not Python 3. 
+Note that currently this package supports Python 3.6+ and is backwards compatible with Python 2.6+
 
 Non-Python Dependencies
 -----------------------

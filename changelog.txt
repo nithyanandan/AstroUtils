@@ -1,3 +1,16 @@
+From 824ef9f (main):
+===================
+
+In README.rst,
+
+(*) Make note about Python 3.6+ and 2.6+ compatibility
+
+From 1075384 (main):
+===================
+
+In astroutils/examples/codes/,
+(*) Add codes and data as codes_data.tar.gz in CPhaseGeom/
+
 From 74904ce (py3):
 ==================
 
