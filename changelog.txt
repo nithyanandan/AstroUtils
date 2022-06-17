@@ -1,3 +1,10 @@
+From 1075384 (py3):
+==================
+
+In astroutils/geometry.py,
+
+(*) In function altaz2hadec(), fix bugs while raising ValueError
+
 From 74904ce (py3):
 ==================
 
