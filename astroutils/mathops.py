@@ -254,7 +254,7 @@ def binned_statistic(x, values=None, statistic='mean', bins=10, range=None):
     else:
         stat, bin_edges, binnum = SP.stats.binned_statistic(x[sortind], x[sortind], statistic=statistic, bins=bins, range=range)
         
-    revind = NP.hstack((bin_edges.size, bin_edges.size+NP.cumsum(stat.astype(NP.int)), sortind))
+    revind = NP.hstack((bin_edges.size, bin_edges.size+NP.cumsum(stat.astype(int)), sortind))
 
     return stat, bin_edges, binnum, revind
 
@@ -1260,11 +1260,11 @@ def interpolate_masked_array_1D(arr, wts, axis, interp_parms, inploc=None,
             wts_interped = MA.copy(wts_reshaped)
             arr_interped = MA.copy(arr_reshaped)
         else:
-            wts_interped = MA.array(NP.full((wts_reshaped.shape[0],outloc.size), dtype=NP.float, fill_value=NP.nan), mask=NP.full((wts_reshaped.shape[0],outloc.size), dtype=NP.bool, fill_value=False))
-            arr_interped = MA.array(NP.full((arr_reshaped.shape[0],outloc.size), dtype=NP.float, fill_value=NP.nan), mask=NP.full((arr_reshaped.shape[0],outloc.size), dtype=NP.bool, fill_value=False))
+            wts_interped = MA.array(NP.full((wts_reshaped.shape[0],outloc.size), dtype=float, fill_value=NP.nan), mask=NP.full((wts_reshaped.shape[0],outloc.size), dtype=NP.bool, fill_value=False))
+            arr_interped = MA.array(NP.full((arr_reshaped.shape[0],outloc.size), dtype=float, fill_value=NP.nan), mask=NP.full((arr_reshaped.shape[0],outloc.size), dtype=NP.bool, fill_value=False))
             if NP.iscomplexobj(arr):
                 arr_interped = arr_interped.astype(NP.complex)
-                arr_interped += 1j * NP.full((wts_reshaped.shape[0],outloc.size), dtype=NP.float, fill_value=NP.nan)
+                arr_interped += 1j * NP.full((wts_reshaped.shape[0],outloc.size), dtype=float, fill_value=NP.nan)
         for ax0ind in NP.arange(arr_reshaped.shape[0]):
             inpind = NP.where(NP.logical_not(mask_reshaped[ax0ind,:]))[0]
             if outloc is None:
@@ -1499,7 +1499,7 @@ def tile(inparr, reps, mirror_axes=None):
             raise TypeError('Input mirror_axes must be a list, tuple, or numpy array')
         else:
             mirror_axes = NP.asarray(mirror_axes).ravel()
-            if mirror_axes.dtype != NP.int:
+            if mirror_axes.dtype != int:
                 raise TypeError('Input mirror_axes must consist of integers')
             mirror_axes = NP.unique(mirror_axes)
 
