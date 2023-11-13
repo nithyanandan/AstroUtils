@@ -1,3 +1,15 @@
+From fdfe6b5 (py3):
+==================
+
+(*) Update .gitignore
+
+From fdf4c7d (py3):
+==================
+
+In astroutils/mathops.py,
+
+(*) Fix numpy dtype usage for int and float
+
 From 1075384 (py3):
 ==================
 
