@@ -416,7 +416,7 @@ def smooth_resample_lightcone(lightcone, boxres_in, zmin,
         if lightcone.shape[0] <= 10:
             chunksize = 1
         else:
-            chunksize = NP.floor(lightcone.shape[0]/10).astype(NP.int)
+            chunksize = NP.floor(lightcone.shape[0]/10).astype(int)
         chunk_edges = NP.arange(0, lightcone.shape[0], chunksize)
         chunk_edges = NP.append(chunk_edges, lightcone.shape[0])
         n_chunks = chunk_edges.size - 1

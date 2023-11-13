@@ -251,7 +251,7 @@ def hadec2radec(hadec, lst, obstime=None, epoch_RA=2000.0, time_type=None):
     if hadec.shape[1] != 2:
         raise ValueError('Input hadec must be a 2D numpy array of shape(nsrc,2)')
     if isinstance(lst, (int,float)):
-        lst = NP.asarray(lst).astype(NP.float).reshape(-1)
+        lst = NP.asarray(lst).astype(float).reshape(-1)
     if (lst.size != 1) and (lst.size != hadec.shape[0]):
         raise ValueError('Input LST must match the shape of input hadec')
 

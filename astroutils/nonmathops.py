@@ -258,7 +258,7 @@ def recursively_save_dict_contents_to_group(h5file, path, dic, compressinfo=None
         if not isinstance(key, str):
             warnings.warn('Key found not to be a string. Converting the key to string and proceeding...')
             key = str(key)
-        if isinstance(item, (NP.ndarray, NP.int, NP.int32, NP.int64, NP.float, NP.float32, NP.float64, NP.complex, NP.complex64, NP.complex128, str, bytes)):
+        if isinstance(item, (NP.ndarray, int, NP.int32, NP.int64, float, NP.float32, NP.float64, NP.complex, NP.complex64, NP.complex128, str, bytes)):
             if isinstance(item, NP.ndarray):
                 if compressinfo is not None:
                     if isinstance(compressinfo, dict):

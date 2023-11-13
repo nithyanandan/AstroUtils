@@ -365,7 +365,7 @@ def rms(inp, axis=None, filter_dict=None, mask=None, verbose=True):
                     raise ValueError('mask and inp cannot be broadcast as numpy arrays')
 
             try:
-                msk = NP.ones_like(inp) * mask.astype(NP.bool)
+                msk = NP.ones_like(inp) * mask.astype(bool)
             except ValueError:
                 raise ValueError('mask and inp cannot be broadcast as compatible numpy arrays in order to create the mask')
 
@@ -386,7 +386,7 @@ def rms(inp, axis=None, filter_dict=None, mask=None, verbose=True):
                 raise ValueError('mask and inp cannot be broadcasted as numpy arrays')
 
             try:
-                msk = NP.ones_like(inp) * mask.astype(NP.bool)
+                msk = NP.ones_like(inp) * mask.astype(bool)
             except ValueError:
                 raise ValueError('mask and inp cannot be broadcast as compatible numpy arrays in order to create the mask')
 
@@ -904,7 +904,7 @@ def phase_unwrap_1D(phase, axis=-1, wrap_around=False, seed=None, tol=NP.pi):
             phase_unwrapped.mask = NP.logical_or(phase_unwrapped.mask,
                                                  largediff_loc)
     else:
-        mask = NP.zeros(phase.shape, dtype=NP.bool)
+        mask = NP.zeros(phase.shape, dtype=bool)
         mask[NP.isnan(phase)] = True
         if NP.any(largediff_loc):
             mask[largediff_loc] = True
@@ -1039,10 +1039,10 @@ def interpolate_phase_1D(phase, wts, axis, interp_parms, collapse_axes=None,
     if interp_parms['op_type'].lower() == 'interp1d':
         other_axes = NP.where(NP.arange(phase_unwrapped.ndim) != axis)[0]
         axis_mask = NP.sum(mask_in, axis=tuple(other_axes)) # shape=(nchan,)
-        if NP.sum(axis_mask.astype(NP.bool)) > 1.0/3 * axis_mask.size:
+        if NP.sum(axis_mask.astype(bool)) > 1.0/3 * axis_mask.size:
             raise ValueError('More than 1/3 of channels are flagged at some point or another. This will lead to failure of interp1d method. Try other interpolation options.')
-        masked_chans = NP.arange(phase_unwrapped.shape[axis])[axis_mask.astype(NP.bool)]
-        unmasked_chans = NP.arange(phase_unwrapped.shape[axis])[NP.logical_not(axis_mask.astype(NP.bool))]
+        masked_chans = NP.arange(phase_unwrapped.shape[axis])[axis_mask.astype(bool)]
+        unmasked_chans = NP.arange(phase_unwrapped.shape[axis])[NP.logical_not(axis_mask.astype(bool))]
         unmasked_phase = NP.take(phase_filled, unmasked_chans, axis=axis, mode='clip')
         unmasked_wts = NP.take(wts_filled, unmasked_chans, axis=axis, mode='clip')
         phase_interpfunc = interpolate.interp1d(unmasked_chans, unmasked_phase, kind=interp_parms['interp_kind'], axis=axis, bounds_error=False, fill_value=NP.nan)
@@ -1260,8 +1260,8 @@ def interpolate_masked_array_1D(arr, wts, axis, interp_parms, inploc=None,
             wts_interped = MA.copy(wts_reshaped)
             arr_interped = MA.copy(arr_reshaped)
         else:
-            wts_interped = MA.array(NP.full((wts_reshaped.shape[0],outloc.size), dtype=float, fill_value=NP.nan), mask=NP.full((wts_reshaped.shape[0],outloc.size), dtype=NP.bool, fill_value=False))
-            arr_interped = MA.array(NP.full((arr_reshaped.shape[0],outloc.size), dtype=float, fill_value=NP.nan), mask=NP.full((arr_reshaped.shape[0],outloc.size), dtype=NP.bool, fill_value=False))
+            wts_interped = MA.array(NP.full((wts_reshaped.shape[0],outloc.size), dtype=float, fill_value=NP.nan), mask=NP.full((wts_reshaped.shape[0],outloc.size), dtype=bool, fill_value=False))
+            arr_interped = MA.array(NP.full((arr_reshaped.shape[0],outloc.size), dtype=float, fill_value=NP.nan), mask=NP.full((arr_reshaped.shape[0],outloc.size), dtype=bool, fill_value=False))
             if NP.iscomplexobj(arr):
                 arr_interped = arr_interped.astype(NP.complex)
                 arr_interped += 1j * NP.full((wts_reshaped.shape[0],outloc.size), dtype=float, fill_value=NP.nan)

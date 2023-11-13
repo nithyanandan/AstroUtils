@@ -559,7 +559,7 @@ def window_fftpow(N_window, shape='rect', pad_width=0, pad_value=0.0,
     eps = 1e-10
     if (shape == 'rect') or (shape == 'RECT'):
         if fftpow != 1.0:
-            nwin = int(NP.ceil(N_window/NP.float(fftpow)))
+            nwin = int(NP.ceil(N_window/float(fftpow)))
         else:
             nwin = N_window
 
@@ -591,7 +591,7 @@ def window_fftpow(N_window, shape='rect', pad_width=0, pad_value=0.0,
     elif (shape == 'bnw') or (shape == 'BNW'):
         a = [0.3635819, -0.4891775, 0.1365995, -0.0106411]
         if fftpow != 1.0:
-            nwin = int(NP.ceil(N_window/NP.float(fftpow)))
+            nwin = int(NP.ceil(N_window/float(fftpow)))
         else:
             nwin = N_window
 
@@ -649,7 +649,7 @@ def window_fftpow(N_window, shape='rect', pad_width=0, pad_value=0.0,
     elif (shape == 'bhw') or (shape == 'BHW'):
         a = [0.35875, -0.48829, 0.14128, -0.01168]
         if fftpow != 1.0:
-            nwin = int(NP.ceil(N_window/NP.float(fftpow)))
+            nwin = int(NP.ceil(N_window/float(fftpow)))
         else:
             nwin = N_window
 
@@ -1811,7 +1811,7 @@ def discretize(inp, nbits=None, nlevels=None, inprange=None, mode='floor',
         inpmax = inprange[1]
 
     interval = (inpmax - inpmin)/nlevels
-    levels = NP.arange(nlevels, dtype=NP.float)
+    levels = NP.arange(nlevels, dtype=float)
 
     if NP.iscomplexobj(inp):
         scaled_inp = (inp - inpmin*(1+1j))/interval

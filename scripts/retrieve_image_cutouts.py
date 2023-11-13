@@ -49,12 +49,12 @@ if __name__ == '__main__':
 
     subsetinfo = parms['subset']
     subparnames = subsetinfo['parmnames']
-    select = NP.ones(len(catalog), dtype=NP.bool)
+    select = NP.ones(len(catalog), dtype=bool)
     if len(subparnames) > 0:
         parmranges = subsetinfo['parmrange']
         for i,prm in enumerate(subparnames):
             subdat = catalog[prm]
-            if (subdat.dtype == NP.float) or (subdat.dtype == NP.int):
+            if (subdat.dtype == float) or (subdat.dtype == int):
                 select[NP.logical_or(subdat < parmranges[i][0], subdat > parmranges[i][1])] = False
             else:
                 for prmstr in parmranges[i]:

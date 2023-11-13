@@ -77,14 +77,14 @@ def retrieve_external_spectrum(spec_extfile, ind=None):
         if not isinstance(ind, (int,list,NP.ndarray)):
             raise TypeError('Input ind must be an integer, list or numpy array')
         else:
-            ind = NP.asarray(ind).astype(NP.int)
+            ind = NP.asarray(ind).astype(int)
             if NP.any(ind < 0):
                 raise IndexError('Out of bound indices found in input ind')
 
     with h5py.File(spec_extfile, 'r') as fileobj:
         nobj = fileobj['object/name'].value.size
         if ind is None:
-            ind = NP.arange(nobj, dtype=NP.int)
+            ind = NP.arange(nobj, dtype=int)
         else:
             if NP.any(ind >= nobj):
                 raise ValueError('Specified indices exceed maximum number of objects in the external file')
@@ -947,7 +947,7 @@ class SkyModel(object):
             init_parms = {}
             outloc = NP.asarray(outloc).ravel()
             if axis == 'position':
-                if not outloc.dtype != NP.int:
+                if not outloc.dtype != int:
                     raise TypeError('Output locations for position axis must be integer indices')
                 init_parms = {'name': NP.take(self.name, outloc), 'frequency': self.frequency, 'location': NP.take(self.location, outloc, axis=0), 'spec_type': self.spec_type, 'epoch': self.epoch, 'coords': self.coords}
                 if self.spec_type == 'spectrum':
@@ -1040,11 +1040,11 @@ class SkyModel(object):
         """
 
         if ind is None:
-            ind = NP.arange(self.location.shape[0], dtype=NP.int)
+            ind = NP.arange(self.location.shape[0], dtype=int)
         elif not isinstance(ind, (int,list,NP.ndarray)):
             raise TypeError('Input ind must be an integer, list or numpy array')
         else:
-            ind = NP.asarray(ind).astype(NP.int)
+            ind = NP.asarray(ind).astype(int)
             if NP.any(NP.logical_or(ind < 0, ind >= self.location.shape[0])):
                 raise IndexError('Out of bound indices found in input ind')
 

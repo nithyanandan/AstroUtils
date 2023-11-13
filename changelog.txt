@@ -1,3 +1,9 @@
+From 195494c (py3):
+==================
+
+(*) Change NP.bool to bool, NP.int to int, and NP.float to float
+throughout
+
 From fdfe6b5 (py3):
 ==================
 

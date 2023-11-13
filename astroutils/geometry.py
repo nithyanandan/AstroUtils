@@ -440,7 +440,7 @@ def points_from_line2d_intersection(coeffs, dvect, ravel=True):
         outarr = NP.empty((dvect.size, dvect.size, 2), dtype=dvect.dtype)
         outarr.fill(NP.nan + 1j*NP.nan)
     else:
-        outarr = NP.empty((dvect.size, dvect.size, 2), dtype=NP.float)
+        outarr = NP.empty((dvect.size, dvect.size, 2), dtype=float)
         outarr.fill(NP.nan)
     
     for i in range(dvect.size):
@@ -728,9 +728,9 @@ def generate_parallel_lines_at_distance_from_line(coeffs, dvects, distances):
         raise ValueError('Inputs distances and number of coeffs must be equal in size or broadcastable')
         
     n_max = NP.max([n_coeffs, n_dvects, n_distances])
-    coeffs = coeffs + NP.zeros((n_max,2), dtype=NP.float)
-    dvects = dvects + NP.zeros(n_max, dtype=NP.float)
-    distances = distances + NP.zeros(n_max, dtype=NP.float)
+    coeffs = coeffs + NP.zeros((n_max,2), dtype=float)
+    dvects = dvects + NP.zeros(n_max, dtype=float)
+    distances = distances + NP.zeros(n_max, dtype=float)
     
     pm_distances = NP.asarray([-1.0, 1.0]).reshape(1,2) * distances.reshape(-1,1)
     
@@ -770,7 +770,7 @@ def polygonArea2D(vertices, absolute=False):
         raise ValueError('This function can only compute area in 2D coordinates')
     if vertices.shape[1] == 1:
         return 0.0
-    if not isinstance(absolute, NP.bool):
+    if not isinstance(absolute, bool):
         raise TypeError('Input absolute must be a boolean value')
     area = 0.5 * (NP.sum(vertices[:,0]*NP.roll(vertices[:,1],-1) - vertices[:,1]*NP.roll(vertices[:,0],-1)))
     if absolute:
@@ -2189,7 +2189,7 @@ def sample_parabola(f, open_angle, wavelength=1.0, axis=90.0, angunits='degrees'
     x = r * NP.cos(NP.pi/2+theta)
     z = r * NP.sin(NP.pi/2+theta)
 
-    xyz = NP.hstack((x.reshape(-1,1), NP.zeros((x.size,1), dtype=NP.float), z.reshape(-1,1)))
+    xyz = NP.hstack((x.reshape(-1,1), NP.zeros((x.size,1), dtype=float), z.reshape(-1,1)))
     return xyz
     
 ################################################################################
