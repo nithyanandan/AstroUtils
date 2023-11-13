@@ -1,3 +1,8 @@
+From f8a94d7 (main):
+===================
+
+(*) Update .gitignore
+
 From c43f214 (py3), d4acae2 (main):
 ==================================
 
