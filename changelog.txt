@@ -1,4 +1,13 @@
-From 195494c (py3):
+From f78b09a (py3):
+==================
+
+(*) Move all astroutils/*.bak files to astroutils/py2bkp/
+
+In changelog.txt,
+
+(*) Fix a githash of previous commit message
+
+From 3b93155 (py3):
 ==================
 
 In astroutils/mathops.py,
