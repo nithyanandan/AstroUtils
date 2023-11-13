@@ -1,3 +1,8 @@
+From 5c9e1ea (py3):
+==================
+
+Update README.rst
+
 From f78b09a (py3):
 ==================
 

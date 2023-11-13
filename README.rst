@@ -8,16 +8,18 @@ miscellaneous routines.
 
 Installation
 ============
-Note that currently this package only supports Python 2.6+, and not Python 3. 
+Note that currently this package supports Python 3.6+, but should also support Python 2.7+. 
 
 Non-Python Dependencies
 -----------------------
 The only non-python dependencies required are ``openmpi`` and ``xterm``. These can usually be installed via a distro
 package manager (for Arch Linux, the package names are exactly ``openmpi`` and ``xterm``).
 
-Using Anaconda
---------------
-If using the Anaconda python distribution, many of the packages may be installed using ``conda``.
+``openmpi`` can also be installed in the environment using the ``mpi4py`` package.
+
+Using Anaconda or Miniconda
+---------------------------
+If using the Anaconda/Miniconda python distribution, many of the packages may be installed using ``conda``.
 
 It is best to first create a new env:
 
@@ -28,8 +30,7 @@ Then install conda packages:
 ``conda install mpi4py progressbar psutil pyyaml h5py scikit-image``
 
 NOTE: at this time, you *must* install ``scikit-image`` via conda, or else it will
-     try to install packages that are incompatible with python 2. Full python 3
-     support is coming soon.
+     try to install packages that are incompatible
      
 Finally, either install AstroUtils directly:
 
@@ -39,6 +40,12 @@ or clone it into a directory and from inside that directory issue the command:
 
 ``pip install .``
 
+Running tests using Pytest
+==========================
+
+If you have ``pytest`` installed, the tests can be run using
+
+``pytest --pyargs astroutils``
 
 Basic Usage
 ===========
