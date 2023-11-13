@@ -1,6 +1,13 @@
 From 195494c (py3):
 ==================
 
+In astroutils/mathops.py,
+
+(*) Add function minmax_scaler() with docstring
+
+From 195494c (py3):
+==================
+
 (*) Change NP.bool to bool, NP.int to int, and NP.float to float
 throughout
 

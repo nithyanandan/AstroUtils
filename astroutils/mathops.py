@@ -1540,3 +1540,25 @@ def tile(inparr, reps, mirror_axes=None):
     return outarr
 
 ################################################################################
+
+def minmax_scaler(inp, low=0.0, high=1.0):
+    """
+    ----------------------------------------------------------------------------
+    Scale an input between minimum and maximum values linearly
+
+    Inputs:
+
+    inp  [numpy array] An N-dimensional numpy array which is to be scaled
+
+    low  [scalar] Minimum value of inp will be scaled to this value
+
+    high [scalar] Maximum value of inp will be scaled to this value
+
+    Output:
+
+    Numpy array after scaling
+    ----------------------------------------------------------------------------
+    """
+    inp_std = (inp - inp.min(axis=0)) / (inp.max(axis=0) - inp.min(axis=0))
+    inp_scaled = inp_std * (high - low) + low
+    return inp_scaled
