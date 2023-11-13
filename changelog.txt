@@ -1,3 +1,8 @@
+From c43f214 (py3), d4acae2 (main):
+==================================
+
+(*) Merge py3 branch onto main branch
+
 From 5c9e1ea (py3):
 ==================
 
@@ -37,12 +42,18 @@ In astroutils/mathops.py,
 
 (*) Fix numpy dtype usage for int and float
 
-From 1075384 (py3):
-==================
+From 824ef9f (main):
+===================
 
-In astroutils/geometry.py,
+In README.rst,
 
-(*) In function altaz2hadec(), fix bugs while raising ValueError
+(*) Make note about Python 3.6+ and 2.6+ compatibility
+
+From 1075384 (main):
+===================
+
+In astroutils/examples/codes/,
+(*) Add codes and data as codes_data.tar.gz in CPhaseGeom/
 
 From 74904ce (py3):
 ==================
