@@ -5,7 +5,7 @@ import numpy as NP
 import numpy.linalg as LA
 import healpy as HP
 import warnings
-
+import ipdb as PDB 
 try:
     from scipy.spatial import cKDTree as KDT
 except ImportError:
@@ -1094,8 +1094,9 @@ def altaz2hadec(altaz, latitude, units=None):
         raise ValueError('Latitude should lie between -90 and 90 degrees. Check inputs and units.')
 
     eps = 1e-10
-
-    arg = NP.sin(altaz[:,0])*NP.sin(latitude) + NP.cos(altaz[:,1])*NP.cos(latitude)*NP.cos(altaz[:,0])
+    
+    # arg = NP.sin(altaz[:,0])*NP.sin(latitude) + NP.cos(altaz[:,1])*NP.cos(latitude)*NP.cos(altaz[:,0])
+    arg = NP.sin(altaz[:,0].astype(NP.longdouble))*NP.sin(latitude.astype(NP.longdouble)) + NP.cos(altaz[:,1].astype(NP.longdouble))*NP.cos(latitude.astype(NP.longdouble))*NP.cos(altaz[:,0].astype(NP.longdouble))
     if NP.abs(arg).max() > 1.0:
         if NP.abs(arg).max() - 1.0 > eps:
             raise ValueError('Non-physical angles found')
@@ -1103,7 +1104,8 @@ def altaz2hadec(altaz, latitude, units=None):
             arg = NP.clip(arg, -1.0, 1.0)
     dec = NP.arcsin(arg)
 
-    arg = (NP.sin(altaz[:,0])-NP.sin(dec)*NP.sin(latitude))/(NP.cos(dec)*NP.cos(latitude))
+    # arg = (NP.sin(altaz[:,0])-NP.sin(dec)*NP.sin(latitude))/(NP.cos(dec)*NP.cos(latitude))
+    arg = (NP.sin(altaz[:,0].astype(NP.longdouble))-NP.sin(dec.astype(NP.longdouble))*NP.sin(latitude.astype(NP.longdouble)))/(NP.cos(dec.astype(NP.longdouble))*NP.cos(latitude.astype(NP.longdouble)))
     if NP.abs(arg).max() > 1.0:
         if NP.abs(arg).max() - 1.0 > eps:
             raise ValueError('Non-physical angles found')

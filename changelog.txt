@@ -1,3 +1,14 @@
+From 032e68d (test):
+===================
+
+In astroutils/geometry.py,
+
+(*) Make computations in longdouble in altaz2hadec()
+
+In astroutils/tests/test_geometry.py,
+
+(*) Reduce testing tolerance to 1e-7 in test_altaz2hadec()
+
 From 574de61 (main):
 ===================
 

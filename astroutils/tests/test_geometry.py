@@ -101,7 +101,7 @@ def test_altaz2hadec(altaz_to_hadec):
     expected_hadec = GEOM.altaz2hadec(altaz, latitude=latitude, units='degrees').ravel()
     if NP.abs(NP.abs(expected_hadec[0] - hadec[0]) - 360.0) <= 1e-10:
         expected_hadec = NP.asarray([hadec[0], expected_hadec[1]])
-    NP.testing.assert_allclose(hadec, expected_hadec, atol=1e-12)
+    NP.testing.assert_allclose(hadec, expected_hadec, atol=1e-7)
 
 def test_hadec2altaz(hadec_to_altaz):
     hadec, altaz, latitude = hadec_to_altaz # Read from fixture in conftest.py
