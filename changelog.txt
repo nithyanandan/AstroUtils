@@ -1,3 +1,10 @@
+From 574de61 (main):
+===================
+
+In astroutils/__init__.py,
+
+(*) Update version label to 3.1.0
+
 From f8a94d7 (main):
 ===================
 
