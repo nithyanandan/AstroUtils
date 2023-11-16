@@ -1,0 +1,21 @@
+name: utils
+channels:
+  - conda-forge
+dependencies:
+  - numpy
+  - scipy
+  - astropy 
+  - healpy
+  - mpi4py
+  - blessings
+  - ipdb 
+  - astroquery
+  - progressbar2
+  - beautifulsoup4
+  - scikit-image
+  - h5py
+  - matplotlib
+  - ipython
+  - jupyterlab
+  - pyyaml
+  - pytest
