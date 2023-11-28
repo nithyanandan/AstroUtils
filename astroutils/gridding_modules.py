@@ -364,20 +364,20 @@ def conv_grid1d(xc, xkern, kernel, xgrid, method='NN'):
         xkern_shifted = xkern + NP.repeat(xshift[npoints],xkern.shape[0])
         interp_func_imag = None
         if method == 'SL':
-            interp_function_real = interpolate.interp1d(xkern_shifted, kernel_real, kind='slinear', fill_value=0.0)
+            interp_func_real = interpolate.interp1d(xkern_shifted, kernel_real, kind='slinear', fill_value=0.0)
             if NP.iscomplexobj(kernel):
                 interp_func_imag = interpolate.interp1d(xkern_shifted, kernel_imag, kind='slinear', fill_value=0.0)
         elif method == 'CS':
-            interp_function_real = interpolate.interp1d(xkern_shifted, kernel_real, kind='cubic', fill_value=0.0)
+            interp_func_real = interpolate.interp1d(xkern_shifted, kernel_real, kind='cubic', fill_value=0.0)
             if NP.iscomplexobj(kernel):
                 interp_func_imag = interpolate.interp1d(xkern_shifted, kernel_imag, kind='cubic', fill_value=0.0)
         else:
-            interp_function_real = interpolate.interp1d(xkern_shifted, kernel_real, kind='nearest', fill_value=0.0)
+            interp_func_real = interpolate.interp1d(xkern_shifted, kernel_real, kind='nearest', fill_value=0.0)
             if NP.iscomplexobj(kernel):
                 interp_func_imag = interpolate.interp1d(xkern_shifted, kernel_imag, kind='nearest', fill_value=0.0)
-        outdata += interp_function_real(xgrid)
+        outdata += interp_func_real(xgrid)
         if NP.iscomplexobj(kernel):
-            outdata += 1j * interp_function_imag(xgrid)
+            outdata += 1j * interp_func_imag(xgrid)
 
     return outdata
         
@@ -470,7 +470,7 @@ def conv_grid2d(xc, yc, xkern, ykern, kernel, xgrid, ygrid, method='NN'):
             print("proceeding with kernel=1. ")
             kernel = 1.0
         else:
-            raise ValueErrorError("Aborting conv_grid2d().")
+            raise ValueError("Aborting conv_grid2d().")
 
     if not isinstance(kernel, (list, NP.ndarray)):
         print("Kernel is a scalar. Proceeding with Nearest Neighbour")

@@ -1,3 +1,10 @@
+From 240b4d8 (main):
+===================
+
+In astroutils/gridding_modules.py,
+
+(*) Fix some typos in conv_grid1d() and conv_grid2d()
+
 From 032e68d (test):
 ===================
 
