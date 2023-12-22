@@ -1,3 +1,10 @@
+From 05e0f2d (grid):
+===================
+
+In astroutils/gridding_modules.py,
+
+(*) In grid(), enforce typecasting of variable lengths as integer
+
 From 240b4d8 (main):
 ===================
 

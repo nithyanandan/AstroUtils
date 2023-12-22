@@ -91,7 +91,7 @@ def grid(rangelist, pad=None, spacing=None, pow2=True, verbose=True):
 
     rangelist = NP.asarray(rangelist)
     lengths = NP.ceil((rangelist[:,1]-rangelist[:,0]+2*pad)/spacing)+1
-    lengths.astype(int)
+    lengths = lengths.astype(int)
 
     for i in range(len(lengths)): 
         if (lengths[i] % 2) == 0: lengths[i] += 1
@@ -101,6 +101,7 @@ def grid(rangelist, pad=None, spacing=None, pow2=True, verbose=True):
 
     if pow2 is True:
         lengths = 2**NP.ceil(NP.log2(lengths))
+        lengths = lengths.astype(int)
         newspacing = (rangelist[:,1]-rangelist[:,0]+2*pad)/(lengths-2)
         offsets = rangelist[:,0]-pad+(lengths-2)*newspacing - (rangelist[:,1]+pad)
         tupleout = list(zip(rangelist[:,0]-pad-0.5*offsets-newspacing, rangelist[:,1]+pad+0.5*offsets, lengths, newspacing)) # converts numpy arrays into a list of tuples
