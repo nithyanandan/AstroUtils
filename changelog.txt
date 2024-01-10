@@ -1,3 +1,11 @@
+From 05e0f2d (main):
+===================
+
+In astroutils/mathops.py,
+
+(*) Include keyword axis in minmax_scaler() and update docstring 
+appropriately
+
 From 240b4d8 (main):
 ===================
 

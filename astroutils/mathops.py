@@ -1541,7 +1541,7 @@ def tile(inparr, reps, mirror_axes=None):
 
 ################################################################################
 
-def minmax_scaler(inp, low=0.0, high=1.0):
+def minmax_scaler(inp, low=0.0, high=1.0, axis=None):
     """
     ----------------------------------------------------------------------------
     Scale an input between minimum and maximum values linearly
@@ -1554,11 +1554,14 @@ def minmax_scaler(inp, low=0.0, high=1.0):
 
     high [scalar] Maximum value of inp will be scaled to this value
 
+    axis [scalar or None] Select axis along which min and max will be 
+         determined. Otherwise (default=None), a flattened array will be used.
+
     Output:
 
     Numpy array after scaling
     ----------------------------------------------------------------------------
     """
-    inp_std = (inp - inp.min(axis=0)) / (inp.max(axis=0) - inp.min(axis=0))
+    inp_std = (inp - NP.min(inp,axis=axis,keepdims=True)) / (NP.max(inp,axis=axis,keepdims=True) - NP.min(inp,axis=axis,keepdims=True))
     inp_scaled = inp_std * (high - low) + low
     return inp_scaled
