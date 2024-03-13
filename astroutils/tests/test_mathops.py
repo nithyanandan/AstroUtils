@@ -1,6 +1,7 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
 from .. import mathops as OPS
 import numpy as NP
+import pytest
 
 def test_reverse():
     n1, n2, n3 = 2, 3, 4
@@ -36,3 +37,28 @@ def test_rms():
 
     NP.testing.assert_allclose(OPS.rms(inp, axis=1), expected_rms)
     
+def test_hermitian_input_type():
+    with pytest.raises(TypeError, match="Input array inparr must be a numpy array"):
+        OPS.hermitian([1, 2, 3])
+
+    with pytest.raises(TypeError, match="Input axes must be a list, tuple, or numpy array"):
+        OPS.hermitian(NP.array([[1, 2], [3, 4]]), axes="invalid_axes")
+
+def test_hermitian_input_shape():
+    input_array = NP.array([1, 2, 3])
+    result = OPS.hermitian(input_array)
+    assert result.shape == (3,1), "Hermitian shape mismatch for 1D input"
+
+def test_hermitian_axes_type():
+    with pytest.raises(ValueError, match="Input axes must be a two-element list, tuple, or numpy array"):
+        OPS.hermitian(NP.array([[1, 2], [3, 4]]), axes=[0])
+
+def test_hermitian_axes_value():
+    with pytest.raises(ValueError, match="The two entries in axes cannot be the same"):
+        OPS.hermitian(NP.array([[1, 2], [3, 4]]), axes=(0, 0))
+
+def test_hermitian():
+    input_array = NP.array([[1+2j, 2 + 1j], [3 - 2j, 4-3j]])
+    result = OPS.hermitian(input_array, axes=(0, 1))
+    expected_result = input_array.T.conj()
+    assert NP.allclose(result, expected_result), "Numerical Hermitian check failed"

@@ -1,5 +1,6 @@
 from __future__ import print_function, division, unicode_literals
 from builtins import zip, range
+from typing import Union, List, Tuple
 import numpy as NP
 import numpy.ma as MA
 import scipy as SP
@@ -1565,3 +1566,64 @@ def minmax_scaler(inp, low=0.0, high=1.0, axis=None):
     inp_std = (inp - NP.min(inp,axis=axis,keepdims=True)) / (NP.max(inp,axis=axis,keepdims=True) - NP.min(inp,axis=axis,keepdims=True))
     inp_scaled = inp_std * (high - low) + low
     return inp_scaled
+
+################################################################################
+
+def hermitian(inparr: NP.ndarray, axes: Union[List[int],Tuple[int,int],NP.ndarray]=(-2,-1)) -> NP.ndarray:
+    """
+    Return the Hermitian of the input array along specified axes.
+
+    Parameters
+    ----------
+    inparr : numpy.ndarray
+        Input array to be Hermitian-transposed.
+    axes : {tuple, list, numpy.ndarray}, optional
+        Two-element sequence denoting which two axes are to be Hermitian-transposed.
+        Default is (-2, -1).
+
+    Returns
+    -------
+    numpy.ndarray
+        Hermitian-transposed array.
+
+    Raises
+    ------
+    TypeError
+        If inparr is not a numpy array or if axes is not a list, tuple, or numpy array.
+    ValueError
+        If axes is not a two-element list, tuple, or numpy array or if the two entries in axes are the same.
+
+    Notes
+    -----
+    The Hermitian of an array is obtained by swapping the specified axes and taking the complex conjugate.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> arr = np.array([[1, 2 + 1j], [3 - 2j, 4]])
+    >>> hermitian(arr, axes=(0, 1))
+    array([[1.-0.j, 3.+2.j],
+           [2.-1.j, 4.-0.j]])
+    """
+    # axes denotes which two axes are to be Hermitian-transposed
+    if not isinstance(inparr, NP.ndarray):
+        raise TypeError('Input array inparr must be a numpy array')
+    if inparr.ndim == 1:
+        inparr = inparr.reshape(1, -1)
+
+    if axes is None:
+        axes = NP.asarray([-2, -1])
+    if not isinstance(axes, (list, tuple, NP.ndarray)):
+        raise TypeError('Input axes must be a list, tuple, or numpy array')
+    axes = NP.asarray(axes).ravel()
+    if axes.size != 2:
+        raise ValueError('Input axes must be a two-element list, tuple, or numpy array')
+    negind = NP.where(axes < 0)[0]
+    if negind.size > 0:
+        axes[negind] += inparr.ndim  # Convert negative axis numbers to positive
+    if axes[0] == axes[1]:
+        raise ValueError('The two entries in axes cannot be the same')
+
+    return NP.swapaxes(inparr, axes[0], axes[1]).conj()
+
+

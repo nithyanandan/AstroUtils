@@ -1,3 +1,14 @@
+From a0bbab7 (math):
+===================
+
+In astroutils/mathops.py,
+
+(*) Add function hermitian() with docstring 
+
+In astroutils/tests/test_mathops.py,
+
+(*) Add tests for astroutils.mathops.hermitian()
+
 From e5d9e99 (main):
 ===================
 
