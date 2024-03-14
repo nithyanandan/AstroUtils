@@ -1,6 +1,6 @@
 from __future__ import print_function, division, unicode_literals
 from builtins import zip, range
-from typing import Union, List, Tuple
+from typing import Optional, Union, List, Tuple
 import numpy as NP
 import numpy.ma as MA
 import scipy as SP
@@ -1569,7 +1569,7 @@ def minmax_scaler(inp, low=0.0, high=1.0, axis=None):
 
 ################################################################################
 
-def hermitian(inparr: NP.ndarray, axes: Union[List[int],Tuple[int,int],NP.ndarray]=(-2,-1)) -> NP.ndarray:
+def hermitian(inparr: NP.ndarray, axes: Optional[Union[List[int],Tuple[int,int],NP.ndarray]]=(-2,-1)) -> NP.ndarray:
     """
     Return the Hermitian of the input array along specified axes.
 
@@ -1626,4 +1626,70 @@ def hermitian(inparr: NP.ndarray, axes: Union[List[int],Tuple[int,int],NP.ndarra
 
     return NP.swapaxes(inparr, axes[0], axes[1]).conj()
 
+################################################################################
 
+def hat(inparr: NP.ndarray, axes: Optional[Union[List[int],Tuple[int,int],NP.ndarray]]=None) -> NP.ndarray:
+    """
+    Compute the inverse of the Hermitian operation along specified axes (hat operation).
+
+    Parameters
+    ----------
+    inparr : numpy.ndarray
+        Input array to be inversed with the Hermitian operation.
+    axes : Union[list, tuple, numpy.ndarray], optional
+        Two-element sequence denoting which two axes are to be Hermitian-transposed.
+        If None, defaults to np.asarray([-2, -1]).
+
+    Returns
+    -------
+    numpy.ndarray
+        Result of the hat operation, the inverse of the Hermitian-transposed array.
+
+    Raises
+    ------
+    TypeError
+        If inparr is not a numpy array.
+    ValueError
+        If axes is not a two-element list, tuple, or numpy array or if the two entries in axes are the same.
+
+    Notes
+    -----
+    The hat operation is the inverse of the Hermitian operation. It involves computing the Hermitian-transposed array,
+    taking the inverse along the last two axes using numpy.linalg.inv(), and optionally rearranging the axes.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> arr = np.array([[1, 2 + 1j], [3 - 2j, 4]])
+    >>> hat_result = hat(arr, axes=(0, 1))
+    """
+
+    if not isinstance(inparr, NP.ndarray):
+        raise TypeError('Input array inparr must be a numpy array')
+    if inparr.ndim == 1:
+        inparr = inparr.reshape(1, -1)
+
+    if axes is None:
+        axes = NP.asarray([-2, -1])
+    if not isinstance(axes, (list, tuple, NP.ndarray)):
+        raise TypeError('Input axes must be a list, tuple, or numpy array')
+    axes = NP.asarray(axes).ravel()
+    if axes.size != 2:
+        raise ValueError('Input axes must be a two-element list, tuple, or numpy array')
+    negind = NP.where(axes < 0)[0]
+    if negind.size > 0:
+        axes[negind] += inparr.ndim  # Convert negative axis numbers to positive
+    if axes[0] == axes[1]:
+        raise ValueError('The two entries in axes cannot be the same')
+
+    inparr_H = hermitian(inparr, axes=axes)
+    invaxes = inparr.ndim - 2 + NP.arange(2)  # For inverse, they must be the last two axes because of numpy.linalg.inv() requirements
+    if not NP.array_equal(NP.sort(axes), invaxes):  # the axes are not at the end, so move them for taking inverse
+        inparr_H = NP.moveaxis(inparr_H, NP.sort(axes), invaxes)
+    if inparr_H.shape[-1] != inparr_H.shape[-2]:
+        raise ValueError('The axes of inversion must be square in shape')
+    inparr_IH = NP.linalg.inv(inparr_H)
+    if not NP.array_equal(NP.sort(axes), invaxes):  # the axes were moved to the end, so move them back
+        inparr_IH = NP.moveaxis(inparr_H, invaxes, NP.sort(axes))
+
+    return inparr_IH

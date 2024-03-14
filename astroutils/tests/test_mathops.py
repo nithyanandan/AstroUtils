@@ -62,3 +62,30 @@ def test_hermitian():
     result = OPS.hermitian(input_array, axes=(0, 1))
     expected_result = input_array.T.conj()
     assert NP.allclose(result, expected_result), "Numerical Hermitian check failed"
+
+def test_hat_input_type():
+    with pytest.raises(TypeError, match="Input array inparr must be a numpy array"):
+        OPS.hat([1,2,3])
+
+    with pytest.raises(TypeError, match="Input axes must be a list, tuple, or numpy array"):
+        OPS.hat(NP.array([[1,2], [3,4]]), axes="invalid_axes")
+
+def test_hat_input_shape():
+    input_array = NP.array([[1,2,3], [4,5,3]])
+    with pytest.raises(ValueError, match="The axes of inversion must be square in shape"):
+        OPS.hat(input_array, axes=None)
+
+def test_hat_axes_type():
+    with pytest.raises(ValueError, match="Input axes must be a two-element list, tuple, or numpy array"):
+        OPS.hat(NP.array([[1,2], [3,4]]), axes=[0])
+
+def test_hat_axes_value():
+    with pytest.raises(ValueError, match="The two entries in axes cannot be the same"):
+        OPS.hat(NP.array([[1,2], [3,4]]), axes=(0, 0))
+
+def test_hat_numerical():
+    input_array = NP.array([[1+2j, 2 + 1j], [3 - 2j, 4-3j]])
+    result = OPS.hat(input_array, axes=(0, 1))
+    hermitian_result = OPS.hermitian(input_array, axes=(0, 1))
+    expected_result = NP.linalg.inv(hermitian_result)
+    assert NP.allclose(result, expected_result), "Numerical Hat operation check failed"

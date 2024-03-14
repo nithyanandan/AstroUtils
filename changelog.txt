@@ -1,3 +1,9 @@
+From 0929d2e (math):
+===================
+
+(*) Forgot to stage changes to astroutils/mathops.py and
+astroutils/tests/test_mathops.py in the previous commit 24ec05c
+
 From 24ec05c (math):
 ===================
 
