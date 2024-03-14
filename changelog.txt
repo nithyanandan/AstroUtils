@@ -1,3 +1,14 @@
+From 24ec05c (math):
+===================
+
+In astroutils/mathops.py,
+
+(*) Add function hat() with docstring 
+
+In astroutils/tests/test_mathops.py,
+
+(*) Add tests for astroutils.mathops.hat()
+
 From a0bbab7 (math):
 ===================
 
