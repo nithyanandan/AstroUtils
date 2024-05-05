@@ -1,3 +1,14 @@
+From fc3959b (math):
+===================
+
+(*) Add a couple of notebooks for EPIC computations in the 
+experiments folder to the repository.
+
+In astroutils/mathops.py,
+
+(*) In function binned_statistic(), fix reverse index computation 
+when the input statistic is not set to 'count'
+
 From 0929d2e (math):
 ===================
 

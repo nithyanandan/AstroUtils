@@ -254,8 +254,12 @@ def binned_statistic(x, values=None, statistic='mean', bins=10, range=None):
         stat, bin_edges, binnum = SP.stats.binned_statistic(x[sortind], values[sortind], statistic=statistic, bins=bins, range=range)
     else:
         stat, bin_edges, binnum = SP.stats.binned_statistic(x[sortind], x[sortind], statistic=statistic, bins=bins, range=range)
-        
-    revind = NP.hstack((bin_edges.size, bin_edges.size+NP.cumsum(stat.astype(int)), sortind))
+
+    if statistic.lower() != 'count':
+        counts, _, _ = SP.stats.binned_statistic(x[sortind], x[sortind], statistic='count', bins=bins, range=range)    
+        revind = NP.hstack((bin_edges.size, bin_edges.size+NP.cumsum(counts.astype(int)), sortind))
+    else:
+        revind = NP.hstack((bin_edges.size, bin_edges.size+NP.cumsum(stat.astype(int)), sortind))
 
     return stat, bin_edges, binnum, revind
 
