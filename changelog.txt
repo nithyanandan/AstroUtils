@@ -1,3 +1,15 @@
+From a36b0c8 (grid), 29f92f9 (math):
+===================================
+
+(*) Merge grid branch changes onto math branch
+
+From 05e0f2d (grid):
+===================
+
+In astroutils/gridding_modules.py,
+
+(*) In grid(), enforce typecasting of variable lengths as integer
+
 From fc3959b (math):
 ===================
 
