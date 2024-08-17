@@ -1,8 +1,12 @@
 from __future__ import print_function, division, unicode_literals
 from builtins import zip, range
 from typing import Optional, Union, List, Tuple
+import warnings
+
 import numpy as NP
 import numpy.ma as MA
+import numpy.linalg as LA
+from numpy.typing import NDArray
 import scipy as SP
 from scipy import interpolate
 from skimage import img_as_float
@@ -12,6 +16,7 @@ from skimage.filters.rank import mean
 from skimage.restoration import unwrap_phase
 import astropy.convolution as CONV
 import healpy as HP
+
 from . import lookup_operations as LKP
 
 #################################################################################
@@ -1573,7 +1578,7 @@ def minmax_scaler(inp, low=0.0, high=1.0, axis=None):
 
 ################################################################################
 
-def hermitian(inparr: NP.ndarray, axes: Optional[Union[List[int],Tuple[int,int],NP.ndarray]]=(-2,-1)) -> NP.ndarray:
+def hermitian(inparr: NDArray[NP.complex128], axes: Optional[Union[List[int],Tuple[int,int],NDArray[int]]]=(-2,-1)) -> NDArray[NP.complex128]:
     """
     Return the Hermitian of the input array along specified axes.
 
@@ -1632,7 +1637,7 @@ def hermitian(inparr: NP.ndarray, axes: Optional[Union[List[int],Tuple[int,int],
 
 ################################################################################
 
-def hat(inparr: NP.ndarray, axes: Optional[Union[List[int],Tuple[int,int],NP.ndarray]]=None) -> NP.ndarray:
+def hat(inparr: NDArray[NP.complex128], axes: Optional[Union[List[int],Tuple[int,int],NP.ndarray]]=None) -> NDArray[NP.complex128]:
     """
     Compute the inverse of the Hermitian operation along specified axes (hat operation).
 
@@ -1697,3 +1702,61 @@ def hat(inparr: NP.ndarray, axes: Optional[Union[List[int],Tuple[int,int],NP.nda
         inparr_IH = NP.moveaxis(inparr_H, invaxes, NP.sort(axes))
 
     return inparr_IH
+
+################################################################################
+
+def sqrt_matrix_factorization(in_matrix: NDArray[NP.complex128]) -> NDArray[NP.complex128]:
+    """
+    Perform matrix square root factorization on a Hermitian matrix.
+
+    The function first checks if the input matrix is Hermitian along the last two axes. 
+    It then attempts to factorize the matrix using the Cholesky decomposition. If Cholesky 
+    decomposition fails, Singular Value Decomposition (SVD) is used instead.
+
+    Parameters
+    ----------
+    in_matrix : NDArray[NP.complex128]
+        The input Hermitian matrix of shape (..., M, M).
+
+    Returns
+    -------
+    NDArray[NP.complex128]
+        The square root matrix with the same shape as the input matrix (..., M, M), 
+        factorized either by Cholesky or SVD.
+
+    Raises
+    ------
+    ValueError
+        If the input matrix is not Hermitian along the last two axes.
+    """
+
+    # Check if the matrix is Hermitian along the last two axes
+    if not NP.allclose(in_matrix, hermitian(in_matrix, axes=(-2,-1))):
+        raise ValueError("Input matrix is not Hermitian along the last two axes.")
+
+    # Number of leading dimensions in in_matrix
+    num_leading_dims = in_matrix.ndim - 2  
+
+    try:
+        # Attempt Cholesky decomposition
+        sqrt_matrix = LA.cholesky(in_matrix)
+    except LA.LinAlgError:
+        # Issue a warning if Cholesky fails
+        warnings.warn(
+            "The input matrix is not positive semi-definite. It indicates something may be wrong with the input matrix. SVD will be used, but results may be in error.",
+            category=UserWarning
+        )
+
+        # If Cholesky fails, perform SVD
+        U, S, Vh = LA.svd(in_matrix)
+
+        # Get the size of the last dimension (dimsize)
+        dimsize = S.shape[-1]
+
+        # Create an identity matrix of shape (dimsize, dimsize) and expand it to broadcast across the leading dimensions
+        # Multiply the identity matrix by S to create diagonal matrix with broadcastable dimensions
+        sqrtS = NP.sqrt(S)[...,NP.newaxis] * NP.eye(dimsize).reshape((1,) * num_leading_dims + (dimsize,dimsize)) # Shape = (...,dimsize,dimsize)
+
+        sqrt_matrix = U @ sqrtS
+
+    return sqrt_matrix

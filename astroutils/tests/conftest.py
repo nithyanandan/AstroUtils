@@ -193,3 +193,29 @@ parabolaparms = {'D': NP.asarray([20.0]), 'f/D': NP.asarray([0.25]), 'f': NP.asa
 def parabola_parms(request):
     return request.param
 
+############# Fixtures for test_mathops.py ##############
+
+@pytest.fixture
+def nruns_shape():
+    return (13,7)
+
+@pytest.fixture
+def positive_definite_hermitian_matrix(nruns_shape):
+    m = 3
+    A = NP.random.normal(size=nruns_shape+(m,m)) + 1j * NP.random.normal(size=nruns_shape+(m,m))
+    return A @ NP.swapaxes(A.conj(),-2,-1)
+
+@pytest.fixture
+def positive_semidefinite_hermitian_matrix(positive_definite_hermitian_matrix):
+    evals, evecs = NP.linalg.eigh(positive_definite_hermitian_matrix)
+    evals[...,0] = 0 # Make the first eigenvalue zero in all runs
+    m = evals.shape[-1]
+    # Number of leading dimensions in in_matrix
+    num_leading_dims = positive_definite_hermitian_matrix.ndim - 2 
+    diag_evals = evals[...,NP.newaxis] * NP.eye(m).reshape((1,) * num_leading_dims + (m,m)) # Shape = (...,m,m)
+    return evecs @ diag_evals @ NP.swapaxes(evecs.conj(),-2,-1)
+
+@pytest.fixture
+def non_hermitian_matrix(nruns_shape):
+    m = 3
+    return NP.random.normal(size=nruns_shape+(m,m)) + 1j * NP.random.normal(size=nruns_shape+(m,m))

@@ -1,7 +1,10 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
-from .. import mathops as OPS
+
+import warnings 
+import pytest 
+
 import numpy as NP
-import pytest
+from .. import mathops as OPS
 
 def test_reverse():
     n1, n2, n3 = 2, 3, 4
@@ -89,3 +92,22 @@ def test_hat_numerical():
     hermitian_result = OPS.hermitian(input_array, axes=(0, 1))
     expected_result = NP.linalg.inv(hermitian_result)
     assert NP.allclose(result, expected_result), "Numerical Hat operation check failed"
+
+def test_sqrt_positive_definite_hermitian_matrix(positive_definite_hermitian_matrix):
+    sqrt_matrix = OPS.sqrt_matrix_factorization(positive_definite_hermitian_matrix)
+    assert NP.allclose(sqrt_matrix @ NP.swapaxes(sqrt_matrix.conj(),-2,-1), positive_definite_hermitian_matrix), "Square root factorization failed for positive-definite Hermitian matrix."
+
+def test_sqrt_positive_semi_definite_hermitian_matrix(positive_semidefinite_hermitian_matrix):
+    """Test square root factorization for a positive semi-definite Hermitian matrix."""
+    with warnings.catch_warnings(record=True) as w:
+        sqrt_matrix = OPS.sqrt_matrix_factorization(positive_semidefinite_hermitian_matrix)
+        assert len(w) == 1
+        assert issubclass(w[-1].category, UserWarning)
+        assert "not positive semi-definite" in str(w[-1].message)
+    assert NP.allclose(sqrt_matrix @ NP.swapaxes(sqrt_matrix.conj(),-2,-1), positive_semidefinite_hermitian_matrix), "Square root factorization failed for positive-semi-definite Hermitian matrix."
+
+def test_sqrt_non_hermitian_matrix(non_hermitian_matrix):
+    """Test that a non-Hermitian matrix raises a ValueError."""
+    with pytest.raises(ValueError, match="Input matrix is not Hermitian"):
+        OPS.sqrt_matrix_factorization(non_hermitian_matrix)
+

@@ -1,3 +1,27 @@
+From f012913 (math):
+===================
+
+In astroutils/mathops.py,
+
+(*) Add function sqrt_matrix_factorization() to compute the square 
+root factorisation of a maxtrix using Cholesky or Singular Value
+Decomposition
+(*) Import NDArray from numpy.typing 
+(*) Update type hinting in functions hermitian() and hat()
+(*) Import warnings module
+
+In astroutils/tests/conftest.py,
+
+(*) Add pytest fixtures nruns_shape, non_hermitian_matrix, 
+positive_definite_hermitian_matrix, and 
+positive_semidefinite_hermitian_matrix
+
+In astroutils/tests/test_mathops.py,
+
+(*) Add tests test_sqrt_positive_definite_hermitian_matrix(), 
+test_sqrt_positive_semi_definite_hermitian_matrix(), and 
+test_sqrt_non_hermitian_matrix()
+
 From a36b0c8 (grid), 29f92f9 (math):
 ===================================
 
