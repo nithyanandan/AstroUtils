@@ -1,3 +1,15 @@
+From 6d8d5de (math):
+===================
+
+In astroutils/mathops.py,
+
+(*) Add function unscented_transform() to compute the mean and 
+covariance of a non-linear transformation of random variables 
+with a given mean and covariance. The tests needs to be written 
+and fixed. 
+(*) Rename import of mathops as MO instead of OPS and make changes
+accordingly throughout. 
+
 From f012913 (math):
 ===================
 

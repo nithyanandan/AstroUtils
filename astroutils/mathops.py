@@ -5,9 +5,10 @@ import warnings
 
 import numpy as NP
 import numpy.ma as MA
-import numpy.linalg as LA
+import numpy.linalg as NPLA
 from numpy.typing import NDArray
 import scipy as SP
+import scipy.linalg as SPLA
 from scipy import interpolate
 from skimage import img_as_float
 import skimage.morphology as morphology
@@ -1739,8 +1740,8 @@ def sqrt_matrix_factorization(in_matrix: NDArray[NP.complex128]) -> NDArray[NP.c
 
     try:
         # Attempt Cholesky decomposition
-        sqrt_matrix = LA.cholesky(in_matrix)
-    except LA.LinAlgError:
+        sqrt_matrix = NPLA.cholesky(in_matrix)
+    except NPLA.LinAlgError:
         # Issue a warning if Cholesky fails
         warnings.warn(
             "The input matrix is not positive semi-definite. It indicates something may be wrong with the input matrix. SVD will be used, but results may be in error.",
@@ -1748,7 +1749,7 @@ def sqrt_matrix_factorization(in_matrix: NDArray[NP.complex128]) -> NDArray[NP.c
         )
 
         # If Cholesky fails, perform SVD
-        U, S, Vh = LA.svd(in_matrix)
+        U, S, Vh = NPLA.svd(in_matrix)
 
         # Get the size of the last dimension (dimsize)
         dimsize = S.shape[-1]
@@ -1760,3 +1761,94 @@ def sqrt_matrix_factorization(in_matrix: NDArray[NP.complex128]) -> NDArray[NP.c
         sqrt_matrix = U @ sqrtS
 
     return sqrt_matrix
+
+def unscented_transform(mean: NDArray[NP.float64], 
+                        covariance: NDArray[NP.float64], 
+                        func, 
+                        alpha: float = 1.0, 
+                        beta: float = 2.0, 
+                        kappa: float = 0.0) -> (NDArray[NP.float64], NDArray[NP.float64]):
+    """
+    Perform the unscented transform on a given random variable defined by mean and covariance.
+
+    Parameters
+    ----------
+    mean : NDArray[NP.float64]
+        The mean of the random variable (shape (..., n)).
+    covariance : NDArray[NP.float64]
+        The covariance matrix of the random variable (shape (..., n, n)).
+    func : callable
+        A function that transforms the sigma points.
+    alpha : float, optional
+        Scaling parameter (default is 1).
+    beta : float, optional
+        Parameter for incorporating prior knowledge about the distribution (default is 2.0 for Gaussian).
+    kappa : float, optional
+        Secondary scaling parameter (default is 0.0).
+
+    Returns
+    -------
+    transformed_mean : NDArray[NP.float64]
+        The transformed mean.
+    transformed_covariance : NDArray[NP.float64]
+        The transformed covariance.
+    """
+
+    n = covariance.shape[-1]
+    lambda_ = alpha ** 2 * (n + kappa) - n
+    sigma_points_shape = mean.shape[:-1] + (2 * n + 1, n)
+    sigma_points = NP.zeros(sigma_points_shape, dtype=NP.complex64)
+    weights_mean = NP.zeros(2 * n + 1)
+    weights_cov = NP.zeros(2 * n + 1)
+
+    weights_mean[0] = lambda_ / (n + lambda_)
+    weights_cov[0] = lambda_ / (n + lambda_) + (1 - alpha ** 2 + beta)
+    weights_mean[1:] = weights_cov[1:] = 1 / (2 * (n + lambda_))
+
+    try:
+        if covariance.ndim == 2 and covariance.shape[0] == covariance.shape[1]:
+            sqrt_cov = SPLA.sqrtm((n + lambda_) * covariance)
+        else:
+            raise ValueError("Covariance matrix must be 2D square for sqrtm.")
+    except (SPLA.LinAlgError, ValueError):
+        sqrt_cov = sqrt_matrix_factorization((n + lambda_) * covariance)
+
+    sigma_points[..., 0, :] = mean
+    # Assign positive deviations: mean + sqrt_cov
+    sigma_points[..., 1:n+1, :] = mean[..., NP.newaxis, :] + sqrt_cov
+
+    # Assign negative deviations: mean - sqrt_cov
+    sigma_points[..., n+1:, :] = mean[..., NP.newaxis, :] - sqrt_cov
+
+    # sqrt_cov_expanded = sqrt_cov[..., NP.newaxis]
+    # sigma_points[..., 1:n+1, :] = mean[..., NP.newaxis, :] + sqrt_cov_expanded.swapaxes(-1, -2)
+    # sigma_points[..., n+1:, :] = mean[..., NP.newaxis, :] - sqrt_cov_expanded.swapaxes(-1, -2)
+
+    # # Expand sqrt_cov for proper broadcasting with the mean
+    # sqrt_cov_expanded = sqrt_cov[..., NP.newaxis, :, :]
+    
+    # # Assign positive deviations: mean + sqrt_cov
+    # sigma_points[..., 1:n+1, :] = mean[..., NP.newaxis, :] + NP.swapaxes(sqrt_cov_expanded, -2, -1)
+    
+    # # Assign negative deviations: mean - sqrt_cov
+    # sigma_points[..., n+1:, :] = mean[..., NP.newaxis, :] - NP.swapaxes(sqrt_cov_expanded, -2, -1)
+
+    # for i in range(n):
+    #     sigma_points[..., i + 1, :] = mean + sqrt_cov_expanded[..., i].squeeze()
+    #     sigma_points[..., i + n + 1, :] = mean - sqrt_cov_expanded[..., i].squeeze()
+
+    transformed_points = NP.array([func(point) for point in sigma_points.reshape(-1, n)]).reshape(sigma_points.shape)
+
+    transformed_mean = NP.sum(weights_mean[..., NP.newaxis] * transformed_points, axis=-2)
+    # transformed_mean = NP.sum(weights_mean[..., NP.newaxis] * transformed_points, axis=-2)
+
+    devns = transformed_points - transformed_mean[..., NP.newaxis, :] 
+    transformed_covariance = NP.einsum('...ki,...kj,k->...ij', devns, devns, weights_cov)
+    # sqr_devns = devns[...,NP.newaxis] * devns[...,NP.newaxis,:].conj()
+    # transformed_covariance = NP.mean()
+    # transformed_covariance = NP.zeros(transformed_points.shape[-2:])
+    # for i in range(2 * n + 1):
+    #     diff = transformed_points[..., i, :] - transformed_mean
+    #     transformed_covariance += weights_cov[i] * NP.einsum('...i,...j->...ij', diff, diff)
+
+    return (transformed_mean, transformed_covariance)
