@@ -1,3 +1,17 @@
+From c6517fd (math):
+===================
+
+In astroutils/mathops.py,
+
+(*) Add function multivariate_gaussian() to generate random variables 
+drawn from a multivariate Gaussian of a given shape, mean, and 
+covariance. Add appropriate docstring and examples. 
+
+In astroutils/tests/test_mathops.py,
+
+(*) Add tests to test various input combinations for the newly added 
+function multivariate_gaussian()
+
 From 6d8d5de (math):
 ===================
 

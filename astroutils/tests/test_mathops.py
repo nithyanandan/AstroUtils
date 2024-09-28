@@ -114,6 +114,64 @@ def test_sqrt_non_hermitian_matrix(non_hermitian_matrix):
     with pytest.raises(ValueError, match="Input matrix is not Hermitian"):
         MO.sqrt_matrix_factorization(non_hermitian_matrix)
 
+########## Tests for multivariate Gaussian random variable generation #######
+
+def test_multivariate_gaussian_2x2_covariance_no_mean():
+    # Basic test with 2x2 covariance and no mean provided
+    covariance = NP.array([[2+0j, 1+1j], [1-1j, 2+0j]], dtype=NP.complex128)
+    result = MO.multivariate_gaussian(covariance)
+    
+    assert result.shape == (2,)
+    assert NP.iscomplexobj(result), "Result should contain complex values."
+
+def test_multivariate_gaussian_2x2_covariance_with_mean():
+    # Test with 2x2 covariance and provided mean
+    covariance = NP.array([[2+0j, 1+1j], [1-1j, 2+0j]], dtype=NP.complex128)
+    mean = NP.array([1+0j, 2+0j], dtype=NP.complex128)
+    result = MO.multivariate_gaussian(covariance, mean)
+    
+    assert result.shape == (2,)
+    assert NP.iscomplexobj(result), "Result should contain complex values."
+
+def test_multivariate_gaussian_batched_covariance():
+    # Test with batched covariance and no size provided
+    covariance = NP.array([[[2+0j, 1+1j], [1-1j, 2+0j]], 
+                           [[1+0j, 0+1j], [0-1j, 1+0j]]], dtype=NP.complex128)
+    result = MO.multivariate_gaussian(covariance)
+    
+    assert result.shape == (2, 2), "Expected shape (2, 2) for the batched covariance."
+    assert NP.iscomplexobj(result), "Result should contain complex values."
+
+# Test broadcasting compatibility for mean vector and covariance
+def test_multivariate_gaussian_batched():
+    covariance = NP.array([[[2+0j, 0+0j], [0+0j, 3+0j]],
+                           [[1+0j, 0+0j], [0+0j, 1+0j]]], dtype=NP.complex128)
+    mean = NP.array([[1+0j, 1+0j], [0+0j, 0+0j]], dtype=NP.complex128)
+    result = MO.multivariate_gaussian(covariance, mean=mean)
+    assert result.shape == (2, 2), "Batched test failed: incorrect shape"
+
+# Test covariance matrix structure preservation after sampling
+def test_multivariate_gaussian_covariance_preservation():
+    covariance = NP.array([[1+0j, 0+0j], [0+0j, 1+0j]], dtype=NP.complex128)
+    samples = NP.array([MO.multivariate_gaussian(covariance) for _ in range(5000)])
+    sample_covariance = NP.cov(samples.T)
+    assert NP.allclose(sample_covariance, covariance, atol=0.05), "Covariance preservation test failed"
+
+# Test if the function maintains covariance structure after generating samples
+def test_covariance_structure():
+    covariance = NP.array([[2+0j, 1+1j], [1-1j, 2+0j]], dtype=NP.complex128)
+    samples = NP.array([MO.multivariate_gaussian(covariance) for _ in range(10000)])
+    sample_covariance = NP.cov(samples.T)
+    assert NP.allclose(sample_covariance, covariance, atol=0.1), "Generated covariance structure does not match"
+
+# Test if broadcasting works properly when mean and size are given in different dimensions
+def test_multivariate_gaussian_broadcast_mean_size():
+    covariance = NP.array([[1+0j, 0+0j], [0+0j, 1+0j]], dtype=NP.complex128)
+    mean = NP.array([3+0j, 3+0j], dtype=NP.complex128)
+    size = (4,)
+    result = MO.multivariate_gaussian(covariance, mean=mean, size=size)
+    assert result.shape == (4, 2), "Broadcast mean and size test failed: incorrect shape"
+
 ###### Tests for unscented transform ########
 
 # # Define a simple linear function for testing
