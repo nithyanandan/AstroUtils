@@ -1851,15 +1851,14 @@ def sqrt_matrix_factorization(in_matrix: NDArray[NP.complex128]) -> NDArray[NP.c
 
 def multivariate_gaussian(
     covariance: NDArray[NP.complex128], mean: NDArray[NP.complex128] = 0, 
-    size: tuple = ()) -> NDArray[NP.complex128]:
+    nruns_shape: Tuple[int, ...] = ()
+) -> NDArray[NP.complex128]:
     """
     Generate complex random variables from a multivariate Gaussian distribution.
 
     This function generates random variables that follow a multivariate complex Gaussian distribution
     with the specified mean and covariance. If `mean` is a scalar, it will apply the same value across 
-    all dimensions. If `size` is not provided, it will be determined based on the first N-2 dimensions 
-    of `covariance`. If both `size` and a multi-dimensional `covariance` are provided, they must be 
-    broadcast-compatible.
+    all dimensions. The output shape is `nruns_shape + covariance.shape[:-2] + (n,)`.
 
     Parameters
     ----------
@@ -1869,65 +1868,69 @@ def multivariate_gaussian(
     mean : NDArray[NP.complex128], optional
         Mean vector or scalar for the distribution, of shape (..., n), (n,), or scalar. Default is `0`. 
         If provided as a scalar, it will apply to all dimensions.
-    size : tuple, optional
-        Shape of the number of instances to generate, e.g., `(m,)` to generate `m` instances. If not 
-        provided, the size is determined based on the first N-2 dimensions of `covariance`.
+    nruns_shape : tuple, optional
+        Shape of the number of instances to generate, e.g., `(k, l)` to generate `k, l` instances per batch. 
+        The output shape is `nruns_shape + (..., n)`, where `...` are the batch dimensions from `covariance`.
 
     Returns
     -------
     NDArray[NP.complex128]
-        Generated complex random variables, of shape `size + (n,)`. The random variables follow 
+        Generated complex random variables, of shape `nruns_shape + (..., n)`. The random variables follow 
         the specified multivariate Gaussian distribution.
 
     Raises
     ------
     ValueError
-        If `size` is not broadcast-compatible with the first N-2 dimensions of `covariance`.
+        If `nruns_shape` is not broadcast-compatible with the batch dimensions of `covariance`.
 
     Notes
     -----
     The function computes the square root of the covariance matrix using `sqrt_matrix_factorization()`.
     If the covariance matrix is not positive semi-definite, SVD is used to compute the square root.
-    
+
     Examples
     --------
     >>> covariance = NP.array([[2+0j, 1+1j], [1-1j, 2+0j]], dtype=NP.complex128)
     >>> multivariate_gaussian(covariance).shape
     (2,)
-    
+
     >>> covariance = NP.array([[[2+0j, 1+1j], [1-1j, 2+0j]], [[1+0j, 0+1j], [0-1j, 1+0j]]], dtype=NP.complex128)
-    >>> multivariate_gaussian(covariance, size=(5,)).shape
+    >>> multivariate_gaussian(covariance, nruns_shape=(5,)).shape
     (5, 2, 2)
+
+    >>> covariance = NP.random.randn(3,4,5) + 1j * NP.random.randn(3,4,5)
+    >>> multivariate_gaussian(covariance, nruns_shape=(2,3)).shape
+    (2, 3, 3, 4, 5)
     """
     
     # Determine n from the last dimension of the covariance matrix
     n = covariance.shape[-1]
     
-    # If mean is a scalar, convert it to a broadcastable shape of (..., n)
+    # Convert mean to an array and reshape for broadcasting
     mean = NP.array(mean)
-    mean_shape = mean.shape
 
-    # If size is not provided, infer size from covariance shape
-    if not size:
-        size = covariance.shape[:-2]
-    
-    # Check for broadcast compatibility between size and the first N-2 dimensions of covariance
-    try:
-        NP.broadcast_shapes(size, covariance.shape[:-2])
-    except ValueError:
-        raise ValueError("The provided `size` is not broadcast-compatible with the first N-2 dimensions of `covariance`.")
-    
-    mean = mean.reshape((1,)*(len(size)+1-len(mean_shape))+mean_shape) # Make it broadcastable to the output array
+    # Extract batch shape from covariance
+    batch_shape = covariance.shape[:-2]
 
-    # Compute the square root of the covariance matrix using sqrt_matrix_factorization
+    # Compute the square root of the covariance matrix
     sqrt_cov = sqrt_matrix_factorization(covariance)  # Shape (..., n, n)
-    
-    ## Generate standard normal random variables with mean 0 and variance 1
-    rvs = (NP.random.normal(size=size + (n,)) + 1j * NP.random.normal(size=size + (n,))) / NP.sqrt(2.0)
 
-    ## Matrix multiplication of sqrt_cov with the random variables + mean added
-    modified_rvs = (sqrt_cov @ rvs[...,NP.newaxis])[...,0] + mean
-   
+    # Generate standard normal random variables with mean 0 and variance 1
+    rvs_shape = nruns_shape + batch_shape + (n,)
+    rvs = (NP.random.normal(size=rvs_shape) + 1j * NP.random.normal(size=rvs_shape)) / NP.sqrt(2.0)
+
+    # Ensure correct broadcasting for matrix multiplication
+    sqrt_cov = sqrt_cov.reshape((1,) * len(nruns_shape) + batch_shape + (n, n))
+    rvs = rvs[..., NP.newaxis]  # Expand last dimension for matrix multiplication
+
+    # Apply transformation: sqrt_cov @ rvs + mean
+    modified_rvs = (sqrt_cov @ rvs)[..., 0]  # Remove last dimension after multiplication
+
+    # Ensure mean has the correct shape and add it
+    mean_shape = (1,)*(len(modified_rvs.shape)-len(mean.shape)) + mean.shape
+    mean = mean.reshape(mean_shape)
+    modified_rvs += mean
+
     return modified_rvs
 
 ################################################################################

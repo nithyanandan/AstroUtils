@@ -202,7 +202,7 @@ def test_multivariate_gaussian_2x2_covariance_with_mean():
     assert NP.iscomplexobj(result), "Result should contain complex values."
 
 def test_multivariate_gaussian_batched_covariance():
-    # Test with batched covariance and no size provided
+    # Test with batched covariance and no nruns_shape provided
     covariance = NP.array([[[2+0j, 1+1j], [1-1j, 2+0j]], 
                            [[1+0j, 0+1j], [0-1j, 1+0j]]], dtype=NP.complex128)
     result = MO.multivariate_gaussian(covariance)
@@ -237,8 +237,57 @@ def test_multivariate_gaussian_broadcast_mean_size():
     covariance = NP.array([[1+0j, 0+0j], [0+0j, 1+0j]], dtype=NP.complex128)
     mean = NP.array([3+0j, 3+0j], dtype=NP.complex128)
     size = (4,)
-    result = MO.multivariate_gaussian(covariance, mean=mean, size=size)
+    result = MO.multivariate_gaussian(covariance, mean=mean, nruns_shape=size)
     assert result.shape == (4, 2), "Broadcast mean and size test failed: incorrect shape"
+
+def test_output_shape():
+    """Test if output shape matches expected shape."""
+    covariance = NP.array([[2+0j, 1+1j], [1-1j, 2+0j]], dtype=NP.complex128)
+    assert MO.multivariate_gaussian(covariance).shape == (2,)
+    assert MO.multivariate_gaussian(covariance, nruns_shape=(5,)).shape == (5, 2)
+    
+    batch_cov = NP.array([
+        [[2+0j, 1+1j], [1-1j, 2+0j]],
+        [[1+0j, 0+1j], [0-1j, 1+0j]]
+    ], dtype=NP.complex128)
+    assert MO.multivariate_gaussian(batch_cov, nruns_shape=(3, 4)).shape == (3, 4, 2, 2)
+
+def test_mean_application():
+    """Test if the mean is correctly applied."""
+    covariance = NP.eye(3, dtype=NP.complex128)
+    mean = NP.array([1+1j, 2+2j, 3+3j], dtype=NP.complex128)
+    samples = MO.multivariate_gaussian(covariance, mean=mean, nruns_shape=(100,))
+    assert samples.shape == (100, 3)
+    assert NP.allclose(samples.mean(axis=0), mean, atol=0.5)  # Allow some tolerance due to randomness
+
+
+def test_zero_mean_unit_variance():
+    """Test if the function generates zero-mean unit-variance data when using identity covariance."""
+    NP.random.seed(42)  # For reproducibility
+    covariance = NP.eye(3, dtype=NP.complex128)
+    samples = MO.multivariate_gaussian(covariance, nruns_shape=(10000,))
+    assert NP.allclose(samples.mean(axis=0), 0, atol=0.1)
+    assert NP.allclose(NP.cov(samples.T), NP.eye(3), atol=0.1)
+
+# def test_invalid_nruns_shape():
+#     """Test if invalid nruns_shape raises an error."""
+#     covariance = NP.eye(2, dtype=NP.complex128)
+#     with pytest.raises(ValueError):
+#         MO.multivariate_gaussian(covariance, nruns_shape=(2, 3, 4))  # Incompatible with covariance shape
+
+def test_non_psd_handling():
+    """Test if the function properly handles non-positive-semidefinite covariance."""
+    covariance = NP.array([[1+0j, 2+0j], [2+0j, 1+0j]], dtype=NP.complex128)  # Not PSD
+    samples = MO.multivariate_gaussian(covariance, nruns_shape=(100,))
+    assert samples.shape == (100, 2)
+    # Check if covariance of generated samples is close to expected
+    assert not NP.allclose(NP.cov(samples.T), covariance, atol=0.1)
+
+def test_broadcasting():
+    """Test if broadcasting works correctly when nruns_shape has extra dimensions."""
+    covariance = NP.eye(3, dtype=NP.complex128)
+    samples = MO.multivariate_gaussian(covariance, nruns_shape=(2, 3))
+    assert samples.shape == (2, 3, 3)
 
 ###### Tests for unscented transform ########
 

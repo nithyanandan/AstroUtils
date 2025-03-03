@@ -1,3 +1,17 @@
+From 038cdb0 (math):
+===================
+
+In astroutils/mathops.py,
+
+(*) Replace function multivariate_gaussian() with a newer version, 
+with docstring to generate complex multivariate random variables 
+with a specified covariance and mean. 
+
+In astroutils/tests/test_mathops.py, 
+
+(*) Add tests to test various combinations of the newly added
+function multivariate_gaussian()
+
 From 62d2958 (math):
 ===================
 
