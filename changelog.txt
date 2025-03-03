@@ -1,3 +1,27 @@
+From 62d2958 (math):
+===================
+
+In astroutils/mathops.py,
+
+(*) Add function gen_random_positive_definite_hermitian_matrix() to
+generate a random positive definite hermitian matrix with type 
+hinting and docstring 
+(*) Add function gen_random_positive_semidefinite_hermitian_matrix() 
+to generate a random positive definite hermitian matrix with type 
+hinting and docstring 
+
+In astroutils/tests/test_mathops.py, 
+
+(*) Add tests to test various combinations of the newly added
+function gen_random_positive_definite_hermitian_matrix()
+(*) Add tests to test various combinations of the newly added
+function gen_random_positive_semidefinite_hermitian_matrix()
+
+In astroutils/tests/conftest.py,
+
+(*) Tweak fixture positive_semidefinite_hermitian_matrix to make
+the last (largest) eigenvalue zero instead of the first (smallest)
+ 
 From c6517fd (math):
 ===================
 

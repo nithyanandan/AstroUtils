@@ -206,9 +206,9 @@ def positive_definite_hermitian_matrix(nruns_shape):
     return A @ NP.swapaxes(A.conj(),-2,-1)
 
 @pytest.fixture
-def positive_semidefinite_hermitian_matrix(positive_definite_hermitian_matrix):
+def positive_semidefinite_hermitian_matrix(positive_definite_hermitian_matrix):    
     evals, evecs = NP.linalg.eigh(positive_definite_hermitian_matrix)
-    evals[...,0] = 0 # Make the first eigenvalue zero in all runs
+    evals[...,-1] = 0 # Make the largest eigenvalue zero in all runs
     m = evals.shape[-1]
     # Number of leading dimensions in in_matrix
     num_leading_dims = positive_definite_hermitian_matrix.ndim - 2 

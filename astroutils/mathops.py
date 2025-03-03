@@ -1,6 +1,6 @@
 from __future__ import print_function, division, unicode_literals
 from builtins import zip, range
-from typing import Optional, Union, List, Tuple
+from typing import Optional, Union, List, Tuple, Sequence
 import warnings
 
 import numpy as NP
@@ -1703,6 +1703,91 @@ def hat(inparr: NDArray[NP.complex128], axes: Optional[Union[List[int],Tuple[int
         inparr_IH = NP.moveaxis(inparr_H, invaxes, NP.sort(axes))
 
     return inparr_IH
+
+################################################################################
+
+def gen_random_positive_definite_hermitian_matrix(
+    nruns_shape: Tuple[int, ...], 
+    ndim: int, 
+    complex: bool = False
+) -> NDArray[NP.complex128]:
+    """
+    Generate a positive definite Hermitian matrix.
+
+    Parameters
+    ----------
+    nruns_shape : Tuple[int, ...]
+        The shape of the batch of matrices to generate.
+    ndim : int
+        The size of the square matrix (ndim x ndim).
+    complex : bool, optional
+        If True, generates a complex Hermitian matrix. Default is False.
+
+    Returns
+    -------
+    NDArray[NP.complex128]
+        A batch of positive definite Hermitian matrices of shape (*nruns_shape, ndim, ndim).
+    """
+    A_real = NP.random.normal(size=nruns_shape + (ndim, ndim))
+    A_imag = NP.random.normal(size=nruns_shape + (ndim, ndim)) if complex else 0
+    A = A_real + 1j * A_imag    
+    return A @ NP.swapaxes(A.conj(), -2, -1)
+
+################################################################################
+
+def gen_random_positive_semidefinite_hermitian_matrix(
+    nruns_shape: Tuple[int, ...], 
+    ndim: int, 
+    zero_indices: Union[int, Sequence[int]] = 0, 
+    complex: bool = False
+) -> NDArray[NP.complex128]:
+    """
+    Generate a positive semi-definite Hermitian matrix with specified singular values set to zero.
+
+    Parameters
+    ----------
+    nruns_shape : Tuple[int, ...]
+        The shape of the batch of matrices to generate.
+    ndim : int
+        The size of the square matrix (ndim x ndim).
+    zero_indices : int or Sequence[int], optional
+        Indices of the singular values to be set to zero in **descending order**. Default is 0.
+        If a single integer is provided, it is converted to a list.
+    complex : bool, optional
+        If True, generates a complex Hermitian matrix. Default is False.
+
+    Returns
+    -------
+    NDArray[NP.complex128]
+        A batch of positive semi-definite Hermitian matrices of shape (*nruns_shape, ndim, ndim).
+
+    Raises
+    ------
+    ValueError
+        If any of `zero_indices` is out of bounds.
+    """
+    if isinstance(zero_indices, int):
+        zero_indices = [zero_indices]  # Convert single index to list
+
+    if any(idx < 0 or idx >= ndim for idx in zero_indices):
+        raise ValueError(f"zero_indices must be within the range [0, {ndim-1}]")
+
+    # Generate a positive definite Hermitian matrix
+    posdef_hermitian_matrix = gen_random_positive_definite_hermitian_matrix(nruns_shape, ndim, complex)
+
+    # Perform SVD: M = U @ diag(S) @ Vh
+    U, S, Vh = NPLA.svd(posdef_hermitian_matrix)
+
+    # Zero out the specified singular values in descending order
+    S[..., zero_indices] = 0
+
+    # Reconstruct the matrix: U @ diag(S) @ Vh
+    reconstructed_matrix = U @ (S[..., NP.newaxis] * Vh)
+
+    # # Ensure Hermitian symmetry
+    # reconstructed_matrix = (reconstructed_matrix + reconstructed_matrix.conj().swapaxes(-2, -1)) / 2
+
+    return reconstructed_matrix
 
 ################################################################################
 

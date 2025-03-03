@@ -96,6 +96,74 @@ def test_hat_numerical():
     expected_result = NP.linalg.inv(hermitian_result)
     assert NP.allclose(result, expected_result), "Numerical Hat operation check failed"
 
+@pytest.mark.parametrize("nruns_shape, ndim, complex", [
+    ((5,), 3, False),  # 5 real 3x3 matrices
+    ((2, 4), 4, True),  # 2x4 batch of complex 4x4 matrices
+    ((), 2, False),  # Single real 2x2 matrix
+    ((3,), 5, True)  # 3 complex 5x5 matrices
+])
+def test_positive_definite_hermitian_matrix(nruns_shape, ndim, complex, positive_definite_hermitian_matrix):
+    """Test if generated matrices are positive-definite and Hermitian."""
+    
+    # Generate matrices using the function under test
+    matrices = MO.gen_random_positive_definite_hermitian_matrix(nruns_shape, ndim, complex)
+    
+    # Ensure the shape matches
+    assert matrices.shape == nruns_shape + (ndim, ndim), "Output shape mismatch"
+
+    # Check if matrices are Hermitian: A == A†
+    assert NP.allclose(matrices, matrices.swapaxes(-2, -1).conj()), "Matrix is not Hermitian"
+
+    # Check if matrices are positive definite: all eigenvalues must be > 0
+    evals = NP.linalg.eigh(matrices)[0]  # Compute eigenvalues
+    assert NP.all(evals > 0), "Matrix is not positive definite"
+
+    # Compare with fixture-generated matrices (if needed)
+    # Ensure eigenvalues of the fixture matrices are also positive
+    fixture_matrices = positive_definite_hermitian_matrix
+    fixture_evals = NP.linalg.eigh(fixture_matrices)[0]
+    assert NP.all(fixture_evals > 0), "Fixture-generated matrix is not positive definite"
+
+@pytest.mark.parametrize("nruns_shape, ndim, zero_indices, complex", [
+    ((5,), 3, 0, False),  # 5 real 3x3 matrices with the largest singular value zeroed
+    ((2, 4), 4, [1, 2], True),  # 2x4 batch of complex 4x4 matrices with two singular values zeroed
+    ((), 2, [0], False),  # Single real 2x2 matrix with one singular value zeroed
+    ((3,), 5, [0, 3], True)  # 3 complex 5x5 matrices with two singular values zeroed
+])
+def test_positive_semidefinite_hermitian_matrix(
+    nruns_shape, ndim, zero_indices, complex, 
+    positive_semidefinite_hermitian_matrix
+):
+    """Test if generated matrices are positive semi-definite and Hermitian with expected zeroed singular values."""
+
+    # Generate matrices using the function under test
+    matrices = MO.gen_random_positive_semidefinite_hermitian_matrix(nruns_shape, ndim, zero_indices, complex)
+
+    # Ensure the shape matches
+    assert matrices.shape == nruns_shape + (ndim, ndim), "Output shape mismatch"
+
+    # Check if matrices are Hermitian: A == A†
+    assert NP.allclose(matrices, matrices.swapaxes(-2, -1).conj()), "Matrix is not Hermitian"
+
+    # Compute singular values
+    _, S, _ = NP.linalg.svd(matrices)
+
+    # Ensure the specified singular values are zero
+    zero_indices_list = [zero_indices] if isinstance(zero_indices, int) else zero_indices
+    assert NP.allclose(S[..., -len(zero_indices_list):],0), "Specified number of singular values are not zero"
+
+    # Ensure at least one singular value is nonzero (to be positive semi-definite, not zero everywhere)
+    assert NP.any(S > 0), "Matrix is entirely zero, expected positive semi-definite"
+
+    # Ensure all singular values are non-negative (to be positive semi-definite, not negative anywhere)
+    assert NP.all(S >= 0), "Matrix has negative eigenvalues, expected positive semi-definite"
+
+    # Compare with fixture-generated matrices (if needed)
+    fixture_matrices = positive_semidefinite_hermitian_matrix 
+    # # Check that fixture matrices have expected zeroed singular values   
+    _, fixture_S, _ = NP.linalg.svd(fixture_matrices)
+    assert NP.allclose(fixture_S[..., -1],0), "Fixture-generated matrix does not match expected zeroed singular values"
+
 def test_sqrt_positive_definite_hermitian_matrix(positive_definite_hermitian_matrix):
     sqrt_matrix = MO.sqrt_matrix_factorization(positive_definite_hermitian_matrix)
     assert NP.allclose(sqrt_matrix @ NP.swapaxes(sqrt_matrix.conj(),-2,-1), positive_definite_hermitian_matrix), "Square root factorization failed for positive-definite Hermitian matrix."
