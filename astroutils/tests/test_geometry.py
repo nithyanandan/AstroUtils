@@ -202,3 +202,62 @@ def test_parabola_parameters(parabola_parms):
         outdict = GEOM.parabola_parameters(depth=indict['h'], f=indict['f'])
     assert_dict_equal(fulldict, outdict)
 
+def test_sample_2D_plane_rectangle():
+    nx, ny, dx, dy = 2, 2, 1.0, 1.0
+    expected_locs = NP.asarray([[-0.5, -0.5],
+                                 [ 0.5, -0.5],
+                                 [-0.5,  0.5],
+                                 [ 0.5,  0.5]])
+    locs = GEOM.sample_2D_plane('rectangle', nx=nx, ny=ny, dx=dx, dy=dy)
+    assert locs.shape == (nx*ny, 2)
+    NP.testing.assert_allclose(locs, expected_locs, atol=1e-10)
+
+def test_sample_2D_plane_rectangle_default_spacing():
+    nx, ny = 3, 1
+    locs = GEOM.sample_2D_plane('rectangle', nx=nx, ny=ny)
+    expected_locs = NP.asarray([[-1.0, 0.0],
+                                 [ 0.0, 0.0],
+                                 [ 1.0, 0.0]])
+    NP.testing.assert_allclose(locs, expected_locs, atol=1e-10)
+
+def test_sample_2D_plane_hexagon():
+    nedge, dx = 2, 1.0
+    hexdy = dx * NP.sin(NP.pi/3)
+    expected_locs = NP.asarray([[-0.5, -hexdy],
+                                 [ 0.5, -hexdy],
+                                 [-1.0,  0.0  ],
+                                 [ 0.0,  0.0  ],
+                                 [ 1.0,  0.0  ],
+                                 [-0.5,  hexdy],
+                                 [ 0.5,  hexdy]])
+    locs = GEOM.sample_2D_plane('hexagon', nedge=nedge, dx=dx)
+    assert locs.shape == (7, 2)
+    NP.testing.assert_allclose(locs, expected_locs, atol=1e-10)
+
+def test_sample_2D_plane_centred_at_origin():
+    locs_rect = GEOM.sample_2D_plane('rectangle', nx=4, ny=3, dx=1.3, dy=0.7)
+    NP.testing.assert_allclose(locs_rect.mean(axis=0), [0.0, 0.0], atol=1e-10)
+    locs_hex = GEOM.sample_2D_plane('hexagon', nedge=3, dx=0.9)
+    NP.testing.assert_allclose(locs_hex.mean(axis=0), [0.0, 0.0], atol=1e-10)
+
+def test_sample_2D_plane_indices_subset():
+    nx, ny, dx, dy = 2, 2, 1.0, 1.0
+    full_locs = GEOM.sample_2D_plane('rectangle', nx=nx, ny=ny, dx=dx, dy=dy)
+    indices = [1, 3]
+    subset_locs = GEOM.sample_2D_plane('rectangle', indices=indices, nx=nx, ny=ny, dx=dx, dy=dy)
+    assert subset_locs.shape == (len(indices), 2)
+    NP.testing.assert_allclose(subset_locs, full_locs[indices,:], atol=1e-10)
+
+def test_sample_2D_plane_indices_none_returns_all():
+    full_locs = GEOM.sample_2D_plane('hexagon', nedge=2, dx=1.0)
+    all_locs = GEOM.sample_2D_plane('hexagon', indices=None, nedge=2, dx=1.0)
+    NP.testing.assert_allclose(all_locs, full_locs, atol=1e-10)
+
+def test_sample_2D_plane_invalid_pattern():
+    with pytest.raises(ValueError):
+        GEOM.sample_2D_plane('triangle', nx=2, ny=2)
+
+def test_sample_2D_plane_missing_required_kwarg():
+    with pytest.raises(KeyError):
+        GEOM.sample_2D_plane('rectangle', ny=2)
+

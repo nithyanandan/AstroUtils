@@ -1,3 +1,17 @@
+From ac1f0c0 (geom):
+===================
+
+In astroutils/geometry.py,
+
+(*) Add function sample_2D_plane() with docstring to generate 
+sampled locations from a regular 2D geometry like rectangle 
+and hexagon, including option to select specific indices.
+
+In astroutils/tests/test_geometry.py,
+
+(*) Add tests to test various combinations of inputs to the 
+neewly added function sample_2D_plane()
+
 From 038cdb0 (math):
 ===================
 
