@@ -1,3 +1,14 @@
+From e0d88d9 (geom):
+===================
+
+In astroutils/tests/conftest.py,
+
+(*) Add fixtures for testing the Point class
+
+In astroutils/tests/test_geometry.py,
+
+(*) Add tests for the Point class
+
 From a3aa1a5 (geom):
 ===================
 

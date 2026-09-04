@@ -6,6 +6,14 @@ import numpy as NP
 
 ############# Fixtures for test_geometry.py ##############
 
+# Inputs to Point.__init__() and the (x,y,z) tuple each should produce
+point_init_inputs   = [None, 5, 5.0, [], [1.0], [1.0,2.0], [1.0,2.0,3.0], [1.0,2.0,3.0,4.0], (1.0,2.0,3.0), NP.asarray([1.0,2.0,3.0])]
+point_init_expected = [(0.0,0.0,0.0), (5.0,0.0,0.0), (5.0,0.0,0.0), (0.0,0.0,0.0), (1.0,0.0,0.0), (1.0,2.0,0.0), (1.0,2.0,3.0), (1.0,2.0,3.0), (1.0,2.0,3.0), (1.0,2.0,3.0)]
+
+@pytest.fixture(scope='module', params=list(zip(point_init_inputs, point_init_expected)))
+def point_init_case(request):
+    return request.param
+
 points1 = [([1.0, 1.0]),
            ([1.0, -2.0]),
            ([2.0, 3.0]),

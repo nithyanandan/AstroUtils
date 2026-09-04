@@ -13,6 +13,97 @@ else:
     tc = TestCase()
     assert_dict_equal = tc.assertDictEqual
 
+def test_point_init(point_init_case):
+    xyz_input, expected_xyz = point_init_case # Read from fixture in conftest.py
+    p = GEOM.Point(xyz_input)
+    assert (p.x, p.y, p.z) == expected_xyz
+
+def test_point_init_from_point_instance():
+    p1 = GEOM.Point([1.0, 2.0, 3.0])
+    p2 = GEOM.Point(p1)
+    assert (p2.x, p2.y, p2.z) == (1.0, 2.0, 3.0)
+
+def test_point_init_invalid_type():
+    with pytest.raises(TypeError):
+        GEOM.Point('abc')
+
+def test_point_str():
+    p = GEOM.Point([1.0, 2.0, 3.0])
+    assert str(p) == '(1.0, 2.0, 3.0)'
+
+def test_point_add():
+    p1 = GEOM.Point([1.0, 2.0, 3.0])
+    p2 = GEOM.Point([4.0, 5.0, 6.0])
+    p3 = p1 + p2
+    assert (p3.x, p3.y, p3.z) == (5.0, 7.0, 9.0)
+
+def test_point_add_invalid_type():
+    p1 = GEOM.Point([1.0, 2.0, 3.0])
+    with pytest.raises(TypeError):
+        p1 + 5.0
+
+def test_point_sub():
+    p1 = GEOM.Point([4.0, 5.0, 6.0])
+    p2 = GEOM.Point([1.0, 2.0, 3.0])
+    p3 = p1 - p2
+    assert (p3.x, p3.y, p3.z) == (3.0, 3.0, 3.0)
+
+def test_point_sub_invalid_type():
+    p1 = GEOM.Point([1.0, 2.0, 3.0])
+    with pytest.raises(TypeError):
+        p1 - 5.0
+
+def test_point_mul_dot_product():
+    p1 = GEOM.Point([1.0, 2.0, 3.0])
+    p2 = GEOM.Point([4.0, 5.0, 6.0])
+    assert p1 * p2 == 32.0 # 1*4 + 2*5 + 3*6
+
+def test_point_mul_invalid_type():
+    p1 = GEOM.Point([1.0, 2.0, 3.0])
+    with pytest.raises(TypeError):
+        p1 * 5.0
+
+def test_point_rmul_scalar_product():
+    p1 = GEOM.Point([1.0, 2.0, 3.0])
+    p2 = 2.0 * p1
+    assert (p2.x, p2.y, p2.z) == (2.0, 4.0, 6.0)
+
+def test_point_rmul_invalid_type():
+    p1 = GEOM.Point([1.0, 2.0, 3.0])
+    with pytest.raises(TypeError):
+        p1.__rmul__('a')
+
+def test_point_abs():
+    p = GEOM.Point([3.0, 4.0, 0.0])
+    assert abs(p) == 5.0
+
+def test_point_comparisons():
+    p_small = GEOM.Point([1.0, 0.0, 0.0]) # magnitude 1
+    p_large = GEOM.Point([3.0, 4.0, 0.0]) # magnitude 5
+    p_equal = GEOM.Point([0.0, 5.0, 0.0]) # magnitude 5, same as p_large
+    assert p_small < p_large
+    assert p_small <= p_large
+    assert p_large > p_small
+    assert p_large >= p_small
+    assert p_large == p_equal
+    assert p_large <= p_equal
+    assert p_large >= p_equal
+    assert not (p_large < p_equal)
+    assert not (p_large > p_equal)
+
+def test_point_comparison_invalid_type():
+    p = GEOM.Point([1.0, 2.0, 3.0])
+    with pytest.raises(TypeError):
+        p < 5.0
+    with pytest.raises(TypeError):
+        p <= 5.0
+    with pytest.raises(TypeError):
+        p > 5.0
+    with pytest.raises(TypeError):
+        p >= 5.0
+    with pytest.raises(TypeError):
+        p == 5.0
+
 def test_generate_line_from_point_and_slope(generate_line_from_point_and_slope):
     points, slopes, expected_eqns = generate_line_from_point_and_slope # Read from fixture in conftest.py
     points = NP.asarray(points).reshape(-1,2)
