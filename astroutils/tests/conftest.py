@@ -225,6 +225,30 @@ costas_welch_invalid_orders = [5, 7, 8]
 def costas_welch_invalid_order(request):
     return request.param
 
+# Case 1: reference point at (lat=0, lon=0, alt=0). At this point the local
+# ENU basis vectors align exactly with the ECEF axes: local Up is along ECEF
+# X, local East along ECEF Y, and local North along ECEF Z. This gives a
+# hand-derivable check independent of lla2ecef().
+ecef_enu_ref_xyz_eq = NP.array([6378137.0, 0.0, 0.0]) # ECEF pos of lat=lon=alt=0 (WGS84 semi-major axis)
+ecef_enu_ref_info_eq = {'xyz': ecef_enu_ref_xyz_eq.copy(), 'lat': 0.0, 'lon': 0.0, 'units': 'degrees'}
+ecef_enu_offset_eq = NP.array([100.0, 200.0, 300.0])      # (dx,dy,dz) offset from reference in ECEF
+ecef_enu_expected_enu_eq = NP.array([200.0, 300.0, 100.0]) # (east,north,up) = (dy,dz,dx) at lat=lon=0
+
+@pytest.fixture(scope='module')
+def ecef2enu_equatorial_case():
+    return (ecef_enu_ref_xyz_eq.copy(), dict(ecef_enu_ref_info_eq), ecef_enu_offset_eq.copy(), ecef_enu_expected_enu_eq.copy())
+
+# Case 2: a general mid-latitude reference point, used for round-trip checks
+# between ecef2enu() and enu2ecef(). ref_xyz below is the ECEF position of
+# ref_latlonalt as returned by lla2ecef() (WGS84).
+ecef_enu_ref_latlonalt = (34.5, -118.2, 500.0) # degrees, degrees, metres
+ecef_enu_ref_xyz_general = NP.array([-2486777.318714501, -4637820.0998305855, 3592575.143868436])
+ecef_enu_offset_general = NP.array([50.0, -75.0, 120.0])
+
+@pytest.fixture(scope='module')
+def ecef2enu_general_case():
+    return (ecef_enu_ref_latlonalt, ecef_enu_ref_xyz_general.copy(), ecef_enu_offset_general.copy())
+
 ############# Fixtures for test_mathops.py ##############
 
 @pytest.fixture

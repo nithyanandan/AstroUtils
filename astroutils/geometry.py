@@ -1516,6 +1516,7 @@ def ecef2enu(xyz, ref_info):
                 raise ValueError('Invalid specification for value under key "units" in input ref_info')
         else:
             warnings.warn('Value under key "units" in input ref_info not specified. Assuming the units are in radians.')
+            ref_info['units'] = 'radians'
     else:
         raise TypeError('Input ref_info must be a dictionary')
 
@@ -1611,6 +1612,7 @@ def enu2ecef(enu, ref_info):
                 raise ValueError('Invalid specification for value under key "units" in input ref_info')
         else:
             warnings.warn('Value under key "units" in input ref_info not specified. Assuming the units are in radians.')
+            ref_info['units'] = 'radians'
     else:
         raise TypeError('Input ref_info must be a dictionary')
 

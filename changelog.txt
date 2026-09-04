@@ -1,3 +1,20 @@
+From ebea37b (geom):
+===================
+
+In astroutils/geometry.py,
+
+(*) Provide default when units not specified in enu2ecef()
+(*) Provide default when units not specified in ecef2enu()
+
+In astroutils/tests/conftest.py,
+
+(*) Add fixtures for testing ecef2enu() and enu2ecef()
+
+In astroutils/tests/test_geometry.py,
+
+(*) Add tests to test various combinations of inputs to 
+functions enu2ecef() and ecef2enu()
+
 From e0d88d9 (geom):
 ===================
 

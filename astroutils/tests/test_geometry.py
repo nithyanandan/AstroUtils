@@ -352,6 +352,149 @@ def test_sample_2D_plane_missing_required_kwarg():
     with pytest.raises(KeyError):
         GEOM.sample_2D_plane('rectangle', ny=2)
 
+def test_ecef2enu_equatorial_reference(ecef2enu_equatorial_case):
+    ref_xyz, ref_info, offset, expected_enu = ecef2enu_equatorial_case # Read from fixture in conftest.py
+    xyz = (ref_xyz + offset).reshape(1,-1)
+    enu = GEOM.ecef2enu(xyz, dict(ref_info))
+    NP.testing.assert_allclose(enu.ravel(), expected_enu, atol=1e-8)
+
+def test_ecef2enu_1d_input(ecef2enu_equatorial_case):
+    ref_xyz, ref_info, offset, expected_enu = ecef2enu_equatorial_case # Read from fixture in conftest.py
+    xyz_1d = ref_xyz + offset # shape (3,)
+    enu = GEOM.ecef2enu(xyz_1d.copy(), dict(ref_info))
+    NP.testing.assert_allclose(enu.ravel(), expected_enu, atol=1e-8)
+
+def test_ecef2enu_at_reference_point(ecef2enu_equatorial_case):
+    ref_xyz, ref_info, offset, expected_enu = ecef2enu_equatorial_case # Read from fixture in conftest.py
+    enu = GEOM.ecef2enu(ref_xyz.reshape(1,-1).copy(), dict(ref_info))
+    NP.testing.assert_allclose(enu.ravel(), [0.0, 0.0, 0.0], atol=1e-8)
+
+def test_enu2ecef_at_reference_point(ecef2enu_general_case):
+    (ref_lat, ref_lon, ref_alt), ref_xyz, offset = ecef2enu_general_case # Read from fixture in conftest.py
+    ref_info = {'lat': ref_lat, 'lon': ref_lon, 'alt': ref_alt, 'units': 'degrees'}
+    xyz = GEOM.enu2ecef(NP.zeros((1,3)), ref_info)
+    NP.testing.assert_allclose(xyz.ravel(), ref_xyz, atol=1e-6)
+
+def test_enu2ecef_default_alt():
+    ref_info = {'lat': 0.0, 'lon': 0.0, 'units': 'degrees'}
+    xyz = GEOM.enu2ecef(NP.zeros((1,3)), ref_info)
+    NP.testing.assert_allclose(xyz.ravel(), [6378137.0, 0.0, 0.0], atol=1e-6)
+
+def test_ecef2enu_enu2ecef_roundtrip(ecef2enu_general_case):
+    (ref_lat, ref_lon, ref_alt), ref_xyz, offset = ecef2enu_general_case # Read from fixture in conftest.py
+    xyz = (ref_xyz + offset).reshape(1,-1)
+    ref_info_fwd = {'xyz': ref_xyz.copy(), 'lat': ref_lat, 'lon': ref_lon, 'units': 'degrees'}
+    enu = GEOM.ecef2enu(xyz.copy(), ref_info_fwd)
+    ref_info_inv = {'lat': ref_lat, 'lon': ref_lon, 'alt': ref_alt, 'units': 'degrees'}
+    xyz_back = GEOM.enu2ecef(enu, ref_info_inv)
+    NP.testing.assert_allclose(xyz_back, xyz, atol=1e-5)
+
+def test_enu2ecef_ecef2enu_roundtrip(ecef2enu_general_case):
+    (ref_lat, ref_lon, ref_alt), ref_xyz, offset = ecef2enu_general_case # Read from fixture in conftest.py
+    enu = offset.reshape(1,-1)
+    ref_info_inv = {'lat': ref_lat, 'lon': ref_lon, 'alt': ref_alt, 'units': 'degrees'}
+    xyz = GEOM.enu2ecef(enu.copy(), ref_info_inv)
+    ref_info_fwd = {'xyz': ref_xyz.copy(), 'lat': ref_lat, 'lon': ref_lon, 'units': 'degrees'}
+    enu_back = GEOM.ecef2enu(xyz, ref_info_fwd)
+    NP.testing.assert_allclose(enu_back, enu, atol=1e-6)
+
+def test_enu2ecef_1d_input(ecef2enu_general_case):
+    (ref_lat, ref_lon, ref_alt), ref_xyz, offset = ecef2enu_general_case # Read from fixture in conftest.py
+    ref_info = {'lat': ref_lat, 'lon': ref_lon, 'alt': ref_alt, 'units': 'degrees'}
+    xyz = GEOM.enu2ecef(offset.copy(), ref_info) # 1D (3,) input
+    ref_info_fwd = {'xyz': ref_xyz.copy(), 'lat': ref_lat, 'lon': ref_lon, 'units': 'degrees'}
+    enu_back = GEOM.ecef2enu(xyz, ref_info_fwd)
+    NP.testing.assert_allclose(enu_back.ravel(), offset, atol=1e-6)
+
+def test_ecef2enu_invalid_xyz_type():
+    ref_info = {'xyz': NP.zeros(3), 'lat': 0.0, 'lon': 0.0, 'units': 'degrees'}
+    with pytest.raises(TypeError):
+        GEOM.ecef2enu([1.0, 2.0, 3.0], ref_info)
+
+def test_ecef2enu_invalid_xyz_shape():
+    ref_info = {'xyz': NP.zeros(3), 'lat': 0.0, 'lon': 0.0, 'units': 'degrees'}
+    with pytest.raises(ValueError):
+        GEOM.ecef2enu(NP.zeros((2,2)), ref_info)
+
+def test_ecef2enu_ref_info_not_dict():
+    with pytest.raises(TypeError):
+        GEOM.ecef2enu(NP.zeros((1,3)), [1.0, 2.0, 3.0])
+
+def test_ecef2enu_missing_xyz_key():
+    ref_info = {'lat': 0.0, 'lon': 0.0, 'units': 'degrees'}
+    with pytest.raises(KeyError):
+        GEOM.ecef2enu(NP.zeros((1,3)), ref_info)
+
+def test_ecef2enu_ref_xyz_not_ndarray():
+    ref_info = {'xyz': [0.0, 0.0, 0.0], 'lat': 0.0, 'lon': 0.0, 'units': 'degrees'}
+    with pytest.raises(TypeError):
+        GEOM.ecef2enu(NP.zeros((1,3)), ref_info)
+
+def test_ecef2enu_ref_xyz_wrong_size():
+    ref_info = {'xyz': NP.zeros(2), 'lat': 0.0, 'lon': 0.0, 'units': 'degrees'}
+    with pytest.raises(ValueError):
+        GEOM.ecef2enu(NP.zeros((1,3)), ref_info)
+
+def test_ecef2enu_missing_lat_key():
+    ref_info = {'xyz': NP.zeros(3), 'lon': 0.0, 'units': 'degrees'}
+    with pytest.raises(KeyError):
+        GEOM.ecef2enu(NP.zeros((1,3)), ref_info)
+
+def test_ecef2enu_missing_lon_key():
+    ref_info = {'xyz': NP.zeros(3), 'lat': 0.0, 'units': 'degrees'}
+    with pytest.raises(KeyError):
+        GEOM.ecef2enu(NP.zeros((1,3)), ref_info)
+
+def test_ecef2enu_invalid_units_value():
+    ref_info = {'xyz': NP.zeros(3), 'lat': 0.0, 'lon': 0.0, 'units': 'foo'}
+    with pytest.raises(ValueError):
+        GEOM.ecef2enu(NP.zeros((1,3)), ref_info)
+
+def test_ecef2enu_missing_units_warns_and_defaults_to_radians():
+    ref_info_norad = {'xyz': NP.zeros(3), 'lat': 0.0, 'lon': 0.0}
+    with pytest.warns(UserWarning):
+        enu_norad = GEOM.ecef2enu(NP.zeros((1,3)), ref_info_norad)
+    ref_info_rad = {'xyz': NP.zeros(3), 'lat': 0.0, 'lon': 0.0, 'units': 'radians'}
+    enu_rad = GEOM.ecef2enu(NP.zeros((1,3)), ref_info_rad)
+    NP.testing.assert_allclose(enu_norad, enu_rad)
+
+def test_enu2ecef_invalid_enu_type():
+    ref_info = {'lat': 0.0, 'lon': 0.0, 'units': 'degrees'}
+    with pytest.raises(TypeError):
+        GEOM.enu2ecef([1.0, 2.0, 3.0], ref_info)
+
+def test_enu2ecef_invalid_enu_shape():
+    ref_info = {'lat': 0.0, 'lon': 0.0, 'units': 'degrees'}
+    with pytest.raises(ValueError):
+        GEOM.enu2ecef(NP.zeros((2,2)), ref_info)
+
+def test_enu2ecef_ref_info_not_dict():
+    with pytest.raises(TypeError):
+        GEOM.enu2ecef(NP.zeros((1,3)), [1.0, 2.0, 3.0])
+
+def test_enu2ecef_missing_lat_key():
+    ref_info = {'lon': 0.0, 'units': 'degrees'}
+    with pytest.raises(KeyError):
+        GEOM.enu2ecef(NP.zeros((1,3)), ref_info)
+
+def test_enu2ecef_missing_lon_key():
+    ref_info = {'lat': 0.0, 'units': 'degrees'}
+    with pytest.raises(KeyError):
+        GEOM.enu2ecef(NP.zeros((1,3)), ref_info)
+
+def test_enu2ecef_invalid_units_value():
+    ref_info = {'lat': 0.0, 'lon': 0.0, 'units': 'foo'}
+    with pytest.raises(ValueError):
+        GEOM.enu2ecef(NP.zeros((1,3)), ref_info)
+
+def test_enu2ecef_missing_units_warns_and_defaults_to_radians():
+    ref_info_norad = {'lat': 0.0, 'lon': 0.0}
+    with pytest.warns(UserWarning):
+        xyz_norad = GEOM.enu2ecef(NP.zeros((1,3)), ref_info_norad)
+    ref_info_rad = {'lat': 0.0, 'lon': 0.0, 'units': 'radians'}
+    xyz_rad = GEOM.enu2ecef(NP.zeros((1,3)), ref_info_rad)
+    NP.testing.assert_allclose(xyz_norad, xyz_rad)
+
 def test_costas_array_valid(costas_array_order):
     n, expected_perm = costas_array_order # Read from fixture in conftest.py
     expected_perm = NP.asarray(expected_perm, dtype=int)
