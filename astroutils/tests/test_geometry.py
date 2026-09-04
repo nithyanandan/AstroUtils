@@ -261,3 +261,54 @@ def test_sample_2D_plane_missing_required_kwarg():
     with pytest.raises(KeyError):
         GEOM.sample_2D_plane('rectangle', ny=2)
 
+def test_costas_array_valid(costas_array_order):
+    n, expected_perm = costas_array_order # Read from fixture in conftest.py
+    expected_perm = NP.asarray(expected_perm, dtype=int)
+    perm = GEOM.costas_array(n)
+    NP.testing.assert_array_equal(perm, expected_perm)
+    assert GEOM.is_costas_array(perm)
+    if n > 0:
+        NP.testing.assert_array_equal(NP.sort(perm), NP.arange(n))
+
+def test_costas_array_welch_method(costas_welch_valid_order):
+    n = costas_welch_valid_order # Read from fixture in conftest.py
+    perm_auto = GEOM.costas_array(n)
+    perm_welch = GEOM.costas_array(n, method='welch')
+    NP.testing.assert_array_equal(perm_auto, perm_welch)
+    assert GEOM.is_costas_array(perm_welch)
+
+def test_costas_array_welch_not_applicable(costas_welch_invalid_order):
+    n = costas_welch_invalid_order # Read from fixture in conftest.py
+    with pytest.raises(ValueError):
+        GEOM.costas_array(n, method='welch')
+
+def test_costas_array_search_method(costas_array_order):
+    n, expected_perm = costas_array_order # Read from fixture in conftest.py
+    perm = GEOM.costas_array(n, method='search')
+    assert GEOM.is_costas_array(perm)
+    if n > 0:
+        NP.testing.assert_array_equal(NP.sort(perm), NP.arange(n))
+
+def test_costas_array_invalid_method():
+    with pytest.raises(ValueError):
+        GEOM.costas_array(4, method='bogus')
+
+def test_costas_array_negative_order():
+    with pytest.raises(ValueError):
+        GEOM.costas_array(-1)
+
+def test_costas_array_noninteger_order():
+    with pytest.raises(TypeError):
+        GEOM.costas_array(3.5)
+
+def test_is_costas_array_valid():
+    assert GEOM.is_costas_array(NP.asarray([1, 3, 2, 0]))
+
+def test_is_costas_array_not_a_permutation():
+    assert not GEOM.is_costas_array(NP.asarray([0, 0, 1]))
+
+def test_is_costas_array_repeated_difference():
+    # An arithmetic-progression permutation has a constant lag-1 difference,
+    # violating the Costas condition
+    assert not GEOM.is_costas_array(NP.asarray([0, 1, 2, 3]))
+

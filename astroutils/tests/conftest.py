@@ -193,6 +193,30 @@ parabolaparms = {'D': NP.asarray([20.0]), 'f/D': NP.asarray([0.25]), 'f': NP.asa
 def parabola_parms(request):
     return request.param
 
+# Orders and their known (deterministic) permutations returned by
+# costas_array() -- n=2,4,6,10,12 are produced by the Welch construction
+# (n+1 prime); n=0,1,3,5,7,8 fall back to the backtracking search.
+costas_orders          = [0,  1,   2,      3,        4,          5,             6,               7,                  8,                     10,                       12]
+costas_expected_perms  = [[], [0], [1,0], [0,2,1], [1,3,2,0], [0,2,3,1,4], [2,1,5,3,4,0], [0,1,5,3,6,2,4], [0,1,4,6,5,3,7,2], [1,3,7,4,9,8,6,2,5,0], [1,3,7,2,5,11,10,8,4,9,6,0]]
+
+@pytest.fixture(scope='module', params=list(zip(costas_orders, costas_expected_perms)))
+def costas_array_order(request):
+    return request.param
+
+# Orders n for which n+1 is prime, so the Welch construction applies
+costas_welch_valid_orders = [2, 4, 6, 10, 12]
+
+@pytest.fixture(scope='module', params=costas_welch_valid_orders)
+def costas_welch_valid_order(request):
+    return request.param
+
+# Orders n for which n+1 is not prime, so the Welch construction must fail
+costas_welch_invalid_orders = [5, 7, 8]
+
+@pytest.fixture(scope='module', params=costas_welch_invalid_orders)
+def costas_welch_invalid_order(request):
+    return request.param
+
 ############# Fixtures for test_mathops.py ##############
 
 @pytest.fixture

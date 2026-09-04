@@ -2560,3 +2560,223 @@ def sample_2D_plane(pattern, indices=None, **kwargs):
     return sample_locs
 
 ################################################################################
+
+# Below are some Costas array routines 
+
+################################################################################
+
+def is_costas_array(perm):
+
+    """
+    ----------------------------------------------------------------------------
+    Verify whether a given permutation array satisfies the Costas property.
+
+    Inputs:
+
+    perm    [list or numpy array] (n,) integer array/sequence which is a
+            permutation of {0, 1, ..., n-1}, where perm[i] denotes the row
+            (0-indexed) occupied by the mark in column i.
+
+    Output:
+
+    [boolean] True if perm is a valid Costas array of order n=len(perm),
+    False otherwise. A permutation is a Costas array if, for every lag
+    k in {1,...,n-1}, the difference sequence perm[i+k]-perm[i] (taken over
+    all valid i) contains no repeated values.
+    ----------------------------------------------------------------------------
+    """
+
+    perm = NP.asarray(perm).reshape(-1)
+    n = perm.size
+    if NP.any(NP.sort(perm) != NP.arange(n)):
+        return False
+    for lag in range(1, n):
+        diffs = perm[lag:] - perm[:n-lag]
+        if diffs.size != NP.unique(diffs).size:
+            return False
+    return True
+
+################################################################################
+
+def costas_array(n, method='auto'):
+
+    """
+    ----------------------------------------------------------------------------
+    Generate a Costas array of order n, i.e. an nxn permutation array in which
+    the vectors joining every pair of marks are all distinct. Such arrays find
+    use as sparse aperture/antenna layouts and frequency-hop patterns with
+    optimal auto-correlation properties.
+
+    Inputs:
+
+    n         [int] Order of the Costas array to generate. Must be a
+              non-negative integer.
+
+    method    [string] Construction method to use. Must be one of:
+              'auto'   [Default] Try the algebraic Welch construction first
+                       (used when p=n+1 is prime), and fall back to an
+                       exhaustive backtracking search otherwise.
+              'welch'  Use only the algebraic Welch construction. Valid only
+                       when p=n+1 is prime, otherwise raises ValueError.
+              'search' Use only the exhaustive backtracking search. Valid for
+                       any n but can become slow for large n (roughly
+                       n <~ 16). Raises ValueError if no Costas array of
+                       order n is found.
+
+    Output:
+
+    perm      [numpy array] (n,) integer array representing the Costas
+              permutation array. perm[i] gives the row (0-indexed) of the
+              mark in column i, with both rows and columns numbered
+              0,...,n-1. Equivalently, the set of (column, row) pairs
+              {(i, perm[i])} denotes the positions of the n marks on the nxn
+              grid.
+
+    Example:
+
+    >>> perm = costas_array(7)
+    >>> perm
+    array([0, 1, 5, 3, 6, 2, 4])
+
+    This is a Costas array of order n=7. Reading perm as (column, row) pairs
+    {(i, perm[i])} places the 7 marks at (0,0), (1,1), (2,5), (3,3), (4,6),
+    (5,2), and (6,4) on a 7x7 grid (column 0 is the leftmost column, row 0 is
+    the bottom row):
+
+        row
+         6  .  .  .  .  X  .  .
+         5  .  .  X  .  .  .  .
+         4  .  .  .  .  .  .  X
+         3  .  .  .  X  .  .  .
+         2  .  .  .  .  .  X  .
+         1  .  X  .  .  .  .  .
+         0  X  .  .  .  .  .  .
+            0  1  2  3  4  5  6   column
+
+    Every one of the 7x6=42 ordered pairs of marks yields a distinct
+    displacement vector (dcol, drow) between them, which is the defining
+    Costas property; this can be checked with is_costas_array(perm).
+    ----------------------------------------------------------------------------
+    """
+
+    def _is_prime(num):
+        if num < 2:
+            return False
+        if num in (2, 3):
+            return True
+        if num % 2 == 0:
+            return False
+        i = 3
+        while i * i <= num:
+            if num % i == 0:
+                return False
+            i += 2
+        return True
+
+    def _prime_factors(num):
+        factors = set()
+        m = num
+        d = 2
+        while d * d <= m:
+            while m % d == 0:
+                factors.add(d)
+                m //= d
+            d += 1
+        if m > 1:
+            factors.add(m)
+        return factors
+
+    def _primitive_root(p):
+        # Find a generator g of the multiplicative group of integers modulo
+        # prime p. Returns None if p is not prime.
+        if not _is_prime(p):
+            return None
+        if p == 2:
+            return 1
+        phi = p - 1
+        phi_factors = _prime_factors(phi)
+        for g in range(2, p):
+            if all(pow(g, phi // q, p) != 1 for q in phi_factors):
+                return g
+        return None
+
+    def _costas_array_welch(order):
+        # Algebraic Welch construction: requires p=order+1 to be prime.
+        # Returns None if this construction is not applicable.
+        p = order + 1
+        g = _primitive_root(p)
+        if g is None:
+            return None
+        return NP.asarray([pow(g, i, p) for i in range(1, p)]) - 1 # 0-indexed
+
+    def _costas_array_search(order):
+        # Exhaustive backtracking search over permutations, pruning branches
+        # that violate the Costas distinct-difference property. Returns None
+        # if no Costas array of this order is found (which, for an
+        # exhaustive search, means none exists). Runtime grows rapidly with
+        # order; intended for modest orders (roughly order <~ 16).
+        if order == 0:
+            return NP.asarray([], dtype=int)
+        perm = [-1] * order
+        row_used = [False] * order
+        diffs_used = [set() for _ in range(order-1)] # diffs_used[lag-1] for lag=1,...,order-1
+
+        def backtrack(col):
+            if col == order:
+                return True
+            for row in range(order):
+                if row_used[row]:
+                    continue
+                added = []
+                valid = True
+                for prev_col in range(col):
+                    lag = col - prev_col
+                    diff = row - perm[prev_col]
+                    if diff in diffs_used[lag-1]:
+                        valid = False
+                        break
+                    added.append((lag-1, diff))
+                if valid:
+                    for lag_idx, diff in added:
+                        diffs_used[lag_idx].add(diff)
+                    perm[col] = row
+                    row_used[row] = True
+                    if backtrack(col+1):
+                        return True
+                    row_used[row] = False
+                    perm[col] = -1
+                    for lag_idx, diff in added:
+                        diffs_used[lag_idx].discard(diff)
+            return False
+
+        if backtrack(0):
+            return NP.asarray(perm)
+        return None
+
+    if not isinstance(n, (int, NP.integer)):
+        raise TypeError('Input n must be an integer')
+    if n < 0:
+        raise ValueError('Input n must be a non-negative integer')
+    if method not in ('auto', 'welch', 'search'):
+        raise ValueError("Input method must be one of 'auto', 'welch', or 'search'")
+
+    if n <= 1:
+        return NP.arange(n)
+
+    if method in ('auto', 'welch'):
+        perm = _costas_array_welch(n)
+        if perm is not None:
+            return perm
+        if method == 'welch':
+            raise ValueError('Welch construction is not applicable for n={0:0d} (n+1 is not prime).'.format(n))
+
+    perm = _costas_array_search(n)
+    if perm is None:
+        raise ValueError('No Costas array of order {0:0d} was found.'.format(n))
+    return perm
+
+################################################################################
+
+# End of Costas array routines 
+
+################################################################################

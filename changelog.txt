@@ -1,3 +1,17 @@
+From a3aa1a5 (geom):
+===================
+
+In astroutils/geometry.py,
+
+(*) Add functions is_costas_array() and costas_array() with 
+docstring to check and generate Costas array of a specified 
+order. 
+
+In astroutils/tests/test_geometry.py,
+
+(*) Add tests to test various combinations of inputs to the 
+newly added function costas_array()
+
 From ac1f0c0 (geom):
 ===================
 
@@ -10,7 +24,7 @@ and hexagon, including option to select specific indices.
 In astroutils/tests/test_geometry.py,
 
 (*) Add tests to test various combinations of inputs to the 
-neewly added function sample_2D_plane()
+newly added function sample_2D_plane()
 
 From 038cdb0 (math):
 ===================
