@@ -1428,7 +1428,15 @@ def ecef2lla(x, y, z, units='radians'):
     lon = NP.arctan2(y, x)
     lat = NP.arctan2(z + eprime_sqr * gps_b * NP.sin(gps_theta)**3, gps_p - e_sqr * gps_a * NP.cos(gps_theta)**3)
     gps_N = gps_a / NP.sqrt(1.0 - e_sqr * NP.sin(lat)**2) # Radius of curvature
-    alt = gps_p / NP.cos(lat) - gps_N
+
+    # alt = gps_p / cos(lat) - gps_N is singular near the poles (cos(lat)->0),
+    # and alt = z / sin(lat) - gps_N*(1-e_sqr) is singular near the equator
+    # (sin(lat)->0). Pick whichever has the larger-magnitude denominator so
+    # the divisor is never smaller than 1/sqrt(2).
+    with NP.errstate(divide='ignore', invalid='ignore'):
+        alt_cos_based = gps_p / NP.cos(lat) - gps_N
+        alt_sin_based = z / NP.sin(lat) - gps_N * (1.0 - e_sqr)
+    alt = NP.where(NP.abs(NP.cos(lat)) >= NP.abs(NP.sin(lat)), alt_cos_based, alt_sin_based)
 
     if units != 'radians':
         lat = NP.degrees(lat)

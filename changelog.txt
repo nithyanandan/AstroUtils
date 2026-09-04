@@ -1,3 +1,33 @@
+From d9e6b96 (geom):
+===================
+
+In astroutils/geometry.py,
+
+(*) Bug fix in ecef2lla(), the altitude formula 
+alt = p/cos(lat) - N is singular at the poles 
+(p=0, cos(lat)→0), silently returning altitudes off by 
+~6.4 million m. Now it computes both the cos(lat)- and 
+sin(lat)-based formulas and picks whichever has the 
+larger-magnitude (i.e. numerically safe) denominator per 
+point, wrapped in NP.errstate to suppress the harmless 
+divide-warning from the unused branch. 
+
+In astroutils/tests/conftest.py, 
+
+(*) Add lla_ecef_known_point (5 known lat/lon/alt ↔ x/y/z 
+pairs: equator, both poles, equator at lon=90°, and a 
+general mid-latitude point) and lla_ecef_roundtrip_points 
+(a batch including both poles).
+
+In astroutils/tests/test_geometry.py,
+
+(*) Add 25 new tests covering known-point correctness in 
+both directions, default altitude, radians/degrees 
+consistency, round-trip accuracy (including the pole case 
+with warnings promoted to errors as a regression guard), 
+and error handling (bad types, size mismatches, invalid 
+units, out-of-range radius).  
+
 From ebea37b (geom):
 ===================
 

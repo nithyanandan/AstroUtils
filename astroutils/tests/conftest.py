@@ -249,6 +249,33 @@ ecef_enu_offset_general = NP.array([50.0, -75.0, 120.0])
 def ecef2enu_general_case():
     return (ecef_enu_ref_latlonalt, ecef_enu_ref_xyz_general.copy(), ecef_enu_offset_general.copy())
 
+# Known (lat,lon,alt) <-> (x,y,z) pairs for lla2ecef()/ecef2lla(), all in
+# degrees/metres: equator/prime-meridian, north pole, south pole, equator at
+# lon=90, and a general mid-latitude point (shared with the ECEF/ENU fixture
+# above for consistency).
+lla_known_lat = [0.0,        90.0,        -90.0,        0.0,        34.5]
+lla_known_lon = [0.0,        0.0,         0.0,          90.0,       -118.2]
+lla_known_alt = [0.0,        0.0,         0.0,          0.0,        500.0]
+lla_known_xyz = [(6378137.0, 0.0, 0.0),
+                 (0.0, 0.0, 6356752.314245179),
+                 (0.0, 0.0, -6356752.314245179),
+                 (0.0, 6378137.0, 0.0),
+                 (-2486777.318714501, -4637820.0998305855, 3592575.143868436)]
+
+@pytest.fixture(scope='module', params=list(zip(lla_known_lat, lla_known_lon, lla_known_alt, lla_known_xyz)))
+def lla_ecef_known_point(request):
+    return request.param
+
+# A batch of (lat,lon,alt) points -- including both poles -- used to check
+# lla2ecef()/ecef2lla() round-trip consistency
+lla_roundtrip_lat = NP.array([-90.0, -60.0, -30.0, 0.0, 15.0, 45.0, 60.0, 80.0, 90.0])
+lla_roundtrip_lon = NP.array([  0.0, -170.0, -45.0, 0.0, 30.0, 90.0, 135.0, 179.0, 45.0])
+lla_roundtrip_alt = NP.array([  0.0,    0.0, 100.0, 500.0, -20.0, 1000.0, 2000.0, 50.0, 10.0])
+
+@pytest.fixture(scope='module')
+def lla_ecef_roundtrip_points():
+    return (lla_roundtrip_lat.copy(), lla_roundtrip_lon.copy(), lla_roundtrip_alt.copy())
+
 ############# Fixtures for test_mathops.py ##############
 
 @pytest.fixture

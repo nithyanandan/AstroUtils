@@ -1,6 +1,7 @@
 from __future__ import print_function, division, unicode_literals, absolute_import
 from builtins import range
 import sys
+import warnings
 import pytest
 from .. import geometry as GEOM
 import numpy as NP
@@ -351,6 +352,97 @@ def test_sample_2D_plane_invalid_pattern():
 def test_sample_2D_plane_missing_required_kwarg():
     with pytest.raises(KeyError):
         GEOM.sample_2D_plane('rectangle', ny=2)
+
+def test_lla2ecef_known_point(lla_ecef_known_point):
+    lat, lon, alt, expected_xyz = lla_ecef_known_point # Read from fixture in conftest.py
+    x, y, z = GEOM.lla2ecef(lat, lon, alt=alt, units='degrees')
+    NP.testing.assert_allclose([x[0], y[0], z[0]], expected_xyz, atol=1e-5)
+
+def test_ecef2lla_known_point(lla_ecef_known_point):
+    lat, lon, alt, xyz = lla_ecef_known_point # Read from fixture in conftest.py
+    x, y, z = xyz
+    lat2, lon2, alt2 = GEOM.ecef2lla(x, y, z, units='degrees')
+    NP.testing.assert_allclose(lat2[0], lat, atol=1e-8)
+    NP.testing.assert_allclose(alt2[0], alt, atol=1e-5)
+    if abs(abs(lat) - 90.0) > 1e-8: # longitude is undefined at the poles
+        NP.testing.assert_allclose(lon2[0], lon, atol=1e-8)
+
+def test_lla2ecef_default_alt():
+    x, y, z = GEOM.lla2ecef(0.0, 0.0, units='degrees')
+    NP.testing.assert_allclose([x[0], y[0], z[0]], [6378137.0, 0.0, 0.0], atol=1e-5)
+
+def test_lla2ecef_radians_degrees_consistency():
+    x_deg, y_deg, z_deg = GEOM.lla2ecef(45.0, 30.0, alt=100.0, units='degrees')
+    x_rad, y_rad, z_rad = GEOM.lla2ecef(NP.radians(45.0), NP.radians(30.0), alt=100.0, units='radians')
+    NP.testing.assert_allclose([x_deg[0], y_deg[0], z_deg[0]], [x_rad[0], y_rad[0], z_rad[0]], atol=1e-6)
+
+def test_ecef2lla_radians_degrees_consistency():
+    x, y, z = GEOM.lla2ecef(45.0, 30.0, alt=100.0, units='degrees')
+    lat_deg, lon_deg, alt_deg = GEOM.ecef2lla(x, y, z, units='degrees')
+    lat_rad, lon_rad, alt_rad = GEOM.ecef2lla(x, y, z, units='radians')
+    NP.testing.assert_allclose(NP.degrees(lat_rad), lat_deg, atol=1e-10)
+    NP.testing.assert_allclose(NP.degrees(lon_rad), lon_deg, atol=1e-10)
+    NP.testing.assert_allclose(alt_rad, alt_deg, atol=1e-8)
+
+def test_lla2ecef_ecef2lla_roundtrip(lla_ecef_roundtrip_points):
+    lats, lons, alts = lla_ecef_roundtrip_points # Read from fixture in conftest.py
+    x, y, z = GEOM.lla2ecef(lats, lons, alt=alts, units='degrees')
+    lat2, lon2, alt2 = GEOM.ecef2lla(x, y, z, units='degrees')
+    NP.testing.assert_allclose(lat2, lats, atol=1e-8)
+    NP.testing.assert_allclose(alt2, alts, atol=1e-4)
+    nonpole = NP.abs(NP.abs(lats) - 90.0) > 1e-8 # longitude is undefined at the poles
+    NP.testing.assert_allclose(lon2[nonpole], lons[nonpole], atol=1e-8)
+
+def test_ecef2lla_pole_no_warnings():
+    # Regression test: alt used to be computed as p/cos(lat) - N, which is
+    # singular at the poles (p=0, cos(lat)=0) and silently returned a wildly
+    # wrong altitude. It must now select the z/sin(lat)-based formula there,
+    # without raising any divide-by-zero warnings.
+    with warnings.catch_warnings():
+        warnings.simplefilter('error')
+        lat, lon, alt = GEOM.ecef2lla(0.0, 0.0, 6356752.314245179, units='degrees')
+    NP.testing.assert_allclose(lat[0], 90.0, atol=1e-8)
+    NP.testing.assert_allclose(alt[0], 0.0, atol=1e-5)
+
+def test_lla2ecef_invalid_units():
+    with pytest.raises(ValueError):
+        GEOM.lla2ecef(0.0, 0.0, units='foo')
+
+def test_ecef2lla_invalid_units():
+    with pytest.raises(ValueError):
+        GEOM.ecef2lla(0.0, 0.0, 0.0, units='foo')
+
+def test_lla2ecef_invalid_lat_type():
+    with pytest.raises(TypeError):
+        GEOM.lla2ecef('a', 0.0)
+
+def test_lla2ecef_invalid_lon_type():
+    with pytest.raises(TypeError):
+        GEOM.lla2ecef(0.0, 'a')
+
+def test_lla2ecef_invalid_alt_type():
+    with pytest.raises(TypeError):
+        GEOM.lla2ecef(0.0, 0.0, alt='a')
+
+def test_lla2ecef_lat_lon_size_mismatch():
+    with pytest.raises(ValueError):
+        GEOM.lla2ecef(NP.array([0.0]), NP.array([0.0, 1.0]))
+
+def test_lla2ecef_alt_size_mismatch():
+    with pytest.raises(ValueError):
+        GEOM.lla2ecef(NP.array([0.0, 1.0]), NP.array([0.0, 1.0]), alt=NP.array([0.0]))
+
+def test_ecef2lla_invalid_x_type():
+    with pytest.raises(TypeError):
+        GEOM.ecef2lla('a', 0.0, 0.0)
+
+def test_ecef2lla_size_mismatch():
+    with pytest.raises(ValueError):
+        GEOM.ecef2lla(NP.array([1.0, 2.0]), NP.array([1.0, 2.0, 3.0]), NP.array([1.0, 2.0]))
+
+def test_ecef2lla_radius_out_of_range():
+    with pytest.raises(ValueError):
+        GEOM.ecef2lla(0.0, 0.0, 0.0, units='degrees')
 
 def test_ecef2enu_equatorial_reference(ecef2enu_equatorial_case):
     ref_xyz, ref_info, offset, expected_enu = ecef2enu_equatorial_case # Read from fixture in conftest.py
